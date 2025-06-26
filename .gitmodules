@@ -1,0 +1,5 @@
+[submodule "a2a-samples"]
+	shallow = true
+	path = a2a-samples
+	url = https://github.com/google-a2a/a2a-samples.git
+	branch = main
