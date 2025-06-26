@@ -1,0 +1,248 @@
+openapi: 3.0.3
+info:
+  title: LLM Arena Backend API
+  version: 0.1.0
+  description: |
+    Single-threaded synchronous backend in charge of agent registration, match
+    scheduling and result retrieval.  
+    - **Public API**: called by the web front-end / ops console  
+    - **MCP API**: callbacks from the green-team referee or agents via A2A / MCP
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Agents
+    description: Agent management
+  - name: Battles
+    description: Match creation, scheduling and querying
+  - name: Queue
+    description: Event-queue for all battle's status
+  - name: MCP
+    description: Callbacks from the green-team referee / agents
+
+components:
+  schemas:
+    ## ---------- Agent ----------
+    AgentRegisterInfo:
+      type: object
+      required: [name, endpoint]
+      properties:
+        name:        { type: string, description: Agent display name }
+        endpoint:    { type: string, format: uri, description: Public A2A URL of the agent }
+        meta:        { type: object, description: Arbitrary extra registration info }
+    AgentCard:
+      type: object
+      description: Capability card returned by the agent via A2A (fields are agent-defined)
+      additionalProperties: true
+    AgentInfo:
+      type: object
+      description: Persisted, complete record of an agent
+      properties:
+        id:           { type: string, format: uuid }
+        registerInfo: { $ref: '#/components/schemas/AgentRegisterInfo' }
+        agentCard:    { $ref: '#/components/schemas/AgentCard' }
+        status:       { type: string, enum: [unlocked, locked], default: unlocked }
+        createdAt:    { type: string, format: date-time }
+
+    ## ---------- Battle ----------
+    BattleRegisterRequest:
+      type: object
+      required: [greenAgentId, opponents]
+      properties:
+        greenAgentId: { type: string, format: uuid }
+        opponents:
+          type: array
+          items: { type: string, format: uuid }
+        config:       { type: object, description: Match parameters (rounds / time limits / etc.) }
+    BattleInfo:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        greenAgentId: { type: string, format: uuid }
+        opponents:    { type: array, items: { type: string, format: uuid } }
+        config:       { type: object }
+        state:        { type: string, enum: [pending, queued, running, finished, error], default: pending }
+        createdAt:    { type: string, format: date-time }
+        result:       { $ref: '#/components/schemas/BattleResult' }
+    BattleResult:
+      type: object
+      properties:
+        winner:      { type: string, description: "Agent ID or 'draw'" }
+        score:       { type: object, description: Scoring details provided by the green team }
+        detail:      { type: object, description: Any extra referee information }
+        reportedAt:  { type: string, format: date-time }
+
+    ## ---------- Queue ----------
+    QueueStatus:
+      type: object
+      properties:
+        runningBattleId:    { type: string, format: uuid, nullable: true }
+        pendingBattleCount: { type: integer, description: Number of battles waiting in the queue }
+        updatedAt:          { type: string, format: date-time }
+
+paths:
+  ## ===== Agents =====
+  /agents:
+    post:
+      summary: Register an agent
+      tags: [Agents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AgentRegisterInfo' }
+      responses:
+        '201':
+          description: Received register info, fetched agent card and created agent on server
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentInfo' }
+    get:
+      summary: List all agents
+      tags: [Agents]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AgentInfo' }
+
+  /agents/{agentId}:
+    parameters:
+      - in: path
+        name: agentId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Retrieve a single agent
+      tags: [Agents]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentInfo' }
+
+  ## ===== Battles =====
+  /battles:
+    post:
+      summary: Create a battle record
+      tags: [Battles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BattleRegisterRequest' }
+      responses:
+        '201':
+          description: Recorded in database
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BattleInfo' }
+    get:
+      summary: List all battles
+      tags: [Battles]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/BattleInfo' }
+
+  /battles/{battleId}:
+    parameters:
+      - in: path
+        name: battleId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: Retrieve battle details
+      tags: [Battles]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BattleInfo' }
+
+  /battles/{battleId}/setup:
+    parameters:
+      - in: path
+        name: battleId
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Lock participants and enqueue the battle
+      tags: [Battles]
+      responses:
+        '202':
+          description: Enqueued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BattleInfo' }
+
+  ## ===== Queue =====
+  /queue/status:
+    get:
+      summary: Retrieve queue and runtime status
+      tags: [Queue]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QueueStatus' }
+
+  ## ===== MCP / A2A callbacks =====
+  /mcp/agents/{agentId}/card:
+    post:
+      summary: Agent-initiated or backend-initiated upload of AgentCard
+      tags: [MCP]
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AgentCard' }
+      responses:
+        '204': { description: Accepted }
+
+  /mcp/battles/{battleId}/result:
+    post:
+      summary: Battle result reported by the green-team referee
+      tags: [MCP]
+      parameters:
+        - in: path
+          name: battleId
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BattleResult' }
+      responses:
+        '204': { description: Saved to database }
+
+    get:
+      summary: Retrieve battle result
+      tags: [MCP]
+      parameters:
+        - in: path
+          name: battleId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BattleResult' }
