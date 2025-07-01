@@ -18,7 +18,8 @@ cd tensortrust_mock_impl
 # setup agents under A2A protocol
 python blue_agent/main.py
 python red_agent/main.py
+python green_agent/main.py
 
 # start game
-python green_agent/green_agent.py
+python green_agent/unit_test.py
 ```

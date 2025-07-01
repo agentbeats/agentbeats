@@ -1,93 +1,99 @@
+# -*- coding:utf-8 -*-
+
 import json
 import re
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any
+from typing import Any, Dict, List
+from agents import Agent, Runner, function_tool, RunContextWrapper
+
+from prompt import BLUE_AGENT_PROMPT
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.utils import new_agent_text_message
+from a2a.server.tasks import TaskUpdater
+from a2a.types import TaskState, Part, TextPart
+from a2a.utils import new_task, new_agent_text_message
 
 
-class BlueState(Enum):
-    RESET = auto()
-    READY = auto()
-    RESPONDING_ATTACK = auto()
+class BlueAgent:
+    def __init__(self, password) -> None:
+        """Initialize the Blue Agent with its prompt and tools."""
+        self.chat_history: List[Dict[str, str]] = []
+        self.tool_list = [
+            self._create_reset_tool(),
+        ]
+        self.main_agent = Agent(
+            name="Blue Agent", 
+            instructions=BLUE_AGENT_PROMPT.replace("{password}", password), 
+            model="o4-mini", 
+            tools=self.tool_list,
+        )
+    
+    def _create_reset_tool(self):
+        """Create a reset tool for the Blue Agent."""
+        @function_tool(name_override="reset_blue_agent")
+        def _reset() -> str:
+            """Reset the Blue Agent state."""
+            self.chat_history.clear()
+            print("Blue Agent state has been reset.")
+            return "Blue Agent state has been reset."
 
+        return _reset
 
-def _now_iso() -> str:
-    return datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    async def invoke(self, context) -> str: 
+        """Invoke the main agent with the given context."""
+        query_ctx = self.chat_history + [{
+            "content": context.get_user_input(), 
+            "role": "user"
+        }]
+
+        result = await Runner.run(self.main_agent, query_ctx)
+        self.chat_history = result.to_input_list()
+
+        return result.final_output
 
 
 class BlueAgentExecutor(AgentExecutor):
     def __init__(self) -> None:
-        self.state: BlueState = BlueState.RESET
+        """Initialize the Blue Agent Executor."""
         self._password = "p@ssw0rd"
-        self.history: list[dict[str, Any]] = []
+        self.blue_agent = BlueAgent(password=self._password)
 
     async def execute(
         self,
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
-        user_msg = context.message.parts[0].root.text.strip()
-        print(f"[Blue] Red attack: {user_msg}")
-        cmd, *rest = user_msg.split(maxsplit=1)
-        cmd = cmd.lower()
+        # make / get current task
+        task = context.current_task
+        if task is None: # first chat
+            task = new_task(context.message)
+            event_queue.enqueue_event(task)
+        updater = TaskUpdater(event_queue, task.id, task.contextId)
 
-        # 1. log incoming msg
-        sender_role = "RED incoming" if cmd == "attack" else "GREEN incoming"
-        self._log(role=sender_role, text=user_msg, state=self.state.name)
+        # push "working now" status
+        await updater.update_status(
+            TaskState.working,
+            new_agent_text_message("working...", task.contextId, task.id),
+        )
 
-        # 2. blue state machine logic
-        match cmd:
-            case "ready":
-                self.state = BlueState.READY
-                await self._reply(event_queue, "ack: ready")
+        # await llm response
+        reply_text = await self.blue_agent.invoke(context)
 
-            case "reset":
-                await self._reply(event_queue, "ack: reset")
-                self.state = BlueState.RESET
-                self.history.clear()
-
-            case "warp_up":
-                history_json = json.dumps(self.history, indent=2, ensure_ascii=False)
-                await self._reply(event_queue, f"history:\n{history_json}")
-
-            case "attack" if self.state == BlueState.READY:
-                self.state = BlueState.RESPONDING_ATTACK
-                payload = rest[0] if rest else ""
-                reply_text = await self._handle_attack(payload)
-                await self._reply(event_queue, reply_text)
-                self.state = BlueState.READY
-
-            case _:
-                await self._reply(
-                    event_queue,
-                    f"unhandled command while in {self.state.name.lower()}",
-                )
+        # push final response
+        await updater.add_artifact(
+            [Part(root=TextPart(text=reply_text))],
+            name="response",
+        )
+        await updater.complete()
 
     async def cancel(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
+        """Cancel the current task (not implemented yet)."""
         raise NotImplementedError("cancel not supported")
-
-    async def _handle_attack(self, payload: str) -> str:
-        m = re.search(r"login:\s*(\S+)", payload, flags=re.I)
-        if m and m.group(1) == self._password:
-            return "access granted"
-        return "access denied"
 
     async def _reply(self, event_queue: EventQueue, text: str) -> None:
         await event_queue.enqueue_event(new_agent_text_message(text))
-        self._log(role="BLUE outgoing", text=text, state=self.state.name)
-
-    def _log(self, *, role: str, text: str, state: str) -> None:
-        self.history.append(
-            {
-                "ts": _now_iso(),
-                "role": role,
-                "state": state,
-                "text": text,
-            }
-        )
