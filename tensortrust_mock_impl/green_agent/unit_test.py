@@ -79,17 +79,17 @@ async def test_plain_message() -> None:
         client = A2AClient(httpx_client=httpx_client, agent_card=card)
 
         # -------- Initial Reset --------
-        print("\n=== Initial Reset ===")
+        print("\n=== Reset: Initial Reset ===")
         async for text in stream_agent_response(client, "reset"):
             print(text, end="", flush=True)
 
         # -------- Generate Defense Prompt --------
-        print("\n\n=== Host a game ===")
+        print("\n\n=== Ready: Host a game ===")
         async for text in stream_agent_response(client, "Host a game"):
             print(text, end="", flush=True)
 
         # -------- Reset Again --------
-        print("\n\n=== Reset Again ===")
+        print("\n\n=== Reset: Reset Again ===")
         async for text in stream_agent_response(client, "reset"):
             print(text, end="", flush=True)
 
