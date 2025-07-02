@@ -72,14 +72,5 @@ def update_battle_result(battle_id: str, result: dict) -> str:
         return f"Error updating battle result: {str(e)}"
 
 if __name__ == "__main__":
-    # Run the FastMCP server as a remote service
-    print("Starting FastMCP server as remote service...")
-    print("This server will handle battle result logging via MCP protocol")
-    print("The green agent will connect to this server to use the update_battle_result tool")
-    print("")
-    print("Server will be available via MCP protocol")
-    print("Press Ctrl+C to stop the server")
-    print("")
-    
     # Run the FastMCP server
     mcp.run()
