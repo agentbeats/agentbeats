@@ -1,0 +1,55 @@
+{
+  "1424c74e-91c6-4c49-ab5f-20d6be1985c5": {
+    "greenAgentId": "bab29558-b2e3-4af4-9577-51aee68045d8",
+    "opponents": [
+      "633d4a5c-a5e6-48e3-8d64-a60ca02584b6",
+      "3eaeffba-6574-4a50-979d-85b6548b108e"
+    ],
+    "config": {
+      "timeout": 60,
+      "rounds": 3
+    },
+    "state": "error",
+    "createdAt": "2025-07-01T18:44:10.974643",
+    "id": "1424c74e-91c6-4c49-ab5f-20d6be1985c5",
+    "result": {
+      "winner": "633d4a5c-a5e6-48e3-8d64-a60ca02584b6",
+      "score": {
+        "blueScore": 10,
+        "redScore": 5
+      },
+      "detail": {
+        "rounds": 3,
+        "log": "Battle completed successfully"
+      },
+      "reportedAt": "2025-07-01T18:44:10.992858"
+    },
+    "error": "Failed to reset green agent"
+  },
+  "af73ff33-4d1b-4859-81e4-fb723450a678": {
+    "greenAgentId": "aa391b87-8bb8-4ad0-bc8b-3504454fb36b",
+    "opponents": [
+      "835f9a09-ca07-4360-be93-81c6d6bd1cc1",
+      "77ff16db-835a-4f95-b9e3-652840cb0958"
+    ],
+    "config": {
+      "timeout": 60,
+      "rounds": 3
+    },
+    "state": "finished",
+    "createdAt": "2025-07-02T04:24:17.696796",
+    "id": "af73ff33-4d1b-4859-81e4-fb723450a678",
+    "result": {
+      "winner": "835f9a09-ca07-4360-be93-81c6d6bd1cc1",
+      "score": {
+        "blueScore": 10,
+        "redScore": 5
+      },
+      "detail": {
+        "rounds": 3,
+        "log": "Battle completed successfully"
+      },
+      "reportedAt": "2025-07-02T04:26:07.532960"
+    }
+  }
+}
