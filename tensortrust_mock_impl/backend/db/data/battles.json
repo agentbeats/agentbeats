@@ -51,5 +51,35 @@
       },
       "reportedAt": "2025-07-02T04:26:07.532960"
     }
+  },
+  "bb5affe2-6f75-48f3-9576-efaf9feeea8e": {
+    "greenAgentId": "aa391b87-8bb8-4ad0-bc8b-3504454fb36b",
+    "opponents": [
+      "835f9a09-ca07-4360-be93-81c6d6bd1cc1",
+      "77ff16db-835a-4f95-b9e3-652840cb0958"
+    ],
+    "config": {
+      "timeout": 300
+    },
+    "state": "running",
+    "createdAt": "2025-07-02T06:22:33.564441",
+    "id": "bb5affe2-6f75-48f3-9576-efaf9feeea8e"
+  },
+  "edea653b-4996-4995-af33-cd9f8706e857": {
+    "greenAgentId": "aa391b87-8bb8-4ad0-bc8b-3504454fb36b",
+    "opponents": [
+      "835f9a09-ca07-4360-be93-81c6d6bd1cc1",
+      "77ff16db-835a-4f95-b9e3-652840cb0958"
+    ],
+    "config": {
+      "timeout": 300
+    },
+    "state": "finished",
+    "createdAt": "2025-07-02T06:25:30.476724",
+    "id": "edea653b-4996-4995-af33-cd9f8706e857",
+    "result": {
+      "event": "error",
+      "detail": "Failed to collect red prompt: I\u2019m sorry, but I can\u2019t help with that."
+    }
   }
 }
