@@ -5,9 +5,11 @@ import json
 import re
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 from agents import Agent, Runner, function_tool, RunContextWrapper
 from uuid import uuid4
+import sys
+import os
 
 from prompt import GREEN_AGENT_PROMPT
 from testing_agent import TestingAgent
@@ -33,7 +35,6 @@ from a2a.types import (
     AgentCard,
 )
 
-
 class GreenAgent:
     def __init__(self, blue_agent_url: str, red_agent_url: str) -> None:
         """Initialize the Green Agent with its prompt and tools."""
@@ -46,16 +47,19 @@ class GreenAgent:
 
         # Initialize chat history and tools
         self.chat_history: List[Dict[str, str]] = []
-        self.tool_list = [
+        tools: Sequence = [
             self._create_reset_tool(),
             self._create_talk_to_agent_tool(), 
-            self._create_eval_prompt_tool(), 
+            self._create_eval_prompt_tool(),
+            self._create_logging_tool(),
         ]
+        
+        self.tool_list = tools
         self.main_agent = Agent(
             name="Green Agent", 
             instructions=GREEN_AGENT_PROMPT, 
             model="o4-mini", 
-            tools=self.tool_list,
+            tools=list(self.tool_list),  # type: ignore
         )
     
     async def init_remote_clients(self) -> None:
@@ -170,6 +174,31 @@ class GreenAgent:
 
         return _eval_prompt
 
+    def _create_logging_tool(self):
+        """Create a tool to log messages to the MCP logger."""
+        @function_tool(name_override="log_message")
+        async def _log_message(message: str) -> str:
+            """Log a message to the MCP logger server."""
+            try:
+                # Call the MCP logger server
+                logger_url = "http://localhost:8025/log"
+                response = await self._httpx_client.post(
+                    logger_url,
+                    json={"message": message},
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get("result", f"Logged: {message}")
+                else:
+                    return f"Failed to log message: HTTP {response.status_code}"
+                    
+            except Exception as e:
+                return f"Failed to log message: {e}"
+
+        return _log_message
+
     async def invoke(self, context) -> str: 
         """Invoke the main agent with the given context."""
         query_ctx = self.chat_history + [{
@@ -177,8 +206,8 @@ class GreenAgent:
             "role": "user"
         }]
 
-        result = await Runner.run(self.main_agent, query_ctx)
-        self.chat_history = result.to_input_list()
+        result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
+        self.chat_history = result.to_input_list()  # type: ignore
 
         return result.final_output
 
@@ -201,8 +230,8 @@ class GreenAgentExecutor(AgentExecutor):
         # make / get current task
         task = context.current_task
         if task is None: # first chat
-            task = new_task(context.message)
-            event_queue.enqueue_event(task)
+            task = new_task(context.message)  # type: ignore
+            await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
 
         # push "working now" status

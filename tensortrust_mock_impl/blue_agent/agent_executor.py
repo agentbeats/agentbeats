@@ -4,7 +4,7 @@ import json
 import re
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 from agents import Agent, Runner, function_tool, RunContextWrapper
 
 from prompt import BLUE_AGENT_PROMPT
@@ -21,14 +21,14 @@ class BlueAgent:
     def __init__(self, password) -> None:
         """Initialize the Blue Agent with its prompt and tools."""
         self.chat_history: List[Dict[str, str]] = []
-        self.tool_list = [
+        self.tool_list: Sequence = [
             self._create_reset_tool(),
         ]
         self.main_agent = Agent(
             name="Blue Agent", 
             instructions=BLUE_AGENT_PROMPT.replace("{password}", password), 
             model="o4-mini", 
-            tools=self.tool_list,
+            tools=list(self.tool_list),  # type: ignore
         )
     
     def _create_reset_tool(self):
@@ -49,8 +49,8 @@ class BlueAgent:
             "role": "user"
         }]
 
-        result = await Runner.run(self.main_agent, query_ctx)
-        self.chat_history = result.to_input_list()
+        result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
+        self.chat_history = result.to_input_list()  # type: ignore
 
         return result.final_output
 
@@ -69,8 +69,8 @@ class BlueAgentExecutor(AgentExecutor):
         # make / get current task
         task = context.current_task
         if task is None: # first chat
-            task = new_task(context.message)
-            event_queue.enqueue_event(task)
+            task = new_task(context.message)  # type: ignore
+            await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
 
         # push "working now" status
