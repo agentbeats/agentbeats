@@ -12,6 +12,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "tensortrust_mock_impl.backend.app:app",
         host="0.0.0.0",
-        port=3000,
+        port=3001,
         reload=True
     )
