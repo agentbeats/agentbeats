@@ -2,7 +2,9 @@
 
 from fastmcp import FastMCP
 
-server = FastMCP("Open MCP for AgentBeast Battle Arena")
+server = FastMCP("Open MCP for AgentBeast Battle Arena", 
+                 host="0.0.0.0", 
+                 port=11000)
 
 # In‑memory session store (will add support later; replace with Redis for production)
 SESSIONS: dict[str, dict[str, str]] = {}
@@ -19,6 +21,4 @@ def log_battle_status(info: str, battle_id: str) -> None:
 
 if __name__ == "__main__":
     # Start the MCP server
-    server.run(transport="streamable-http", 
-               host="0.0.0.0", port=11000, 
-               log_level="info")
+    server.run(transport="sse")

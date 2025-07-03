@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Dict, List
 from agents import Agent, Runner, function_tool
-from agents.mcp.server import MCPServerStreamableHttp
+from agents.mcp import MCPServerSse
 from uuid import uuid4
 import sys
 import os
@@ -52,14 +52,17 @@ class GreenAgent:
 
         # URL for the MCP server
         self.mcp_url = mcp_url
-        self.mcp_server = MCPServerStreamableHttp(
+        self.mcp_servers = []
+        self.mcp_servers.append(MCPServerSse(
+            name="Open MCP for AgentBeast Battle Arena",
             params={
                 "url": self.mcp_url, 
                 # "headers": {
                 #     "battle-id": battle_id,
                 # } # TODO: will formally support this later, won't need agent to pass it manually.
             }
-        )
+        ))
+        self.mcp_servers_connected = False
 
         self.battle_id = battle_id
 
@@ -69,14 +72,23 @@ class GreenAgent:
             self._create_talk_to_agent_tool(), 
             self._create_eval_prompt_tool(), 
         ]
-        self.main_agent = Agent(
-            name="Green Agent", 
-            instructions=GREEN_AGENT_PROMPT.replace("{battle_id}", self.battle_id), 
-            model="o4-mini", 
-            tools=self.tool_list,
-            mcp_servers=[self.mcp_server], 
-        )
-    
+
+    async def ensure_mcp_connected(self) -> None:
+        """Ensure the MCP server is connected."""
+        if not self.mcp_servers_connected:
+            for server in self.mcp_servers:
+                await server.connect()
+            
+            self.main_agent = Agent(
+                name="Green Agent", 
+                instructions=GREEN_AGENT_PROMPT.replace("{battle_id}", self.battle_id), 
+                model="o4-mini", 
+                tools=self.tool_list,
+                mcp_servers=self.mcp_servers, 
+            )
+
+            self.mcp_servers_connected = True
+
     async def init_remote_clients(self) -> None:
         self.blue_client = await self._make_client(self.blue_agent_url)
         self.red_client = await self._make_client(self.red_agent_url)
@@ -153,7 +165,7 @@ class GreenAgent:
             "content": context.get_user_input(),
             "role": "user"
         }]
-        result = await Runner.run(self._main_agent, query_ctx)  # type: ignore
+        result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore
         return result.final_output
 

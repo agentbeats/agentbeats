@@ -44,7 +44,7 @@ RESET_GREEN_PAYLOAD = {
     "extra_args": {
         "blue-agent-url": "http://localhost:8001",
         "red-agent-url": "http://localhost:9001",
-        "mcp-url": "http://localhost:11000",
+        "mcp-url": "http://localhost:11000/sse",
         "battle-id": uuid4().hex,
     },
 }
