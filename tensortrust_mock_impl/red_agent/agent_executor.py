@@ -21,26 +21,11 @@ class RedAgent:
     def __init__(self) -> None:
         """Initialize the Red Agent with its prompt and tools."""
         self.chat_history: List[Dict[str, str]] = []
-        self.tool_list: Sequence = [
-            self._create_reset_tool(),
-        ]
         self.main_agent = Agent(
             name="Red Agent", 
             instructions=RED_AGENT_PROMPT, 
             model="o4-mini", 
-            tools=list(self.tool_list),  # type: ignore
         )
-    
-    def _create_reset_tool(self):
-        """Create a reset tool for the Red Agent."""
-        @function_tool(name_override="reset_red_agent")
-        def _reset() -> str:
-            """Reset the Red Agent state."""
-            self.chat_history.clear()
-            print("Red Agent state has been reset.")
-            return "Red Agent state has been reset."
-
-        return _reset
 
     async def invoke(self, context) -> str: 
         """Invoke the main agent with the given context."""
@@ -68,7 +53,7 @@ class RedAgentExecutor(AgentExecutor):
         # make / get current task
         task = context.current_task
         if task is None: # first chat
-            task = new_task(context.message)  # type: ignore
+            task = new_task(context.message)
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
 

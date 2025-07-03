@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-
 """
 A implementation of a red agent that follows the specification in TensorTrust (https://arxiv.org/abs/2311.01011)
 This agent is designed to act as a attacker for prompt injection attacks, which generates prompts that tries its best to penetrate a logging in system and can reset its state when needed.
 """
 
+import argparse
 import uvicorn
 
 from a2a.server.apps import A2AStarletteApplication
@@ -15,7 +15,7 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 from agent_executor import RedAgentExecutor
 
 
-if __name__ == "__main__":
+def build_app(listen_port: int) -> A2AStarletteApplication:
     reset_skill = AgentSkill(
         id="red_reset",
         name="Red Resetter",
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     agent_card = AgentCard(
         name="Red Agent (Attacker)",
         description="A2A attacker that generates prompts that tries its best to penetrate a logging in system and can reset its state when needed.",
-        url="http://localhost:9001/",
+        url=f"http://localhost:{listen_port}/",
         version="1.0.0",
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
@@ -54,4 +54,26 @@ if __name__ == "__main__":
         ),
     )
 
-    uvicorn.run(app.build(), host="0.0.0.0", port=9001)
+    return app
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run the Red Agent (Attacker) server with a configurable port.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=9001,
+        help="TCP port for the HTTP server to listen on (default: 9001)",
+    )
+
+    args = parser.parse_args()
+
+    application = build_app(args.port)
+
+    uvicorn.run(application.build(), host="0.0.0.0", port=args.port)
+
+
+if __name__ == "__main__":
+    main()
