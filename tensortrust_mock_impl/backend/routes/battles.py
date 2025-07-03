@@ -198,13 +198,13 @@ async def process_battle(battle_id: str):
             unlock_and_unready_agents(battle)
             return
         
-        blue_agent_card = opponents[0]["agentCard"]
-        red_agent_card = opponents[1]["agentCard"] if len(opponents) > 1 else None
+        blue_agent_url = battle["opponents"][0]
+        red_agent_url = battle["opponents"][1] if len(opponents) > 1 else None
         
         notify_success = await a2a_client.notify_green_agent(
             green_endpoint,
-            blue_agent_card,
-            red_agent_card,
+            blue_agent_url,
+            red_agent_url,
             battle_id
         )
         
