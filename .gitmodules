@@ -3,3 +3,8 @@
 	path = a2a-samples
 	url = https://github.com/google-a2a/a2a-samples.git
 	branch = main
+[submodule "wasp"]
+	shallow = true
+	path = wasp
+	url = https://github.com/galgantar/wasp.git
+	branch = main
