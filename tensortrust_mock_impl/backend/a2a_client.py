@@ -114,8 +114,8 @@ class AgentBeatsA2AClient:
             
     async def notify_green_agent(self, 
                                 endpoint: str, 
-                                blue_agent_card: Dict[str, Any], 
-                                red_agent_card: Optional[Dict[str, Any]], 
+                                blue_agent_url: str, 
+                                red_agent_url: Optional[str], 
                                 battle_id: str) -> bool:
         """Notify the green agent about a battle and provide opponent agent cards."""
         try:
@@ -127,8 +127,8 @@ class AgentBeatsA2AClient:
             battle_info = {
                 "type": "battle_start",
                 "battle_id": battle_id,
-                "blue_agent_card": blue_agent_card,
-                "red_agent_card": red_agent_card
+                "blue_agent_url": blue_agent_url,
+                "red_agent_url": red_agent_url
             }
             
             # Create message parts with the JSON data
