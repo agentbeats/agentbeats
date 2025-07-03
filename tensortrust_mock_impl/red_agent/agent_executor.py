@@ -4,7 +4,7 @@ import json
 import re
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 from agents import Agent, Runner, function_tool, RunContextWrapper
 
 from prompt import RED_AGENT_PROMPT
@@ -34,8 +34,8 @@ class RedAgent:
             "role": "user"
         }]
 
-        result = await Runner.run(self.main_agent, query_ctx)
-        self.chat_history = result.to_input_list()
+        result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
+        self.chat_history = result.to_input_list()  # type: ignore
 
         return result.final_output
 
