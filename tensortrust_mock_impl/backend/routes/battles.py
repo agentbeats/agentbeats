@@ -14,6 +14,34 @@ battle_queue = []
 queue_lock = threading.Lock()
 processor_running = False
 
+def add_battle_log(battle_id: str, message: str, detail: Dict[str, Any] = None, source: str = "system"):
+    """Helper function to add a log entry to a battle."""
+    try:
+        battle = db.read("battles", battle_id)
+        if not battle:
+            return False
+            
+        if "logs" not in battle:
+            battle["logs"] = []
+            
+        log_entry = {
+            "eventType": "log",
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": message,
+            "source": source
+        }
+        
+        if detail:
+            log_entry["detail"] = detail
+            
+        battle["logs"].append(log_entry)
+        db.update("battles", battle_id, battle)
+        return True
+        
+    except Exception as e:
+        print(f"Error adding battle log: {str(e)}")
+        return False
+
 def start_battle_processor():
     global processor_running
     if processor_running:
@@ -78,10 +106,11 @@ async def process_battle(battle_id: str):
         if not battle:
             print(f"Battle {battle_id} not found")
             return
-            
+
         # Update battle state to running
         battle["state"] = "running"
         db.update("battles", battle_id, battle)
+        add_battle_log(battle_id, "Battle started")
         
         # Get the green agent info
         green_agent = db.read("agents", battle["greenAgentId"])
@@ -101,54 +130,63 @@ async def process_battle(battle_id: str):
                 db.update("battles", battle_id, battle)
                 return
             opponents.append(opponent)
-            
+
         # Lock the agents
         for agent_id in [battle["greenAgentId"]] + battle["opponents"]:
             agent = db.read("agents", agent_id)
             if agent:
                 agent["status"] = "locked"
                 db.update("agents", agent_id, agent)
-                
+        add_battle_log(battle_id, "Agents locked")
+
         # Reset the agents
-        green_starter = green_agent["registerInfo"]["starter"]
-        blue_starter = opponents[0]["registerInfo"]["starter"]
-        red_starter = opponents[1]["registerInfo"]["starter"] if len(opponents) > 1 else None
+        green_launcher = green_agent["registerInfo"]["launcher"]
+        blue_launcher = opponents[0]["registerInfo"]["launcher"]
+        red_launcher = opponents[1]["registerInfo"]["launcher"] if len(opponents) > 1 else None
         
-        green_reset = a2a_client.reset_agent_trigger(green_starter)
+        green_reset = a2a_client.reset_agent_trigger(green_launcher)
         if not green_reset:
             battle["state"] = "error"
             battle["error"] = "Failed to reset green agent"
             db.update("battles", battle_id, battle)
+            add_battle_log(battle_id, "Green agent reset failed", {"agent": "green"})
             unlock_and_unready_agents(battle)
             return
-            
-        blue_reset = a2a_client.reset_agent_trigger(blue_starter)
+        
+        blue_reset = a2a_client.reset_agent_trigger(blue_launcher)
         if not blue_reset:
             battle["state"] = "error"
             battle["error"] = "Failed to reset blue agent"
             db.update("battles", battle_id, battle)
+            add_battle_log(battle_id, "Blue agent reset failed", {"agent": "blue"})
             unlock_and_unready_agents(battle)
-            return
-            
-        if red_starter:
-            red_reset = a2a_client.reset_agent_trigger(red_starter)
+            return        
+        
+        if red_launcher:
+            red_reset = a2a_client.reset_agent_trigger(red_launcher)
             if not red_reset:
                 battle["state"] = "error"
                 battle["error"] = "Failed to reset red agent"
                 db.update("battles", battle_id, battle)
+                add_battle_log(battle_id, "Red agent reset failed", {"agent": "red"})
                 unlock_and_unready_agents(battle)
                 return
 
-        # Wait for all agents to be ready
-        ready_timeout = battle.get("config", {}).get("readyTimeout", 300)  # default 30 seconds
+        ready_timeout = battle.get("config", {}).get("readyTimeout", 300)
         agent_ids = [battle["greenAgentId"]] + battle["opponents"]
+        add_battle_log(battle_id, "Waiting for agents to be ready", {
+            "timeout": ready_timeout
+        })
         ready = await wait_agents_ready(agent_ids, timeout=ready_timeout)
+        
         if not ready:
             battle["state"] = "error"
             battle["error"] = f"Not all agents ready after {ready_timeout} seconds"
             db.update("battles", battle_id, battle)
+            add_battle_log(battle_id, "Agents not ready timeout", {"timeout": ready_timeout})
             unlock_and_unready_agents(battle)
             return
+        add_battle_log(battle_id, "All agents ready", {"agent_ids": agent_ids})
                 
         # Kick off the battle by notifying the green agent
         green_endpoint = green_agent["registerInfo"]["endpoint"]
@@ -156,6 +194,7 @@ async def process_battle(battle_id: str):
             battle["state"] = "error"
             battle["error"] = "Green agent endpoint not found"
             db.update("battles", battle_id, battle)
+            add_battle_log(battle_id, "Green agent endpoint not found")
             unlock_and_unready_agents(battle)
             return
         
@@ -173,13 +212,15 @@ async def process_battle(battle_id: str):
             battle["state"] = "error"
             battle["error"] = "Failed to notify green agent"
             db.update("battles", battle_id, battle)
+            add_battle_log(battle_id, "Failed to notify green agent", {
+                "green_endpoint": green_endpoint
+            }, "system")
             unlock_and_unready_agents(battle)
             return
 
-        print(f"Battle {battle_id} kick off successfully with green agent {green_agent['id']} and opponents {[opponent['id'] for opponent in opponents]}")
+        add_battle_log(battle_id, "Green agent notified, battle commenced")
             
-        # Set a timeout for the battle (using a simple approach for now)
-        timeout = battle.get("config", {}).get("timeout", 300)  # Default 5 minutes
+        timeout = battle.get("config", {}).get("timeout", 300)
         timeout_thread = threading.Thread(
             target=check_battle_timeout,
             args=(battle_id, timeout),
@@ -204,8 +245,10 @@ def check_battle_timeout(battle_id: str, timeout: int):
     battle = db.read("battles", battle_id)
     if battle and battle["state"] == "running":
         # Battle timed out
+        add_battle_log(battle_id, "Battle timed out", {"timeout_seconds": timeout}, "system")
         battle["state"] = "finished"
         battle["result"] = {
+            "eventType": "result",
             "winner": "draw",
             "score": {"reason": "timeout"},
             "detail": {"message": "Battle timed out"},
@@ -240,14 +283,14 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
                     status_code=404, 
                     detail=f"Opponent agent with ID {opponent_id} not found"
                 )
-                
-        # Create battle record
+                  # Create battle record
         battle_record = {
             "greenAgentId": battle_request['greenAgentId'],
             "opponents": battle_request['opponents'],
             "config": battle_request.get('config', {}),
             "state": "pending",
-            "createdAt": datetime.utcnow().isoformat()
+            "createdAt": datetime.utcnow().isoformat(),
+            "logs": []  # Initialize empty logs array
         }
         created_battle = db.create("battles", battle_record)
         
@@ -303,22 +346,48 @@ def get_battle(battle_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error retrieving battle: {str(e)}")
         
 @router.post("/battles/{battle_id}", status_code=status.HTTP_204_NO_CONTENT)
-def update_battle_result(battle_id: str, result: Dict[str, Any]):
-    """Update battle result reported by green agent."""
+def update_battle_event(battle_id: str, event: Dict[str, Any]):
+    """Handle battle result or log entry."""
     try:
         battle = db.read("battles", battle_id)
         if not battle:
             raise HTTPException(status_code=404, detail=f"Battle with ID {battle_id} not found")
+
+        battle_state = battle.get("state", "finished")
+        if battle_state == "finished":
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Battle {battle_id} is not in a valid state for updates: {battle_state}"
+            )
             
-        # Update the battle result
-        battle["result"] = result
-        battle["state"] = "finished"
-        db.update("battles", battle_id, battle)
+        # Check event type
+        event_type = event.get("eventType")
+        if not event_type:
+            raise HTTPException(status_code=400, detail="Missing eventType field")
+            
+        if event_type == "result":
+            # Update the battle result
+            battle["result"] = event # BattleResult
+            battle["state"] = "finished"
+            unlock_and_unready_agents(battle)
+        elif event_type == "log":
+            if "timestamp" not in event:
+                event["timestamp"] = datetime.utcnow().isoformat()
+            if "logs" not in battle:
+                battle["logs"] = []
+    
+            battle["logs"].append(event)
+            
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid eventType: {event_type}. Must be 'result' or 'log'"
+            )
         
-        unlock_and_unready_agents(battle)
-                
+        db.update("battles", battle_id, battle)
         return None
+        
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating battle result: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error updating battle event: {str(e)}")

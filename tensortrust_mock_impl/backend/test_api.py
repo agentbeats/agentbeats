@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 import os
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = "http://localhost:3001"
 
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if backend_path not in sys.path:
@@ -77,6 +77,12 @@ async def test_api():
             print(f"  - Opponents: {', '.join(battle['opponents'])}")
         else:
             print(f"❌ Failed to get battle details: {response.status_code}")
+
+        response = await report_log(client, "Test log message for battle", battle_id)
+        if response:
+            print("✅ Log reported successfully")
+        else:
+            print("❌ Failed to report log")
                 
         # Simulate battle result reporting
         print("\nSimulating battle result reporting...")
@@ -90,7 +96,8 @@ async def test_api():
                 "rounds": 3,
                 "log": "Battle completed successfully"
             },
-            "reportedAt": datetime.utcnow().isoformat()
+            "reportedAt": datetime.utcnow().isoformat(),
+            "eventType": "result",
         }
         
         response = await client.post(
@@ -109,9 +116,8 @@ async def test_api():
             battle = response.json()
             print(f"✅ Battle state: {battle['state']}")
             if "result" in battle:
-                print(f"  - Winner: {battle['result']['winner']}")
-                print(f"  - Score: {json.dumps(battle['result']['score'])}")
-                print(f"  - Details: {json.dumps(battle['result']['detail'])}")
+                print(battle['result'])
+                print(battle['state'])
         else:
             print(f"❌ Failed to get updated battle details: {response.status_code}")
                 
@@ -130,6 +136,28 @@ def report_ready(agent_id):
         print(f"❌ Failed to report agent {agent_id} as ready: {response.status_code}")
         print(f"Response content: {response.text}")
 
+async def report_log(client, message, battle_id):
+    """Report a log message for a battle."""
+    print(f"Reporting log for battle {battle_id}...")
+    
+    log_entry = {
+        "message": message,
+        "eventType": "log",
+        "source": "test_api",
+    }
+    
+    response = await client.post(
+        f"{BASE_URL}/battles/{battle_id}",
+        json=log_entry
+    )
+    
+    if response.status_code == 204:
+        print("✅ Log reported successfully")
+    else:
+        print(f"❌ Failed to report log: {response.status_code}")
+        print(f"Response content: {response.text}")
+    return response.status_code == 204
+
 async def register_agent(client, name, endpoint):
     """Register a real agent and return its ID."""
     print(f"\nRegistering {name}...")
@@ -138,7 +166,7 @@ async def register_agent(client, name, endpoint):
     agent_info = {
         "name": name,
         "endpoint": endpoint,
-        "starter": "http://aaaa",  # Assuming a starter endpoint for the agent
+        "launcher": "http://aaaa",  # Assuming a launcher endpoint for the agent
         "meta": {
             "type": name.split()[0].lower()  # green, blue, or red
         }
@@ -166,9 +194,10 @@ async def create_battle(client, green_agent_id, opponent_ids):
         "greenAgentId": green_agent_id,
         "opponents": opponent_ids,
         "config": {
-            "timeout": 60,  # 1 minute timeout for testing
+            "timeout": 20,
             "rounds": 3
-        }
+        },
+        'eventType': 'result'
     }
     
     response = await client.post(
