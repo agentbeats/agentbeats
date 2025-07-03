@@ -6,7 +6,8 @@ import re
 from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Dict, List
-from agents import Agent, Runner, function_tool, RunContextWrapper
+from agents import Agent, Runner, function_tool
+from agents.mcp.server import MCPServerStreamableHttp
 from uuid import uuid4
 
 from prompt import GREEN_AGENT_PROMPT
@@ -35,7 +36,10 @@ from a2a.types import (
 
 
 class GreenAgent:
-    def __init__(self, blue_agent_url: str, red_agent_url: str) -> None:
+    def __init__(self, blue_agent_url: str, 
+                        red_agent_url: str, 
+                        mcp_url: str, 
+                        battle_id: str) -> None:
         """Initialize the Green Agent with its prompt and tools."""
         # URLs for the blue and red agents
         self.blue_agent_url = blue_agent_url
@@ -44,18 +48,31 @@ class GreenAgent:
         self.red_client: A2AClient | None = None
         self._httpx_client: httpx.AsyncClient = httpx.AsyncClient()
 
+        # URL for the MCP server
+        self.mcp_url = mcp_url
+        self.mcp_server = MCPServerStreamableHttp(
+            params={
+                "url": self.mcp_url, 
+                # "headers": {
+                #     "battle-id": battle_id,
+                # } # TODO: will formally support this later, won't need agent to pass it manually.
+            }
+        )
+
+        self.battle_id = battle_id
+
         # Initialize chat history and tools
         self.chat_history: List[Dict[str, str]] = []
         self.tool_list = [
-            self._create_reset_tool(),
             self._create_talk_to_agent_tool(), 
             self._create_eval_prompt_tool(), 
         ]
         self.main_agent = Agent(
             name="Green Agent", 
-            instructions=GREEN_AGENT_PROMPT, 
+            instructions=GREEN_AGENT_PROMPT.replace("{battle_id}", self.battle_id), 
             model="o4-mini", 
             tools=self.tool_list,
+            mcp_servers=[self.mcp_server], 
         )
     
     async def init_remote_clients(self) -> None:
@@ -75,20 +92,6 @@ class GreenAgent:
         if card is None:
             raise RuntimeError(f"Failed to resolve agent card from {base_url}")
         return A2AClient(httpx_client=self._httpx_client, agent_card=card)
-    
-    def _create_reset_tool(self):
-        """Create a reset tool for the Green Agent."""
-        @function_tool(name_override="reset_green_agent")
-        async def _reset() -> str:
-            """Reset the Green Agent state."""
-            self.chat_history.clear()
-            self.blue_client = None
-            self.red_client = None
-            await self.init_remote_clients() # Reinitialize clients
-            print("Green Agent state has been reset.")
-            return "Green Agent state has been reset."
-
-        return _reset
 
     def _create_talk_to_agent_tool(self):
         """Create a tool to talk to the main agent."""
@@ -184,10 +187,15 @@ class GreenAgent:
 
 
 class GreenAgentExecutor(AgentExecutor):
-    def __init__(self, blue_agent_url: str, red_agent_url: str) -> None:
+    def __init__(self, blue_agent_url: str, 
+                        red_agent_url: str, 
+                        mcp_url: str, 
+                        battle_id: str) -> None:
         """Initialize the Green Agent Executor."""
         self.green_agent = GreenAgent(blue_agent_url=blue_agent_url, 
-                                      red_agent_url=red_agent_url)
+                                      red_agent_url=red_agent_url, 
+                                      battle_id=battle_id, 
+                                      mcp_url=mcp_url)
 
     async def execute(
         self,
@@ -202,7 +210,7 @@ class GreenAgentExecutor(AgentExecutor):
         task = context.current_task
         if task is None: # first chat
             task = new_task(context.message)
-            event_queue.enqueue_event(task)
+            await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
 
         # push "working now" status
