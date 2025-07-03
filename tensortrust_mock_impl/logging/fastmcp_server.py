@@ -13,7 +13,9 @@ RED_AGENT_ID = "77ff16db-835a-4f95-b9e3-652840cb0958"
 BATTLE_ID_MAP = {}
 
 # Create an MCP server
-mcp = FastMCP("fastmcp-logger")
+mcp = FastMCP("fastmcp-logger", 
+                host="0.0.0.0",
+                port=11000)
 
 # Add a tool to update battle results via backend API
 @mcp.tool()
@@ -73,4 +75,4 @@ def update_battle_result(battle_id: str, result: dict) -> str:
 
 if __name__ == "__main__":
     # Run the FastMCP server
-    mcp.run()
+    mcp.run(transport="sse")

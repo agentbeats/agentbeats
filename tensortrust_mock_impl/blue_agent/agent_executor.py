@@ -21,20 +21,10 @@ class BlueAgent:
     def __init__(self, password) -> None:
         """Initialize the Blue Agent with its prompt and tools."""
         self.chat_history: List[Dict[str, str]] = []
-<<<<<<< HEAD
-=======
-        self.tool_list: Sequence = [
-            self._create_reset_tool(),
-        ]
->>>>>>> 6abbeb94761b815c93665b408e81453b5cb3872b
         self.main_agent = Agent(
             name="Blue Agent", 
             instructions=BLUE_AGENT_PROMPT.replace("{password}", password), 
             model="o4-mini", 
-<<<<<<< HEAD
-=======
-            tools=list(self.tool_list),  # type: ignore
->>>>>>> 6abbeb94761b815c93665b408e81453b5cb3872b
         )
 
     async def invoke(self, context) -> str: 
@@ -64,11 +54,7 @@ class BlueAgentExecutor(AgentExecutor):
         # make / get current task
         task = context.current_task
         if task is None: # first chat
-<<<<<<< HEAD
             task = new_task(context.message)
-=======
-            task = new_task(context.message)  # type: ignore
->>>>>>> 6abbeb94761b815c93665b408e81453b5cb3872b
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
 
