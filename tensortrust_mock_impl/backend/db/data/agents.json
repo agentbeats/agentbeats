@@ -1,9 +1,9 @@
 {
-  "aa391b87-8bb8-4ad0-bc8b-3504454fb36b": {
+  "04144c6a-7bdc-44ed-9092-eb16ae931b4c": {
     "registerInfo": {
       "name": "Green Team Agent",
       "endpoint": "http://localhost:9999",
-      "starter": "http://aaaa",
+      "launcher": "http://aaaa",
       "meta": {
         "type": "green"
       }
@@ -41,14 +41,14 @@
     },
     "status": "unlocked",
     "ready": false,
-    "id": "aa391b87-8bb8-4ad0-bc8b-3504454fb36b",
-    "createdAt": "2025-07-02T04:23:41.260113"
+    "id": "04144c6a-7bdc-44ed-9092-eb16ae931b4c",
+    "createdAt": "2025-07-03T02:17:27.912056"
   },
-  "835f9a09-ca07-4360-be93-81c6d6bd1cc1": {
+  "c442d03b-28f6-4195-9425-21f1e99a79c7": {
     "registerInfo": {
       "name": "Blue Team Agent",
       "endpoint": "http://localhost:9997",
-      "starter": "http://aaaa",
+      "launcher": "http://aaaa",
       "meta": {
         "type": "blue"
       }
@@ -86,14 +86,14 @@
     },
     "status": "unlocked",
     "ready": false,
-    "id": "835f9a09-ca07-4360-be93-81c6d6bd1cc1",
-    "createdAt": "2025-07-02T04:23:42.488906"
+    "id": "c442d03b-28f6-4195-9425-21f1e99a79c7",
+    "createdAt": "2025-07-03T02:17:28.184255"
   },
-  "77ff16db-835a-4f95-b9e3-652840cb0958": {
+  "b529c7a1-8b63-4abc-b4a9-daa3a6ae5d90": {
     "registerInfo": {
       "name": "Red Team Agent",
       "endpoint": "http://localhost:9998",
-      "starter": "http://aaaa",
+      "launcher": "http://aaaa",
       "meta": {
         "type": "red"
       }
@@ -131,7 +131,142 @@
     },
     "status": "unlocked",
     "ready": false,
-    "id": "77ff16db-835a-4f95-b9e3-652840cb0958",
-    "createdAt": "2025-07-02T04:23:42.766187"
+    "id": "b529c7a1-8b63-4abc-b4a9-daa3a6ae5d90",
+    "createdAt": "2025-07-03T02:17:28.462510"
+  },
+  "80077d86-b765-49df-b904-f160c8a902a0": {
+    "registerInfo": {
+      "name": "Green Team Agent",
+      "endpoint": "http://localhost:9999",
+      "launcher": "http://aaaa",
+      "meta": {
+        "type": "green"
+      }
+    },
+    "agentCard": {
+      "capabilities": {
+        "streaming": true
+      },
+      "defaultInputModes": [
+        "text"
+      ],
+      "defaultOutputModes": [
+        "text"
+      ],
+      "description": "Just a hello world agent",
+      "name": "Hello World Agent",
+      "protocolVersion": "0.2.5",
+      "skills": [
+        {
+          "description": "just returns hello world",
+          "examples": [
+            "hi",
+            "hello world"
+          ],
+          "id": "hello_world",
+          "name": "Returns hello world",
+          "tags": [
+            "hello world"
+          ]
+        }
+      ],
+      "supportsAuthenticatedExtendedCard": true,
+      "url": "http://localhost:9999/",
+      "version": "1.0.0"
+    },
+    "status": "unlocked",
+    "ready": false,
+    "id": "80077d86-b765-49df-b904-f160c8a902a0",
+    "createdAt": "2025-07-03T02:21:56.881152"
+  },
+  "92b81170-c026-4732-96f7-d970a935dbbf": {
+    "registerInfo": {
+      "name": "Blue Team Agent",
+      "endpoint": "http://localhost:9997",
+      "launcher": "http://aaaa",
+      "meta": {
+        "type": "blue"
+      }
+    },
+    "agentCard": {
+      "capabilities": {
+        "streaming": true
+      },
+      "defaultInputModes": [
+        "text"
+      ],
+      "defaultOutputModes": [
+        "text"
+      ],
+      "description": "Just a hello world agent",
+      "name": "Hello World Agent",
+      "protocolVersion": "0.2.5",
+      "skills": [
+        {
+          "description": "just returns blue hello world",
+          "examples": [
+            "hi",
+            "hello world"
+          ],
+          "id": "blue_hello_world",
+          "name": "Returns blue hello world",
+          "tags": [
+            "hello world"
+          ]
+        }
+      ],
+      "supportsAuthenticatedExtendedCard": true,
+      "url": "http://localhost:9999/",
+      "version": "1.0.0"
+    },
+    "status": "unlocked",
+    "ready": false,
+    "id": "92b81170-c026-4732-96f7-d970a935dbbf",
+    "createdAt": "2025-07-03T02:21:57.163002"
+  },
+  "5b40e692-2a01-42d4-9e03-ad3a5097c746": {
+    "registerInfo": {
+      "name": "Red Team Agent",
+      "endpoint": "http://localhost:9998",
+      "launcher": "http://aaaa",
+      "meta": {
+        "type": "red"
+      }
+    },
+    "agentCard": {
+      "capabilities": {
+        "streaming": true
+      },
+      "defaultInputModes": [
+        "text"
+      ],
+      "defaultOutputModes": [
+        "text"
+      ],
+      "description": "Just a hello world agent",
+      "name": "Hello World Agent",
+      "protocolVersion": "0.2.5",
+      "skills": [
+        {
+          "description": "just returns red hello world",
+          "examples": [
+            "hi",
+            "hello world"
+          ],
+          "id": "red_hello_world",
+          "name": "Returns red hello world",
+          "tags": [
+            "hello world"
+          ]
+        }
+      ],
+      "supportsAuthenticatedExtendedCard": true,
+      "url": "http://localhost:9999/",
+      "version": "1.0.0"
+    },
+    "status": "unlocked",
+    "ready": false,
+    "id": "5b40e692-2a01-42d4-9e03-ad3a5097c746",
+    "createdAt": "2025-07-03T02:21:57.439414"
   }
 }

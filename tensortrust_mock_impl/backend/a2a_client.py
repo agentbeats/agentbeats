@@ -85,7 +85,7 @@ class AgentBeatsA2AClient:
             logger.error(f"Error creating A2A client for {endpoint}: {str(e)}")
             return None
             
-    def reset_agent_trigger(self, starter_url: str) -> bool:
+    def reset_agent_trigger(self, launcher_url: str) -> bool:
         try:
             # client = await self._get_or_create_client(endpoint)
             # if not client:
@@ -106,10 +106,10 @@ class AgentBeatsA2AClient:
             # response = await client.send_message(request)
             
             # return True
-            print(f"Resetting agent at {starter_url}...") # TODO: wait for agent starter implementation
+            print(f"Resetting agent at {launcher_url}...") # TODO: wait for agent starter implementation
             return True
         except Exception as e:
-            logger.error(f"Error resetting agent at {starter_url}: {str(e)}")
+            logger.error(f"Error resetting agent at {launcher_url}: {str(e)}")
             return False
             
     async def notify_green_agent(self, 

@@ -23,7 +23,7 @@ components:
       required:
         - name
         - endpoint
-        - starter
+        - launcher
       properties:
         name:
           type: string
@@ -32,10 +32,10 @@ components:
           type: string
           format: uri
           description: Public A2A URL of the agent
-        starter:
+        launcher:
           type: string
           format: uri
-          description: Starter service URL for this agent
+          description: launcher service URL for this agent
         meta:
           type: object
           description: Arbitrary extra registration info
@@ -114,9 +114,20 @@ components:
           format: date-time
         result:
           $ref: "#/components/schemas/BattleResult"
+        logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/BattleLog"
+          description: All log entries for this battle
     BattleResult:
       type: object
+      required:
+        - eventType
       properties:
+        eventType:
+          type: string
+          enum: [result]
+          description: Discriminator field to identify this as a battle result
         winner:
           type: string
           description: Agent ID or 'draw'
@@ -129,11 +140,41 @@ components:
         reportedAt:
           type: string
           format: date-time
-
+    BattleLog:
+      type: object
+      required:
+        - eventType
+        - message
+      properties:
+        eventType:
+          type: string
+          enum: [log]
+          description: Discriminator field to identify this as a battle log
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          description: Log message or event description
+        detail:
+          type: object
+          description: Additional log details
+        source:
+          type: string
+          description: Source of the log (e.g., 'referee', 'agent', 'system')
+    BattleEvent:
+      oneOf:
+        - $ref: "#/components/schemas/BattleResult"
+        - $ref: "#/components/schemas/BattleLog"
+      discriminator:
+        propertyName: eventType
+        mapping:
+          result: "#/components/schemas/BattleResult"
+          log: "#/components/schemas/BattleLog"
 paths:
   /agents:
     post:
-      summary: Register an agent and its starter
+      summary: Register an agent and its launcher
       tags:
         - Agents
       requestBody:
@@ -251,7 +292,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/BattleInfo"
     post:
-      summary: Battle result and log reported by the green-team referee
+      summary: Report battle result or add battle log entry
+      description: |
+        This endpoint accepts two types of data:
+        - BattleResult: Final battle outcome (winner, score, etc.) - replaces any existing result
+        - BattleLog: Log entry to be appended to the battle's log history
       tags:
         - Battles
       parameters:
@@ -266,10 +311,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BattleResult"
+              $ref: "#/components/schemas/BattleEvent"
+            examples:
+              battleResult:
+                summary: Report final battle result
+                value:
+                  eventType: result
+                  winner: "agent-123"
+                  score: { "red": 100, "blue": 85 }
+                  detail: { "rounds": 3, "duration": "5m30s" }
+                  reportedAt: "2025-07-02T10:30:00Z"
+              battleLog:
+                summary: Add log entry
+                value:
+                  eventType: log
+                  timestamp: "2025-07-02T10:25:00Z"
+                  message: "Round 2 completed"
+                  detail: { "round": 2, "action": "move", "result": "success" }
+                  source: "referee"
       responses:
         "204":
-          description: Saved to database
+          description: |
+            Data saved to database:
+            - If BattleResult: result field updated
+            - If BattleLog: entry appended to logs array
 
   /mcp/agents/{agentId}/card:
     post:

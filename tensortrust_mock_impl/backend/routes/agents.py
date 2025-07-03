@@ -12,7 +12,7 @@ async def register_agent(agent_info: Dict[str, Any]):
     """Register a new agent."""
     try:
         # Validate required fields
-        if 'name' not in agent_info or 'endpoint' not in agent_info or 'starter' not in agent_info:
+        if 'name' not in agent_info or 'endpoint' not in agent_info or 'launcher' not in agent_info:
             raise HTTPException(status_code=400, detail="Missing required fields: name and endpoint")
             
         # Get agent card from the endpoint
