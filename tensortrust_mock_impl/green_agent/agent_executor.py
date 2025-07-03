@@ -5,9 +5,9 @@ import json
 import re
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, List, Sequence
-from agents import Agent, Runner, function_tool, RunContextWrapper
-from agents.mcp import MCPServerStdio, create_static_tool_filter
+from typing import Any, Dict, List
+from agents import Agent, Runner, function_tool
+from agents.mcp.server import MCPServerStreamableHttp
 from uuid import uuid4
 import sys
 import os
@@ -38,50 +38,45 @@ from a2a.types import (
 )
 
 class GreenAgent:
-    def __init__(self, blue_agent_url: str, red_agent_url: str) -> None:
+    def __init__(self, blue_agent_url: str, 
+                        red_agent_url: str, 
+                        mcp_url: str, 
+                        battle_id: str) -> None:
+        """Initialize the Green Agent with its prompt and tools."""
+        # URLs for the blue and red agents
         self.blue_agent_url = blue_agent_url
         self.red_agent_url = red_agent_url
         self.blue_client: A2AClient | None = None
         self.red_client: A2AClient | None = None
         self._httpx_client: httpx.AsyncClient = httpx.AsyncClient()
+
+        # URL for the MCP server
+        self.mcp_url = mcp_url
+        self.mcp_server = MCPServerStreamableHttp(
+            params={
+                "url": self.mcp_url, 
+                # "headers": {
+                #     "battle-id": battle_id,
+                # } # TODO: will formally support this later, won't need agent to pass it manually.
+            }
+        )
+
+        self.battle_id = battle_id
+
+        # Initialize chat history and tools
         self.chat_history: List[Dict[str, str]] = []
-        self._mcp_connected = False
-        self._main_agent = None
-        # Prepare MCPServerStdio instance but do not connect yet
-        current_dir = Path(__file__).parent
-        logging_dir = current_dir.parent / "logging"
-        mcp_server_path = logging_dir / "fastmcp_server.py"
-        if mcp_server_path.exists():
-            self.mcp_server = MCPServerStdio(
-                params={
-                    "command": "python",
-                    "args": [str(mcp_server_path)]
-                },
-                tool_filter=create_static_tool_filter(
-                    allowed_tool_names=["update_battle_result"]
-                )
-            )
-            print(f"[GreenAgent] FastMCP server subprocess configured: {mcp_server_path}")
-        else:
-            self.mcp_server = None
-            print(f"[GreenAgent] WARNING: FastMCP server file not found: {mcp_server_path}")
-
-    async def ensure_mcp_connected(self):
-        if not self._mcp_connected and self.mcp_server is not None:
-            await self.mcp_server.connect()
-            self._main_agent = Agent(
-                name="Green Agent",
-                instructions=GREEN_AGENT_PROMPT,
-                model="o4-mini",
-                tools=[
-                    self._create_reset_tool(),
-                    self._create_talk_to_agent_tool(),
-                    self._create_eval_prompt_tool(),
-                ],
-                mcp_servers=[self.mcp_server]
-            )
-            self._mcp_connected = True
-
+        self.tool_list = [
+            self._create_talk_to_agent_tool(), 
+            self._create_eval_prompt_tool(), 
+        ]
+        self.main_agent = Agent(
+            name="Green Agent", 
+            instructions=GREEN_AGENT_PROMPT.replace("{battle_id}", self.battle_id), 
+            model="o4-mini", 
+            tools=self.tool_list,
+            mcp_servers=[self.mcp_server], 
+        )
+    
     async def init_remote_clients(self) -> None:
         self.blue_client = await self._make_client(self.blue_agent_url)
         self.red_client = await self._make_client(self.red_agent_url)
@@ -97,17 +92,6 @@ class GreenAgent:
         if card is None:
             raise RuntimeError(f"Failed to resolve agent card from {base_url}")
         return A2AClient(httpx_client=self._httpx_client, agent_card=card)
-
-    def _create_reset_tool(self):
-        @function_tool(name_override="reset_green_agent")
-        async def _reset() -> str:
-            self.chat_history.clear()
-            self.blue_client = None
-            self.red_client = None
-            await self.init_remote_clients()
-            print("Green Agent state has been reset.")
-            return "Green Agent state has been reset."
-        return _reset
 
     def _create_talk_to_agent_tool(self):
         @function_tool(name_override="talk_to_red_or_blue_agent")
@@ -174,10 +158,15 @@ class GreenAgent:
         return result.final_output
 
 class GreenAgentExecutor(AgentExecutor):
-    def __init__(self, blue_agent_url: str, red_agent_url: str) -> None:
-        self.blue_agent_url = blue_agent_url
-        self.red_agent_url = red_agent_url
-        self.green_agent = GreenAgent(blue_agent_url=blue_agent_url, red_agent_url=red_agent_url)
+    def __init__(self, blue_agent_url: str, 
+                        red_agent_url: str, 
+                        mcp_url: str, 
+                        battle_id: str) -> None:
+        """Initialize the Green Agent Executor."""
+        self.green_agent = GreenAgent(blue_agent_url=blue_agent_url, 
+                                      red_agent_url=red_agent_url, 
+                                      battle_id=battle_id, 
+                                      mcp_url=mcp_url)
 
     async def execute(
         self,
@@ -187,8 +176,8 @@ class GreenAgentExecutor(AgentExecutor):
         if self.green_agent.blue_client is None or self.green_agent.red_client is None:
             await self.green_agent.init_remote_clients()
         task = context.current_task
-        if task is None:
-            task = new_task(context.message)  # type: ignore
+        if task is None: # first chat
+            task = new_task(context.message)
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         await updater.update_status(
