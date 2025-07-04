@@ -40,13 +40,10 @@ PUBLIC_CARD_PATH = "/.well-known/agent.json"
 
 RESET_RED_BLUE_PAYLOAD = {"signal": "reset"}
 RESET_GREEN_PAYLOAD = {
-    "signal": "reset",
+    "signal": "reset", 
     "extra_args": {
-        "blue-agent-url": "http://localhost:8001",
-        "red-agent-url": "http://localhost:9001",
-        "mcp-url": "http://localhost:11000/sse",
-        "battle-id": uuid4().hex,
-    },
+        "mcp-url": "http://localhost:11000/sse"
+    }
 }
 
 
@@ -92,6 +89,14 @@ async def stream_agent_response(
                         yield p.root.text
 
 
+START_BATTLE_PROMPT = """
+Start battle with the following settings:
+- Blue agent URL: http://localhost:8001
+- Red agent URL: http://localhost:9001
+- Battle ID: {battle_id}
+""".replace("{battle_id}", uuid4().hex)
+
+
 async def main() -> None:
     # Step 1–3: Reset launchers
     blue_result = await send_reset(BLUE_LAUNCHER_URL + "/reset", payload=RESET_RED_BLUE_PAYLOAD)
@@ -112,7 +117,7 @@ async def main() -> None:
         client = A2AClient(httpx_client=httpx_client, agent_card=card)
 
         print("\n=== Start Battle ===")
-        async for text in stream_agent_response(client, "start battle"):
+        async for text in stream_agent_response(client, START_BATTLE_PROMPT):
             print(text, end="", flush=True)
 
 

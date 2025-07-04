@@ -21,9 +21,6 @@ from agent_executor import GreenAgentExecutor
 
 
 def build_app(listen_port: int, 
-              blue_agent_url: str, 
-              red_agent_url: str, 
-              battle_id: str, 
               mcp_url: str) -> A2AStarletteApplication:
 
     reset_skill = AgentSkill(
@@ -63,12 +60,7 @@ def build_app(listen_port: int,
     app = A2AStarletteApplication(
         agent_card=agent_card,
         http_handler=DefaultRequestHandler(
-            agent_executor=GreenAgentExecutor(
-                blue_agent_url=blue_agent_url,
-                red_agent_url=red_agent_url,
-                battle_id=battle_id, 
-                mcp_url=mcp_url, 
-            ),
+            agent_executor=GreenAgentExecutor(mcp_url=mcp_url),
             task_store=InMemoryTaskStore(),
         ),
     )
@@ -87,39 +79,15 @@ def main() -> None:
         help="TCP port for the HTTP server to listen on (default: 10001)",
     )
     parser.add_argument(
-        "--blue-agent-url",
-        type=str,
-        required=True,
-        help="URL of the Blue Agent server (e.g., http://localhost:8001/)",
-    )
-    parser.add_argument(
-        "--red-agent-url",
-        type=str,
-        required=True,
-        help="URL of the Red Agent server (e.g., http://localhost:9001/)",
-    )
-    parser.add_argument(
         "--mcp-url",
         type=str,
-        required=True,
-        help="URL of the Open MCP server for Agent Beast Battle Arena",
-    )
-    parser.add_argument(
-        "--battle-id", 
-        type=str,
-        required=True,
-        help="Unique identifier for the battle between blue and red agents",
+        required=True, 
+        help="URL for the MCP server (example: http://localhost:11000/sse)",
     )
 
     args = parser.parse_args()
 
-    application = build_app(
-        args.port, 
-        args.blue_agent_url, 
-        args.red_agent_url, 
-        args.battle_id,
-        args.mcp_url
-    )
+    application = build_app(args.port, args.mcp_url)
 
     uvicorn.run(application.build(), host="0.0.0.0", port=args.port)
 
