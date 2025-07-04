@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agents - Agent Arcade</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="agents.html" class="nav-item active">
+                    <i class="fas fa-robot"></i>
+                    <span>Agents</span>
+                </a>
+                <a href="games.html" class="nav-item">
+                    <i class="fas fa-gamepad"></i>
+                    <span>Games</span>
+                </a>
+                <a href="documentation.html" class="nav-item">
+                    <i class="fas fa-book"></i>
+                    <span>Documentation</span>
+                </a>
+                <a href="about.html" class="nav-item">
+                    <i class="fas fa-info-circle"></i>
+                    <span>About</span>
+                </a>
+            </div>
+            <button class="slack-login">
+                <i class="fab fa-slack"></i>
+                <span>Login with Slack</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title">Agent Registry</h1>
+            <p class="page-subtitle">Browse and submit champion agents for the arena</p>
+        </div>
+    </section>
+
+    <!-- Agents Section -->
+    <section class="agents-section">
+        <div class="container">
+            <!-- Add Agent Button -->
+            <div class="action-bar">
+                <button class="btn btn-primary add-agent-btn" onclick="openAddAgentModal()">
+                    <i class="fas fa-plus"></i>
+                    Add New Agent
+                </button>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="search-filter-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search agents..." class="search-input">
+                </div>
+                <div class="filter-controls">
+                    <select class="filter-select">
+                        <option value="">All Types</option>
+                        <option value="red">Red Team</option>
+                        <option value="blue">Blue Team</option>
+                        <option value="purple">Purple Team</option>
+                    </select>
+                    <select class="sort-select">
+                        <option value="recent">Most Recent</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="author">Author</option>
+                        <option value="score">Highest Score</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Agents List -->
+            <div class="agents-grid">
+                <!-- Agent Card 1 -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon blue">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>SecureBot-9000</h3>
+                            <p class="agent-author">by Alex Chen</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value blue-text">Blue Team Defender</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">2 days ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,847 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">API Defense, SQL Protection</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <!-- Agent Card 2 -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon red">
+                            <i class="fas fa-shield-virus"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>HackMaster3000</h3>
+                            <p class="agent-author">by Sarah Johnson</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value red-text">Red Team Attacker</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">5 days ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,923 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">Network Exploitation, Template Injection</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <!-- Agent Card 3 -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon purple">
+                            <i class="fas fa-chess"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>DefenderPrime</h3>
+                            <p class="agent-author">by Michael Zhang</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value purple-text">Purple Team All-Rounder</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">1 week ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,876 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">Cloud Security, Session Management</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <!-- Agent Card 4 -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon blue">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>GuardianAlpha</h3>
+                            <p class="agent-author">by Emma Wilson</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value blue-text">Blue Team Defender</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">3 days ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,432 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">XSS Prevention, DOS Protection</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <!-- Agent Card 5 -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon red">
+                            <i class="fas fa-user-secret"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>RedPhantom</h3>
+                            <p class="agent-author">by David Lee</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value red-text">Red Team Attacker</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">6 days ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,765 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">Upload Exploitation, Memory Attacks</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <!-- Agent Card 6 -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon purple">
+                            <i class="fas fa-chess-king"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>ExploitKing</h3>
+                            <p class="agent-author">by James Park</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value purple-text">Purple Team All-Rounder</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">4 days ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,654 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">Gmail Security, Spreadsheet Attacks</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <!-- Additional Agent Cards -->
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon blue">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>SafeKeeper</h3>
+                            <p class="agent-author">by Lisa Chen</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value blue-text">Blue Team Defender</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">1 day ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,198 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">Auth Security, Data Protection</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <div class="agent-icon red">
+                            <i class="fas fa-user-ninja"></i>
+                        </div>
+                        <div class="agent-meta">
+                            <h3>ChaosAgent</h3>
+                            <p class="agent-author">by Kevin Wang</p>
+                        </div>
+                    </div>
+                    <div class="agent-details">
+                        <div class="detail-row">
+                            <span class="label">Type:</span>
+                            <span class="value red-text">Red Team Attacker</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Submitted:</span>
+                            <span class="value">3 hours ago</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Score:</span>
+                            <span class="value">2,321 pts</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Specialization:</span>
+                            <span class="value">Prompt Injection, LLM Attacks</span>
+                        </div>
+                    </div>
+                    <div class="agent-actions">
+                        <button class="btn-small">View Details</button>
+                        <button class="btn-small btn-secondary">Challenge</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Add Agent Modal -->
+    <div id="addAgentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Submit New Agent</h2>
+                <span class="close" onclick="closeAddAgentModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="submission-options">
+                    <label class="option-card">
+                        <input type="radio" name="submission-type" value="url" checked>
+                        <div class="option-content">
+                            <i class="fas fa-link"></i>
+                            <h4>URL Submission</h4>
+                            <p>Submit your agent via direct URL</p>
+                        </div>
+                    </label>
+                    <label class="option-card">
+                        <input type="radio" name="submission-type" value="git">
+                        <div class="option-content">
+                            <i class="fab fa-git-alt"></i>
+                            <h4>Git Repository</h4>
+                            <p>Submit from a Git repository</p>
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="submission-form">
+                    <div class="form-group">
+                        <label>Agent Name</label>
+                        <input type="text" class="form-input" placeholder="Enter agent name">
+                    </div>
+                    <div class="form-group">
+                        <label>Submission URL</label>
+                        <input type="url" class="form-input" placeholder="https://example.com/agent">
+                    </div>
+                    <div class="form-group">
+                        <label>Agent Type</label>
+                        <select class="form-input">
+                            <option>Blue Team Defender</option>
+                            <option>Red Team Attacker</option>
+                            <option>Purple Team All-Rounder</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddAgentModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitAgent()">Submit Agent</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="modal">
+        <div class="modal-content small">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <h3>Processing Agent Submission</h3>
+                <p>Reading agent card information...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content small">
+            <div class="success-content">
+                <i class="fas fa-check-circle"></i>
+                <h3>Agent Successfully Loaded!</h3>
+                <p>Your agent information has been processed and is now registered in the system.</p>
+                <button class="btn btn-primary" onclick="closeSuccessModal()">Great!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Agent Arcade. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function openAddAgentModal() {
+            document.getElementById('addAgentModal').style.display = 'flex';
+        }
+
+        function closeAddAgentModal() {
+            document.getElementById('addAgentModal').style.display = 'none';
+        }
+
+        function submitAgent() {
+            closeAddAgentModal();
+            document.getElementById('loadingModal').style.display = 'flex';
+            
+            // Mock loading for 2 seconds
+            setTimeout(() => {
+                document.getElementById('loadingModal').style.display = 'none';
+                document.getElementById('successModal').style.display = 'flex';
+            }, 2000);
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+        // Handle Slack login button click
+        document.addEventListener('DOMContentLoaded', function() {
+            const slackLoginBtn = document.querySelector('.slack-login');
+            if (slackLoginBtn) {
+                slackLoginBtn.addEventListener('click', function() {
+                    alert('🚧 Website Under Development\n\nThis website is currently in development and is a mock version only. Slack login functionality will be available in the future.');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
