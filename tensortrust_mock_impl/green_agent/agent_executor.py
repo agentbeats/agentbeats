@@ -38,16 +38,8 @@ from a2a.types import (
 )
 
 class GreenAgent:
-    def __init__(self, blue_agent_url: str, 
-                        red_agent_url: str, 
-                        mcp_url: str, 
-                        battle_id: str) -> None:
+    def __init__(self, mcp_url: str) -> None:
         """Initialize the Green Agent with its prompt and tools."""
-        # URLs for the blue and red agents
-        self.blue_agent_url = blue_agent_url
-        self.red_agent_url = red_agent_url
-        self.blue_client: A2AClient | None = None
-        self.red_client: A2AClient | None = None
         self._httpx_client: httpx.AsyncClient = httpx.AsyncClient()
 
         # URL for the MCP server
@@ -64,8 +56,6 @@ class GreenAgent:
         ))
         self.mcp_servers_connected = False
 
-        self.battle_id = battle_id
-
         # Initialize chat history and tools
         self.chat_history: List[Dict[str, str]] = []
         self.tool_list = [
@@ -81,17 +71,13 @@ class GreenAgent:
             
             self.main_agent = Agent(
                 name="Green Agent", 
-                instructions=GREEN_AGENT_PROMPT.replace("{battle_id}", self.battle_id), 
+                instructions=GREEN_AGENT_PROMPT, 
                 model="o4-mini", 
                 tools=self.tool_list,
                 mcp_servers=self.mcp_servers, 
             )
 
             self.mcp_servers_connected = True
-
-    async def init_remote_clients(self) -> None:
-        self.blue_client = await self._make_client(self.blue_agent_url)
-        self.red_client = await self._make_client(self.red_agent_url)
 
     async def _make_client(self, base_url: str) -> A2AClient:
         resolver = A2ACardResolver(
@@ -107,13 +93,8 @@ class GreenAgent:
 
     def _create_talk_to_agent_tool(self):
         @function_tool(name_override="talk_to_red_or_blue_agent")
-        async def _talk_to_agent(query: str, target: str) -> str:
-            if target not in ["red", "blue"]:
-                raise ValueError("Target must be either 'red' or 'blue'.")
-            client = self.red_client if target == "red" else self.blue_client
-            if client is None:
-                print(f"Client for {target} agent is not initialized.")
-                raise RuntimeError(f"Client for {target} agent is not initialized.")
+        async def _talk_to_agent(query: str, target_url: str) -> str:
+            client = await self._make_client(target_url)
             params = MessageSendParams(
                 message=Message(
                     role=Role.user,
@@ -170,23 +151,15 @@ class GreenAgent:
         return result.final_output
 
 class GreenAgentExecutor(AgentExecutor):
-    def __init__(self, blue_agent_url: str, 
-                        red_agent_url: str, 
-                        mcp_url: str, 
-                        battle_id: str) -> None:
+    def __init__(self, mcp_url: str) -> None:
         """Initialize the Green Agent Executor."""
-        self.green_agent = GreenAgent(blue_agent_url=blue_agent_url, 
-                                      red_agent_url=red_agent_url, 
-                                      battle_id=battle_id, 
-                                      mcp_url=mcp_url)
+        self.green_agent = GreenAgent(mcp_url=mcp_url)
 
     async def execute(
         self,
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
-        if self.green_agent.blue_client is None or self.green_agent.red_client is None:
-            await self.green_agent.init_remote_clients()
         task = context.current_task
         if task is None: # first chat
             task = new_task(context.message)

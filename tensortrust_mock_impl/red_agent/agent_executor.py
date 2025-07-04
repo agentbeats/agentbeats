@@ -37,6 +37,8 @@ class RedAgent:
         result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore
 
+        print(result.final_output)
+
         return result.final_output
 
 
