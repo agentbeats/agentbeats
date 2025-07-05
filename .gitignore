@@ -3,3 +3,5 @@
 
 **/venv/
 **/.DS_Store
+wasp_agents/log_files/
+**/.env
