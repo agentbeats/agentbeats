@@ -5,7 +5,8 @@
 </script>
 
 <Sidebar.Provider
-	style="--sidebar-width: calc(var(--spacing) * 54); --header-height: calc(var(--spacing) * 12);"
+	open={false}
+	style="--sidebar-width: calc(var(--spacing) * 94); --sidebar-width-icon: calc(var(--spacing) * 16); --header-height: calc(var(--spacing) * 12);"
 >
 	<AppSidebar variant="inset" />
 	<Sidebar.Inset>
