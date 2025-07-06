@@ -32,6 +32,7 @@
 					<Sidebar.MenuButton
 						{...props}
 						size="lg"
+						tooltipContent={user.name}
 						class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 					>
 						<Avatar.Root class="size-8 rounded-lg">
