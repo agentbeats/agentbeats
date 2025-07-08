@@ -12,6 +12,23 @@ from datetime import datetime
 import os
 
 BASE_URL = "http://localhost:3001"
+GREEN_URL = "http://localhost:7001"
+GREEN_LAUNCHER = "http://localhost:7000"
+BLUE_URL = "http://localhost:8001"
+BLUE_LAUNCHER = "http://localhost:8000"
+RED_URL = "http://localhost:9001"
+RED_LAUNCHER = "http://localhost:9000"
+
+MCP_URL = "http://0.0.0.0:6000/sse/"
+
+# RESET_RED_BLUE_PAYLOAD = {"signal": "reset", "agent_id": None}
+# RESET_GREEN_PAYLOAD = {
+#     "signal": "reset", 
+#     "extra_args": {
+#         "mcp-url": "http://0.0.0.0:6000/sse/"
+#     }, 
+#     "agent_id": None
+# }
 
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if backend_path not in sys.path:
@@ -29,14 +46,30 @@ async def test_api():
             print(f"❌ Health check failed: {response.status_code}")
             return
 
-        green_agent_id = await register_agent(client, "Green Team Agent", "http://localhost:9999", "http://aaa")
-        blue_agent_id = await register_agent(client, "Blue Team Agent", "http://localhost:9997", "http://aaa")
-        red_agent_id = await register_agent(client, "Red Team Agent", "http://localhost:9998", "http://aaa")
-            
+        green_agent_id = await register_agent(client, "Green Team Agent", GREEN_URL, GREEN_LAUNCHER)
+        blue_agent_id = await register_agent(client, "Blue Team Agent", BLUE_URL, BLUE_LAUNCHER)
+        red_agent_id = await register_agent(client, "Red Team Agent", RED_URL, RED_LAUNCHER)
+        
         if not all([green_agent_id, blue_agent_id, red_agent_id]):
             print("❌ Failed to register all agents")
             return
-            
+        
+        # blue_result = await send_reset(BLUE_LAUNCHER + "/reset", payload={"signal": "reset", "agent_id": blue_agent_id})
+        # red_result = await send_reset(RED_LAUNCHER + "/reset", payload={"signal": "reset", "agent_id": red_agent_id})
+        # green_result = await send_reset(GREEN_LAUNCHER + "/reset", payload={
+        #     "signal": "reset", 
+        #     "extra_args": {
+        #         "mcp-url": "http://localhost:6000/sse/"
+        #     }, 
+        #     "agent_id": green_agent_id
+        # })
+        # if not all([blue_result, red_result, green_result]):
+        #     print("❌ Failed to reset all agents")
+        #     return
+        
+        input("Press Enter to continue after agents are registered...")
+
+
         print("\nListing all agents:")
         response = await client.get(f"{BASE_URL}/agents")
         if response.status_code == 200:
@@ -55,15 +88,14 @@ async def test_api():
             green_agent_id,
             [blue_agent_id, red_agent_id]
         )
-
-        input("Press Enter to continue after agents are registered...")
-        for agent_id in [green_agent_id, blue_agent_id, red_agent_id]:
-            report_ready(agent_id)
-        print("All agents reported as ready")
-
         if not battle_id:
             print("❌ Failed to create battle")
             return
+        
+        input("Press Enter to continue after agents are ready...")
+        # for agent_id in [green_agent_id, blue_agent_id, red_agent_id]:
+        #     report_ready(agent_id)
+        # print("All agents reported as ready")
 
         input("Press Enter to continue, battle is happening...")
         # Get battle details
@@ -78,36 +110,38 @@ async def test_api():
         else:
             print(f"❌ Failed to get battle details: {response.status_code}")
 
-        response = await report_log(client, "Test log message for battle", battle_id)
-        if response:
-            print("✅ Log reported successfully")
-        else:
-            print("❌ Failed to report log")
+        # response = await report_log(client, "Test log message for battle", battle_id)
+        # if response:
+        #     print("✅ Log reported successfully")
+        # else:
+        #     print("❌ Failed to report log")
                 
-        # Simulate battle result reporting
-        print("\nSimulating battle result reporting...")
-        battle_result = {
-            "winner": blue_agent_id,
-            "score": {
-                "blueScore": 10,
-                "redScore": 5
-            },
-            "detail": {
-                "rounds": 3,
-                "log": "Battle completed successfully"
-            },
-            "reportedAt": datetime.utcnow().isoformat(),
-            "eventType": "result",
-        }
+        # # Simulate battle result reporting
+        # print("\nSimulating battle result reporting...")
+        # battle_result = {
+        #     "winner": blue_agent_id,
+        #     "score": {
+        #         "blueScore": 10,
+        #         "redScore": 5
+        #     },
+        #     "detail": {
+        #         "rounds": 3,
+        #         "log": "Battle completed successfully"
+        #     },
+        #     "reportedAt": datetime.utcnow().isoformat(),
+        #     "eventType": "result",
+        # }
         
-        response = await client.post(
-            f"{BASE_URL}/battles/{battle_id}",
-            json=battle_result
-        )
-        if response.status_code == 204:
-            print("✅ Battle result reported successfully")
-        else:
-            print(f"❌ Failed to report battle result: {response.status_code}")
+        # response = await client.post(
+        #     f"{BASE_URL}/battles/{battle_id}",
+        #     json=battle_result
+        # )
+        # if response.status_code == 204:
+        #     print("✅ Battle result reported successfully")
+        # else:
+        #     print(f"❌ Failed to report battle result: {response.status_code}")
+
+        input("Press Enter to continue, after battle result is reported...")
                 
         # Get updated battle details
         print("\nUpdated battle details:")
@@ -122,6 +156,14 @@ async def test_api():
             print(f"❌ Failed to get updated battle details: {response.status_code}")
                 
         print("\nTest completed successfully!")
+
+async def send_reset(url: str, payload: dict) -> None:
+    """POST a reset signal to *url*."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(url, json=payload)
+        resp.raise_for_status()
+    print(f"[reset] sent to {url} -> {resp.status_code}")
+    return resp.json()
 
 def report_ready(agent_id):
     """Report that an agent is ready."""
@@ -194,8 +236,10 @@ async def create_battle(client, green_agent_id, opponent_ids):
         "greenAgentId": green_agent_id,
         "opponents": opponent_ids,
         "config": {
-            "timeout": 20,
-            "rounds": 3
+            "timeout": 300,
+            "readyTimeout": 300,
+            # "readyTimeout": 20,
+            
         },
         'eventType': 'result'
     }

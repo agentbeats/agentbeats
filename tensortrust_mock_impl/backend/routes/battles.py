@@ -115,6 +115,7 @@ async def process_battle(battle_id: str):
         # Get the green agent info
         green_agent = db.read("agents", battle["greenAgentId"])
         if not green_agent:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = "Green agent not found"
             db.update("battles", battle_id, battle)
@@ -125,6 +126,7 @@ async def process_battle(battle_id: str):
         for opponent_id in battle["opponents"]:
             opponent = db.read("agents", opponent_id)
             if not opponent:
+                battle = db.read("battles", battle_id)
                 battle["state"] = "error"
                 battle["error"] = f"Opponent agent {opponent_id} not found"
                 db.update("battles", battle_id, battle)
@@ -144,8 +146,9 @@ async def process_battle(battle_id: str):
         blue_launcher = opponents[0]["registerInfo"]["launcher"]
         red_launcher = opponents[1]["registerInfo"]["launcher"] if len(opponents) > 1 else None
         
-        green_reset = a2a_client.reset_agent_trigger(green_launcher)
+        green_reset = await a2a_client.reset_agent_trigger(green_launcher, agent_id=battle["greenAgentId"], extra_args={"mcp-url": "http://localhost:6000/sse/"})
         if not green_reset:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = "Failed to reset green agent"
             db.update("battles", battle_id, battle)
@@ -153,8 +156,9 @@ async def process_battle(battle_id: str):
             unlock_and_unready_agents(battle)
             return
         
-        blue_reset = a2a_client.reset_agent_trigger(blue_launcher)
+        blue_reset = await a2a_client.reset_agent_trigger(blue_launcher,agent_id=battle["opponents"][0])
         if not blue_reset:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = "Failed to reset blue agent"
             db.update("battles", battle_id, battle)
@@ -163,8 +167,9 @@ async def process_battle(battle_id: str):
             return        
         
         if red_launcher:
-            red_reset = a2a_client.reset_agent_trigger(red_launcher)
+            red_reset = await a2a_client.reset_agent_trigger(red_launcher, agent_id=battle["opponents"][1])
             if not red_reset:
+                battle = db.read("battles", battle_id)
                 battle["state"] = "error"
                 battle["error"] = "Failed to reset red agent"
                 db.update("battles", battle_id, battle)
@@ -180,6 +185,7 @@ async def process_battle(battle_id: str):
         ready = await wait_agents_ready(agent_ids, timeout=ready_timeout)
         
         if not ready:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = f"Not all agents ready after {ready_timeout} seconds"
             db.update("battles", battle_id, battle)
@@ -191,6 +197,7 @@ async def process_battle(battle_id: str):
         # Kick off the battle by notifying the green agent
         green_endpoint = green_agent["registerInfo"]["endpoint"]
         if not green_endpoint:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = "Green agent endpoint not found"
             db.update("battles", battle_id, battle)
@@ -198,9 +205,12 @@ async def process_battle(battle_id: str):
             unlock_and_unready_agents(battle)
             return
         
-        blue_agent_url = battle["opponents"][0]
-        red_agent_url = battle["opponents"][1] if len(opponents) > 1 else None
+        blue_agent_id: str = battle["opponents"][0]
+        red_agent_id: str = battle["opponents"][1] if len(opponents) > 1 else None
         
+        blue_agent_url = db.read("agents", blue_agent_id)["registerInfo"]["endpoint"]
+        red_agent_url = db.read("agents", red_agent_id)["registerInfo"]["endpoint"] if red_agent_id else None
+
         notify_success = await a2a_client.notify_green_agent(
             green_endpoint,
             blue_agent_url,
@@ -209,6 +219,7 @@ async def process_battle(battle_id: str):
         )
         
         if not notify_success:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = "Failed to notify green agent"
             db.update("battles", battle_id, battle)
@@ -232,6 +243,7 @@ async def process_battle(battle_id: str):
         print(f"Error processing battle {battle_id}: {str(e)}")
         battle = db.read("battles", battle_id)
         if battle:
+            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = str(e)
             db.update("battles", battle_id, battle)
@@ -246,6 +258,7 @@ def check_battle_timeout(battle_id: str, timeout: int):
     if battle and battle["state"] == "running":
         # Battle timed out
         add_battle_log(battle_id, "Battle timed out", {"timeout_seconds": timeout}, "system")
+        battle = db.read("battles", battle_id)
         battle["state"] = "finished"
         battle["result"] = {
             "eventType": "result",
