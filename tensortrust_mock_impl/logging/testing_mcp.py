@@ -14,12 +14,12 @@ logger = logging.getLogger(__name__)
 server = FastMCP(
     "Open MCP for AgentBeast Battle Arena",
     host="0.0.0.0",
-    port=6000,
+    port=9001,
 )
 
 SESSIONS: dict[str, dict[str, str]] = {}
 
-BASE_URL = "http://localhost:3001"
+BASE_URL = "http://localhost:9000"
 
 # @server.tool()
 # def update_battle_result(battle_id: str, info: str) -> str:
