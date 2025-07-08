@@ -34,3 +34,17 @@ export async function getAgentById(agentId: string) {
     throw error;
   }
 } 
+
+export async function getAllAgents() {
+  try {
+    const res = await fetch('http://localhost:9000/agents');
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to fetch agents');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to fetch agents:', error);
+    throw error;
+  }
+} 

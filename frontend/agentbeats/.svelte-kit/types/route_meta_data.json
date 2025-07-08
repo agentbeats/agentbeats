@@ -13,5 +13,8 @@
 	],
 	"/stage-battle": [
 		"src/routes/stage-battle/+page.ts"
+	],
+	"/users": [
+		"src/routes/users/+page.ts"
 	]
 }

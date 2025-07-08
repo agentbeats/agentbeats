@@ -36,7 +36,7 @@ onMount(async () => {
     </Card.Header>
   </Card.Root>
 {:else}
-  <Card.Root class="relative flex flex-col items-center justify-between min-h-[220px] p-4">
+  <Card.Root class="relative flex flex-col items-center justify-between min-h-[400px] p-8 w-full max-w-6xl">
     <!-- Battle topic/title at top center -->
     <div class="absolute top-2 left-1/2 -translate-x-1/2 text-center text-base font-semibold text-primary">
       Battle Topic (TBD)
@@ -59,9 +59,10 @@ onMount(async () => {
         </div>
       </div>
     </div>
-    <!-- Battle ID at the very bottom in small font -->
+    <!-- Battle ID and timestamp at the very bottom in small font -->
     <div class="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground select-text">
-      id: {battle.id}
+      id: {battle.id} |
+      timestamp: {battle.timestamp ?? battle.createdAt ?? 'N/A'}
     </div>
   </Card.Root>
 {/if} 

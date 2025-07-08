@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from .routes import agents, battles
+from .routes import agents, battles, users
 from .a2a_client import a2a_client
 
 # Configure logging
@@ -33,6 +33,7 @@ app.add_middleware(
 # Include routers
 app.include_router(agents.router, tags=["Agents"])
 app.include_router(battles.router, tags=["Battles"])
+app.include_router(users.router, tags=["Users"])
 
 # Add request logging middleware
 @app.middleware("http")
