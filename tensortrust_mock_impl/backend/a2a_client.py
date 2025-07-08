@@ -1,6 +1,7 @@
 import httpx
 import logging
 import uuid
+import time
 import json
 from typing import Dict, Any, Optional, List
 from a2a.client import A2ACardResolver, A2AClient
@@ -175,6 +176,9 @@ class AgentBeatsA2AClient:
                                 battle_id: str) -> bool:
         """Notify the green agent about a battle using streaming message format."""
         try:
+            # TODO: make this more eligant, for exmaple, 
+            # the launcher should send PUT request after agent is really set
+            time.sleep(5)
             client = await self._get_or_create_client(endpoint)
             if not client:
                 return False
@@ -208,7 +212,7 @@ class AgentBeatsA2AClient:
             response_received = False
             async for chunk in client.send_message_streaming(request):
                 response_received = True
-                break
+                # break
                 
             return response_received
                             
@@ -262,7 +266,7 @@ class AgentBeatsA2AClient:
                 async for chunk in client.send_message_streaming(request):
                     response_received = True
                     logger.info(f"Custom message response: {chunk}")
-                    break
+                    # break
                 
                 return response_received
                 

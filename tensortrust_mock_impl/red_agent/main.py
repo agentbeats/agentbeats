@@ -15,6 +15,9 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 from agent_executor import RedAgentExecutor
 
 
+SERVER_BASE_URL = "http://nuggets.puppy9.com"
+
+
 def build_app(listen_port: int) -> A2AStarletteApplication:
     reset_skill = AgentSkill(
         id="red_reset",
@@ -37,7 +40,7 @@ def build_app(listen_port: int) -> A2AStarletteApplication:
     agent_card = AgentCard(
         name="Red Agent (Attacker)",
         description="A2A attacker that generates prompts that tries its best to penetrate a logging in system and can reset its state when needed.",
-        url=f"http://localhost:{listen_port}/",
+        url=f"{SERVER_BASE_URL}:{listen_port}/",
         version="1.0.0",
         defaultInputModes=["text"],
         defaultOutputModes=["text"],

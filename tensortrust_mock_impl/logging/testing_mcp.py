@@ -19,21 +19,16 @@ server = FastMCP(
 
 SESSIONS: dict[str, dict[str, str]] = {}
 
-BASE_URL = "http://localhost:9000"
+BACKEND_URL = "http://nuggets.puppy9.com:9000"
 
-# @server.tool()
-# def update_battle_result(battle_id: str, info: str) -> str:
-#     """
-#     Log battle status to console and <battle_id>.log.
-#     Info should be a string (e.g. blue agent's system prompt, red agent's attack prompt, evaluation result, etc.).
-#     """
-#     logger.info("Battle %s: %s", battle_id, info)
+@server.tool()
+def echo(message: str) -> str:
+    """
+    Echo the input message.
+    """
+    logger.info("Echoing message: %s", message)
+    return f"Echo: {message}"
 
-#     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-#     line = f"[INFO] [{timestamp}] {info}\n"
-#     with open(f"{battle_id}.log", "a", encoding="utf-8") as f:
-#         f.write(line)
-#     return 'logged'
 @server.tool()
 def update_battle_process(battle_id: str, info: str) -> str:
     """
@@ -52,7 +47,7 @@ def update_battle_process(battle_id: str, info: str) -> str:
     try:
         # Call backend API
         response = requests.post(
-            f"{BASE_URL}/battles/{battle_id}",
+            f"{BACKEND_URL}/battles/{battle_id}",
             json=event_data,
             headers={"Content-Type": "application/json"},
             timeout=10
@@ -106,7 +101,7 @@ def report_on_battle_end(battle_id: str, winner: str, score: dict, detail: dict 
     try:
         # Call backend API
         response = requests.post(
-            f"{BASE_URL}/battles/{battle_id}",
+            f"{BACKEND_URL}/battles/{battle_id}",
             json=result_data,
             headers={"Content-Type": "application/json"},
             timeout=10
