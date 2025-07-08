@@ -14,11 +14,11 @@ import os
 BASE_URL = "http://localhost:9000"
 MCP_URL = "http://localhost:9001/sse/"
 
-BLUE_LAUNCHER = "http://localhost:9010"
-BLUE_URL = "http://localhost:9011"
+BLUE_LAUNCHER = "http://localhost:6010"
+BLUE_URL = "http://localhost:6011"
 
-RED_LAUNCHER = "http://localhost:9020"
-RED_URL = "http://localhost:9021"
+RED_LAUNCHER = "http://localhost:6020"
+RED_URL = "http://localhost:6021"
 
 GREEN_LAUNCHER = "http://localhost:9030"
 GREEN_URL = "http://localhost:9031"
@@ -123,27 +123,27 @@ async def test_api():
 #         print(f"❌ Failed to report agent {agent_id} as ready: {response.status_code}")
 #         print(f"Response content: {response.text}")
 
-async def report_log(client, message, battle_id):
-    """Report a log message for a battle."""
-    print(f"Reporting log for battle {battle_id}...")
+# async def report_log(client, message, battle_id):
+#     """Report a log message for a battle."""
+#     print(f"Reporting log for battle {battle_id}...")
     
-    log_entry = {
-        "message": message,
-        "eventType": "log",
-        "source": "test_api",
-    }
+#     log_entry = {
+#         "message": message,
+#         "eventType": "log",
+#         "source": "test_api",
+#     }
     
-    response = await client.post(
-        f"{BASE_URL}/battles/{battle_id}",
-        json=log_entry
-    )
+#     response = await client.post(
+#         f"{BASE_URL}/battles/{battle_id}",
+#         json=log_entry
+#     )
     
-    if response.status_code == 204:
-        print("✅ Log reported successfully")
-    else:
-        print(f"❌ Failed to report log: {response.status_code}")
-        print(f"Response content: {response.text}")
-    return response.status_code == 204
+#     if response.status_code == 204:
+#         print("✅ Log reported successfully")
+#     else:
+#         print(f"❌ Failed to report log: {response.status_code}")
+#         print(f"Response content: {response.text}")
+#     return response.status_code == 204
 
 async def register_agent(client, name, endpoint, launcher):
     """Register a real agent and return its ID."""
@@ -181,10 +181,8 @@ async def create_battle(client, green_agent_id, opponent_ids):
         "green_agent_id": green_agent_id,
         "opponents": opponent_ids,
         "config": {
-            "timeout": 300,
-            "readyTimeout": 300,
-            # "readyTimeout": 20,
-            
+            "battle_timeout": 300,
+            "ready_timeout": 300,            
         },
     }
     
