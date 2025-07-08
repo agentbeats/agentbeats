@@ -35,20 +35,42 @@ BASE_URL = "http://localhost:9000"
 #         f.write(line)
 #     return 'logged'
 @server.tool()
-def update_battle_process(battle_id: str, info: str) -> str:
+def update_battle_process(battle_id: str, message: str, reported_by: str, detail: dict = None) -> str:
     """
-    Log battle status to backend API and console.
-    Info should be a string (e.g. blue agent's system prompt, red agent's attack prompt, evaluation result, etc.).
+    Log battle process updates to backend API and console.
+    
+    This tool records intermediate events and progress during a battle, helping track
+    what each participant is doing and how the battle is evolving.
+    
+    Args:
+        battle_id (str): Unique identifier for the battle session
+        message (str): Simple, human-readable description of what happened
+                      Example: "guardrailGenerator defense prompt success" or "red agent launched attack"
+        detail (dict): Structured data containing specific details about the event
+                      Can include prompts, responses, configurations, or any relevant data
+                      Example: {"prompt": "You are a helpful assistant...", "tool": "xxxTool"}
+        reported_by (str): The role/agent that triggered this event
+                          Example: "guardrailGenerator", "red_agent", "blue_agent", "evaluator"
+    
+    Returns:
+        str: Status message indicating where the log was recorded
+    
+    Example usage in TensorTrust game:
+        - message: "guardrailGenerator defense prompt success"
+        - detail: {"defense_prompt": "Ignore all previous instructions...", "secret_key": "abc123"}
+        - reported_by: "guardrailGenerator"
     """
-    logger.info("Battle %s: %s", battle_id, info)
+    # logger.info("Battle %s: %s", battle_id, info)
 
     # Prepare event data for backend API
     event_data = {
-        "eventType": "log",
-        "message": info,
+        "is_result": False,
+        "message": message,
+        "reported_by": reported_by,
         "timestamp": datetime.utcnow().isoformat()
     }
-    
+    if detail:
+        event_data["detail"] = detail
     try:
         # Call backend API
         response = requests.post(
@@ -65,7 +87,7 @@ def update_battle_process(battle_id: str, info: str) -> str:
             logger.error("Failed to log to backend for battle %s: %s", battle_id, response.text)
             # Fallback to local file logging
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            line = f"[INFO] [{timestamp}] {info}\n"
+            line = f"[INFO] [{timestamp}] {message}\n"
             with open(f"{battle_id}.log", "a", encoding="utf-8") as f:
                 f.write(line)
             return 'logged locally (backend failed)'
@@ -74,7 +96,7 @@ def update_battle_process(battle_id: str, info: str) -> str:
         logger.error("Network error when logging to backend for battle %s: %s", battle_id, str(e))
         # Fallback to local file logging
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        line = f"[INFO] [{timestamp}] {info}\n"
+        line = f"[INFO] [{timestamp}] {message}\n"
         with open(f"{battle_id}.log", "a", encoding="utf-8") as f:
             f.write(line)
         return 'logged locally (network error)'
@@ -94,10 +116,10 @@ def report_on_battle_end(battle_id: str, winner: str, score: dict, detail: dict 
     
     # Prepare result event data for backend API
     result_data = {
-        "eventType": "result",
+        "is_result": True,
         "winner": winner,
         "score": score,
-        "reportedAt": datetime.utcnow().isoformat()
+        "reported_at": datetime.utcnow().isoformat()
     }
     
     if detail:
