@@ -18,9 +18,12 @@
 <Sidebar.Group bind:ref {...restProps}>
 	<Sidebar.GroupContent>
 		<Sidebar.Menu>
-			{#each items as item (item.title)}
-				<Sidebar.MenuItem>
-					<Sidebar.MenuButton size="sm" tooltipContent={item.title} class="[&>svg]:size-4 group-data-[collapsible=icon]:[&>svg]:!size-5">
+			{#each items as item, i (item.title)}
+				<Sidebar.MenuItem class={i !== items.length - 1 ? 'mb-2' : ''}>
+					<Sidebar.MenuButton 
+						tooltipContent={item.title} 
+						class="[&>svg]:size-4 group-data-[collapsible=icon]:[&>svg]:!size-6 group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-3 group-data-[collapsible=icon]:!justify-center"
+					>
 						{#snippet child({ props })}
 							<a href={item.url} {...props}>
 								<item.icon />

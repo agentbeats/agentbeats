@@ -2,8 +2,11 @@
 import { onMount } from "svelte";
 import AgentChip from "./agent-chip.svelte";
 import { getAgentById } from "$lib/api/agents";
+import { createEventDispatcher } from "svelte";
 
 export let agentId: string;
+export let modalState = undefined;
+const dispatch = createEventDispatcher();
 let agent: any = null;
 let loading = true;
 let error: string | null = null;
@@ -33,9 +36,17 @@ function mapAgentData(raw: any) {
 onMount(async () => {
   loading = true;
   error = null;
+  if (!agentId) {
+    agent = fallbackAgent;
+    loading = false;
+    return;
+  }
   try {
     const raw = await getAgentById(agentId);
     agent = mapAgentData(raw);
+    if (!agent || agent.notFound) {
+      agent = fallbackAgent;
+    }
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to load agent';
     agent = fallbackAgent;
