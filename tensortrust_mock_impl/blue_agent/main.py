@@ -68,7 +68,7 @@ def main() -> None:
     parser.add_argument(
         "--port",
         type=int,
-        default=8001,
+        default=9011,
         help="TCP port for the HTTP server to listen on (default: 8001)",
     )
 

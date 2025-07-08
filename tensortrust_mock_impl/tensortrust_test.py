@@ -12,16 +12,16 @@ from datetime import datetime
 import os
 
 BASE_URL = "http://localhost:9000"
-MCP_URL = "http://0.0.0.0:9001/sse/"
+MCP_URL = "http://localhost:9001/sse/"
 
-BLUE_LAUNCHER = "http://localhost:9100"
-BLUE_URL = "http://localhost:9101"
+BLUE_LAUNCHER = "http://localhost:9010"
+BLUE_URL = "http://localhost:9011"
 
-RED_LAUNCHER = "http://localhost:9200"
-RED_URL = "http://localhost:9201"
+RED_LAUNCHER = "http://localhost:9020"
+RED_URL = "http://localhost:9021"
 
-GREEN_LAUNCHER = "http://localhost:9300"
-GREEN_URL = "http://localhost:9301"
+GREEN_LAUNCHER = "http://localhost:9030"
+GREEN_URL = "http://localhost:9031"
 
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if backend_path not in sys.path:

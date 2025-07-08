@@ -132,7 +132,9 @@ def main() -> None:
 
     print(AGENT_FILE, BASE_PORT, CHILD_PORT, args.mcp_url)
 
-    extra_args = {"port": CHILD_PORT}
+    # extra_args = {"port": CHILD_PORT}
+    extra_args = {}
+    
     if args.mcp_url:
         extra_args["mcp-url"] = args.mcp_url
 

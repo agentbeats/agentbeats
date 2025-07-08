@@ -18,7 +18,8 @@ from a2a.types import (
 logger = logging.getLogger(__name__)
 
 class AgentBeatsA2AClient:
-    """Client for communicating with agents via A2A protocol using the official SDK."""
+    # TODO: change this name, make it more clear
+    """Client for communicating with agents/launcher via A2A protocol using the official SDK."""
     
     def __init__(self):
         self.httpx_client = None
@@ -71,10 +72,12 @@ class AgentBeatsA2AClient:
             )
             
             # Fetch the agent card
+            logger.info(f"Fetching agent card from resolver...")
             agent_card = await resolver.get_agent_card()
             
             if agent_card:
                 # Create the client
+                logger.info(f"Successfully got agent card: {agent_card.model_dump(exclude_none=True)}")
                 client = A2AClient(
                     httpx_client=self.httpx_client,
                     agent_card=agent_card
@@ -86,6 +89,9 @@ class AgentBeatsA2AClient:
                 return None
         except Exception as e:
             logger.error(f"Error creating A2A client for {endpoint}: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
             
     async def reset_agent_trigger(self, launcher_url: str, agent_id: str, extra_args: dict = {}) -> bool:
