@@ -19,6 +19,7 @@ import shlex
 import subprocess
 from pathlib import Path
 from typing import Optional
+import requests
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -32,8 +33,11 @@ agent_proc: Optional[subprocess.Popen] = None
 state_lock = asyncio.Lock()
 AGENT_KILL_TIMEOUT = 5
 
+BACKEND_URL = "http://localhost:9000"
+
 class SignalPayload(BaseModel):
     signal: str
+    agent_id: str
     extra_args: Optional[dict] = None
 
 
@@ -79,6 +83,25 @@ async def reset(payload: SignalPayload):
         if agent_proc and agent_proc.poll() is None:
             _terminate_agent(agent_proc)
         agent_proc = _start_agent(extra_args=payload.extra_args or {})
+        agent_id = payload.agent_id
+        
+        # try:
+        #     with open(f"{agent_id}.txt", "w") as f:
+        #         f.write(f"Agent ID: {agent_id}\n")
+        #     print(f"Created/verified folder: {agent_id}")
+        # except Exception as e:
+        #     print(f"Warning: Failed to create folder {agent_id}: {e}")
+        
+        try:
+            response = requests.put(
+                f"{BACKEND_URL}/agents/{agent_id}",
+                json={"ready": True},
+                timeout=5
+            )
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+                print(f"Warning: Failed to notify backend about agent reset: {e}")
+        
         return {
             "status": "restarted",
             "pid": agent_proc.pid,
@@ -91,19 +114,31 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument("--host", default="0.0.0.0", help="Bind address for controller")
     p.add_argument("--port", type=int, default=8000, help="Controller port")
     p.add_argument("--reload", action="store_true", help="Uvicorn autoreload")
+    p.add_argument(
+        "--mcp-url",
+        type=str, 
+        help="URL for the MCP server (example: http://localhost:9001/sse)",
+    )
     return p.parse_args()
 
 
 def main() -> None:
-    global AGENT_FILE, BASE_PORT, CHILD_PORT
+    global AGENT_FILE, BASE_PORT, CHILD_PORT, agent_proc
 
     args = _parse_cli()
     AGENT_FILE = args.file
     BASE_PORT = args.port
     CHILD_PORT = BASE_PORT + 1
 
-    print(AGENT_FILE, BASE_PORT, CHILD_PORT)
+    print(AGENT_FILE, BASE_PORT, CHILD_PORT, args.mcp_url)
 
+    # extra_args = {"port": CHILD_PORT}
+    extra_args = {}
+    
+    if args.mcp_url:
+        extra_args["mcp-url"] = args.mcp_url
+
+    agent_proc = _start_agent(extra_args=extra_args)
     uvicorn.run(app, host=args.host, port=BASE_PORT, reload=False)
 
 

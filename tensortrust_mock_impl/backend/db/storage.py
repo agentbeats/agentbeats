@@ -220,6 +220,6 @@ class SQLiteStorage:
             return [row[0] for row in rows]
 
 
-# Default database instance (for backward compatibility)
-# Use config.py for more flexible configuration
-db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
+
+# db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
+db = JSONStorage(os.path.join(os.path.dirname(__file__), 'data'))
