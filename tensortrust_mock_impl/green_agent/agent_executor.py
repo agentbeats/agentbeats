@@ -52,7 +52,8 @@ class GreenAgent:
                 # "headers": {
                 #     "battle-id": battle_id,
                 # } # TODO: will formally support this later, won't need agent to pass it manually.
-            }
+            }, 
+            cache_tools_list=True,
         ))
         self.mcp_servers_connected = False
 
@@ -94,6 +95,10 @@ class GreenAgent:
     def _create_talk_to_agent_tool(self):
         @function_tool(name_override="talk_to_red_or_blue_agent")
         async def _talk_to_agent(query: str, target_url: str) -> str:
+            """
+            Given a query and a target URL, this tool will send the query to the agent at the target URL and return the response. The target URL should be the FULL URL of the agent's endpoint, including the protocol (http or https).
+            For example, if the agent is running on localhost at port 8000, the target URL should be "http://localhost:8000".
+            """
             client = await self._make_client(target_url)
             params = MessageSendParams(
                 message=Message(
@@ -146,8 +151,10 @@ class GreenAgent:
             "content": context.get_user_input(),
             "role": "user"
         }]
-        result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
+        print(context.get_user_input(), "=========================================GREEN INPUT")
+        result = await Runner.run(self.main_agent, query_ctx, max_turns=30)  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore
+        print(result.final_output, "=========================================GREEN OUTPUT")
         return result.final_output
 
 class GreenAgentExecutor(AgentExecutor):
