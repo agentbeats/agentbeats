@@ -47,19 +47,6 @@ async def test_api():
             print("❌ Failed to register all agents")
             return
         
-        # blue_result = await send_reset(BLUE_LAUNCHER + "/reset", payload={"signal": "reset", "agent_id": blue_agent_id})
-        # red_result = await send_reset(RED_LAUNCHER + "/reset", payload={"signal": "reset", "agent_id": red_agent_id})
-        # green_result = await send_reset(GREEN_LAUNCHER + "/reset", payload={
-        #     "signal": "reset", 
-        #     "extra_args": {
-        #         "mcp-url": "http://localhost:9001/sse/"
-        #     }, 
-        #     "agent_id": green_agent_id
-        # })
-        # if not all([blue_result, red_result, green_result]):
-        #     print("❌ Failed to reset all agents")
-        #     return
-        
         input("Press Enter to continue after agents are registered...")
 
 
@@ -69,7 +56,7 @@ async def test_api():
             agents = response.json()
             print(f"✅ Found {len(agents)} agents")
             for agent in agents:
-                print(f"  - {agent['registerInfo']['name']} ({agent['id']})")
+                print(f"  - {agent['register_info']['name']} ({agent['id']})")
         else:
             print(f"❌ Failed to list agents: {response.status_code}")
 
@@ -86,53 +73,18 @@ async def test_api():
             return
         
         input("Press Enter to continue after agents are ready...")
-        # for agent_id in [green_agent_id, blue_agent_id, red_agent_id]:
-        #     report_ready(agent_id)
-        # print("All agents reported as ready")
 
         input("Press Enter to continue, battle is happening...")
-        # Get battle details
         print("\nBattle details:")
         response = await client.get(f"{BASE_URL}/battles/{battle_id}")
         if response.status_code == 200:
             battle = response.json()
             print(f"✅ Battle {battle_id} created")
             print(f"  - State: {battle['state']}")
-            print(f"  - Green Agent: {battle['greenAgentId']}")
+            print(f"  - Green Agent: {battle['green_agent_id']}")
             print(f"  - Opponents: {', '.join(battle['opponents'])}")
         else:
             print(f"❌ Failed to get battle details: {response.status_code}")
-
-        # response = await report_log(client, "Test log message for battle", battle_id)
-        # if response:
-        #     print("✅ Log reported successfully")
-        # else:
-        #     print("❌ Failed to report log")
-                
-        # # Simulate battle result reporting
-        # print("\nSimulating battle result reporting...")
-        # battle_result = {
-        #     "winner": blue_agent_id,
-        #     "score": {
-        #         "blueScore": 10,
-        #         "redScore": 5
-        #     },
-        #     "detail": {
-        #         "rounds": 3,
-        #         "log": "Battle completed successfully"
-        #     },
-        #     "reportedAt": datetime.utcnow().isoformat(),
-        #     "eventType": "result",
-        # }
-        
-        # response = await client.post(
-        #     f"{BASE_URL}/battles/{battle_id}",
-        #     json=battle_result
-        # )
-        # if response.status_code == 204:
-        #     print("✅ Battle result reported successfully")
-        # else:
-        #     print(f"❌ Failed to report battle result: {response.status_code}")
 
         input("Press Enter to continue, after battle result is reported...")
                 
@@ -150,26 +102,26 @@ async def test_api():
                 
         print("\nTest completed successfully!")
 
-async def send_reset(url: str, payload: dict) -> None:
-    """POST a reset signal to *url*."""
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(url, json=payload)
-        resp.raise_for_status()
-    print(f"[reset] sent to {url} -> {resp.status_code}")
-    return resp.json()
+# async def send_reset(url: str, payload: dict) -> None:
+#     """POST a reset signal to *url*."""
+#     async with httpx.AsyncClient() as client:
+#         resp = await client.post(url, json=payload)
+#         resp.raise_for_status()
+#     print(f"[reset] sent to {url} -> {resp.status_code}")
+#     return resp.json()
 
-def report_ready(agent_id):
-    """Report that an agent is ready."""
-    print(f"Reporting agent {agent_id} as ready...")
-    info = {
-        'ready': True,
-    }
-    response = httpx.put(f"{BASE_URL}/agents/{agent_id}", json=info)
-    if response.status_code == 204:
-        print(f"✅ Agent {agent_id} is now ready")
-    else:
-        print(f"❌ Failed to report agent {agent_id} as ready: {response.status_code}")
-        print(f"Response content: {response.text}")
+# def report_ready(agent_id):
+#     """Report that an agent is ready."""
+#     print(f"Reporting agent {agent_id} as ready...")
+#     info = {
+#         'ready': True,
+#     }
+#     response = httpx.put(f"{BASE_URL}/agents/{agent_id}", json=info)
+#     if response.status_code == 204:
+#         print(f"✅ Agent {agent_id} is now ready")
+#     else:
+#         print(f"❌ Failed to report agent {agent_id} as ready: {response.status_code}")
+#         print(f"Response content: {response.text}")
 
 async def report_log(client, message, battle_id):
     """Report a log message for a battle."""
@@ -200,8 +152,8 @@ async def register_agent(client, name, endpoint, launcher):
     # Register the agent
     agent_info = {
         "name": name,
-        "endpoint": endpoint,
-        "launcher": launcher,  # Assuming a launcher endpoint for the agent
+        "agent_url": endpoint,
+        "launcher_url": launcher,  # Assuming a launcher endpoint for the agent
         "meta": {
             "type": name.split()[0].lower()  # green, blue, or red
         }
@@ -226,7 +178,7 @@ async def create_battle(client, green_agent_id, opponent_ids):
     print("\nCreating battle...")
     
     battle_request = {
-        "greenAgentId": green_agent_id,
+        "green_agent_id": green_agent_id,
         "opponents": opponent_ids,
         "config": {
             "timeout": 300,
@@ -234,7 +186,6 @@ async def create_battle(client, green_agent_id, opponent_ids):
             # "readyTimeout": 20,
             
         },
-        'eventType': 'result'
     }
     
     response = await client.post(

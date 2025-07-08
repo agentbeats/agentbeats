@@ -43,8 +43,8 @@ class JSONStorage:
             data['id'] = str(uuid.uuid4())
             
         # Add created timestamp if not provided
-        if 'createdAt' not in data:
-            data['createdAt'] = datetime.utcnow().isoformat()
+        if 'created_at' not in data:
+            data['created_at'] = datetime.utcnow().isoformat()
             
         collection_data[data['id']] = data
         self._write_collection(collection, collection_data)
@@ -134,14 +134,14 @@ class SQLiteStorage:
             data['id'] = str(uuid.uuid4())
             
         # Add created timestamp if not provided
-        if 'createdAt' not in data:
-            data['createdAt'] = datetime.utcnow().isoformat()
+        if 'created_at' not in data:
+            data['created_at'] = datetime.utcnow().isoformat()
         
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''
                 INSERT OR REPLACE INTO collections (id, collection, data, created_at)
                 VALUES (?, ?, ?, ?)
-            ''', (data['id'], collection, self._serialize_data(data), data['createdAt']))
+            ''', (data['id'], collection, self._serialize_data(data), data['created_at']))
             conn.commit()
             
         return data
@@ -222,4 +222,4 @@ class SQLiteStorage:
 
 
 # db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
-db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
+db = JSONStorage(os.path.join(os.path.dirname(__file__), 'data'))
