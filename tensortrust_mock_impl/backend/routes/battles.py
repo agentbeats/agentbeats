@@ -392,13 +392,11 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
             
         # Check event type
         is_result = event.get("is_result", None)
-        if not is_result:
-            raise HTTPException(status_code=400, detail="Missing eventType field")
+        if is_result is None:
+            raise HTTPException(status_code=400, detail="Missing is_result field")
             
         if is_result:
             # Update the battle result
-            if "interact_history" not in battle:
-                battle["interact_history"] = []
             battle["interact_history"].append(event)
 
             battle["result"] = {
@@ -413,8 +411,6 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
             # timestamp, is_result, message, detail
             if "timestamp" not in event:
                 event["timestamp"] = datetime.utcnow().isoformat()
-            if "interact_history" not in battle:
-                battle["interact_history"] = []
     
             battle["interact_history"].append(event)
 
