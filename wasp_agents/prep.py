@@ -20,6 +20,9 @@ if output_dir[-1] == '/':
 else:
     output_dir = output_dir + '/' + str(output_dir_idx) + '/'
 
+# Create output directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)
+
 # Change to the webarena_prompt_injections/scripts directory before running the command
 scripts_dir = os.path.join(project_root, 'wasp/webarena_prompt_injections/scripts')
 os.chdir(scripts_dir)
