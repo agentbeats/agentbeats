@@ -11,17 +11,17 @@ import sys
 from datetime import datetime
 import os
 
-BASE_URL = "http://localhost:9000"
-MCP_URL = "http://localhost:9001/sse/"
+BASE_URL = "http://nuggets.puppy9.com:9000"
+MCP_URL = "http://nuggets.puppy9.com:9001/sse/"
 
-BLUE_LAUNCHER = "http://localhost:9010"
-BLUE_URL = "http://localhost:9011"
+BLUE_LAUNCHER = "http://nuggets.puppy9.com:9010"
+BLUE_URL = "http://nuggets.puppy9.com:9011"
 
-RED_LAUNCHER = "http://localhost:9020"
-RED_URL = "http://localhost:9021"
+RED_LAUNCHER = "http://nuggets.puppy9.com:9020"
+RED_URL = "http://nuggets.puppy9.com:9021"
 
-GREEN_LAUNCHER = "http://localhost:9030"
-GREEN_URL = "http://localhost:9031"
+GREEN_LAUNCHER = "http://nuggets.puppy9.com:9030"
+GREEN_URL = "http://nuggets.puppy9.com:9031"
 
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if backend_path not in sys.path:

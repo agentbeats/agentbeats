@@ -149,7 +149,7 @@ async def process_battle(battle_id: str):
         green_reset = await a2a_client.reset_agent_trigger(
             green_launcher, 
             agent_id=battle["greenAgentId"], 
-            extra_args={"mcp-url": "http://localhost:9001/sse/"}
+            extra_args={"mcp-url": "http://nuggets.puppy9.com:9001/sse/"}
         )
         if not green_reset:
             battle = db.read("battles", battle_id)
