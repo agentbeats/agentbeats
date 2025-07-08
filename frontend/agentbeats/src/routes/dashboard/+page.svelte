@@ -1,20 +1,12 @@
 <script lang="ts">
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import AppSidebar from "$lib/components/sidebar-left.svelte";
-	import AppSidebarRight from "$lib/components/sidebar-right.svelte";
-	import SiteHeader from "$lib/components/site-header.svelte";
+// Dashboard-specific logic here
+export const title = 'Dashboard';
 </script>
 
-<Sidebar.Provider
-	open={false}
-	style="--header-height: calc(var(--spacing) * 12); --sidebar-width: calc(var(--spacing) * 94); --sidebar-width-icon: calc(var(--spacing) * 16);"
->
-	<AppSidebar variant="inset" />
-	<Sidebar.Inset>
-		<SiteHeader title={"Dashboard"}/>
-		<main class="flex-1 p-6">
-			<!-- Your dashboard content here -->
-		</main>
-	</Sidebar.Inset>
-	<AppSidebarRight variant="inset" />
-</Sidebar.Provider>
+<main class="flex-1 p-6 flex flex-col items-center justify-start">
+	<h2 class="text-2xl font-bold text-center mt-10 mb-6">Dashboard</h2>
+	<p class="text-center text-muted-foreground mb-8 max-w-2xl">
+		Welcome to your AgentBeats dashboard. Here you can monitor agent activity, view battle stats, and manage your AI teams.
+	</p>
+	<!-- Your dashboard content here -->
+</main>

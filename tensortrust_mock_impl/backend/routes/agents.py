@@ -9,17 +9,34 @@ router = APIRouter()
 
 @router.post("/agents", status_code=status.HTTP_201_CREATED)
 async def register_agent(agent_info: Dict[str, Any]):
-    """Register a new agent."""
+    """
+    Register a new agent.
+    NOTE: For local development/testing, you can set 'mock': True in the agent_info to bypass the agent card fetch.
+    DO NOT USE THIS IN PRODUCTION. This is for mock/test data only!
+    """
     try:
         # Validate required fields
         if 'name' not in agent_info or 'endpoint' not in agent_info or 'launcher' not in agent_info:
             raise HTTPException(status_code=400, detail="Missing required fields: name and endpoint")
-            
-        # Get agent card from the endpoint
-        agent_card = await a2a_client.get_agent_card(agent_info['endpoint'])
-        if not agent_card:
-            raise HTTPException(status_code=400, detail="Failed to get agent card from endpoint")
-            
+        
+        # --- MOCK AGENT REGISTRATION FOR TESTING ONLY ---
+        # If 'mock' flag is set, skip the agent card fetch and use a dummy card.
+        # This is for local development/testing and should NOT be used in production!
+        if agent_info.get('mock'):
+            # Dummy agent card structure (customize as needed for your frontend)
+            agent_card = {
+                "name": agent_info['name'],
+                "type": agent_info.get('meta', {}).get('type', 'unknown'),
+                "description": f"Mock agent card for {agent_info['name']} (testing only)",
+                "mock": True
+            }
+        else:
+            # --- PRODUCTION/REAL AGENT REGISTRATION ---
+            # Fetch the agent card from the agent's endpoint (requires a real running agent)
+            agent_card = await a2a_client.get_agent_card(agent_info['endpoint'])
+            if not agent_card:
+                raise HTTPException(status_code=400, detail="Failed to get agent card from endpoint")
+        
         # Create agent record
         agent_record = {
             "registerInfo": agent_info,

@@ -5,6 +5,7 @@
 	import TheaterIcon from "@lucide/svelte/icons/theater";
 	import RegisterIcon from "@lucide/svelte/icons/smile-plus";
 	import ShieldIcon from "@lucide/svelte/icons/shield-half";
+	import UserIcon from "@lucide/svelte/icons/user";
 
 	const data = {
 		navMain: [
@@ -22,6 +23,11 @@
 				title: "Agents",
 				url: "/agents",
 				icon: BotIcon,
+			},
+			{
+				title: "Users",
+				url: "/users",
+				icon: UserIcon,
 			},
 			{
 				title: "Documentation",
