@@ -222,4 +222,4 @@ class SQLiteStorage:
 
 
 # db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
-db = JSONStorage(os.path.join(os.path.dirname(__file__), 'data'))
+db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))

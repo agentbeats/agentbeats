@@ -1,6 +1,6 @@
 export async function createBattle(battleInfo: any) {
 	try {
-		const res = await fetch('http://localhost:3001/battles', {
+		const res = await fetch('http://localhost:9000/battles', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

@@ -2,7 +2,7 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch }) => {
 	try {
-		const res = await fetch('http://localhost:3001/battles');
+		const res = await fetch('http://localhost:9000/battles');
 		const rawData = await res.json();
 		
 		const battles = rawData.map((item: any) => ({
