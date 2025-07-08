@@ -8,7 +8,7 @@ info:
     - **Public API**: called by the web front-end / ops console  
     - **MCP API**: callbacks from the green-team referee or agents via A2A / MCP
 servers:
-  - url: http://localhost:9000
+  - url: http://nuggets.puppy9.com:9000
 tags:
   - name: Agents
     description: Agent management
@@ -22,17 +22,17 @@ components:
       type: object
       required:
         - name
-        - endpoint
-        - launcher
+        - agent_url
+        - launcher_url
       properties:
         name:
           type: string
           description: Agent display name
-        endpoint:
+        agent_url:
           type: string
           format: uri
           description: Public A2A URL of the agent
-        launcher:
+        launcher_url:
           type: string
           format: uri
           description: launcher service URL for this agent
@@ -50,9 +50,9 @@ components:
         id:
           type: string
           format: uuid
-        registerInfo:
+        register_info:
           $ref: "#/components/schemas/AgentRegisterInfo"
-        agentCard:
+        agent_card:
           $ref: "#/components/schemas/AgentCard"
         status:
           type: string
@@ -64,16 +64,16 @@ components:
           type: boolean
           description: Whether the agent is ready after reset
           default: false
-        createdAt:
+        created_at:
           type: string
           format: date-time
     BattleRegisterRequest:
       type: object
       required:
-        - greenAgentId
+        - green_agent_id
         - opponents
       properties:
-        greenAgentId:
+        green_agent_id:
           type: string
           format: uuid
         opponents:
@@ -90,7 +90,7 @@ components:
         id:
           type: string
           format: uuid
-        greenAgentId:
+        green_agent_id:
           type: string
           format: uuid
         opponents:
@@ -109,25 +109,24 @@ components:
             - finished
             - error
           default: pending
-        createdAt:
+        created_at:
           type: string
           format: date-time
         result:
           $ref: "#/components/schemas/BattleResult"
-        logs:
+        interact_history:
           type: array
           items:
-            $ref: "#/components/schemas/BattleLog"
+            $ref: "#/components/schemas/BattleInteractHistory"
           description: All log entries for this battle
     BattleResult:
       type: object
       required:
-        - eventType
+        - is_result
       properties:
-        eventType:
-          type: string
-          enum: [result]
-          description: Discriminator field to identify this as a battle result
+        is_result:
+          type: boolean
+          description: Whether this entry represents a final result or just a log
         winner:
           type: string
           description: Agent ID or 'draw'
@@ -137,19 +136,18 @@ components:
         detail:
           type: object
           description: Any extra referee information
-        reportedAt:
+        reported_at:
           type: string
           format: date-time
-    BattleLog:
+    BattleInteractHistory:
       type: object
       required:
-        - eventType
+        - is_result
         - message
       properties:
-        eventType:
-          type: string
-          enum: [log]
-          description: Discriminator field to identify this as a battle log
+        is_result:
+          type: boolean
+          description: Whether this entry represents a final result or just a log
         timestamp:
           type: string
           format: date-time
@@ -159,18 +157,18 @@ components:
         detail:
           type: object
           description: Additional log details
-        source:
+        reported_by:
           type: string
-          description: Source of the log (e.g., 'referee', 'agent', 'system')
+          description: Name of the agent this information primarily involves
     BattleEvent:
       oneOf:
         - $ref: "#/components/schemas/BattleResult"
-        - $ref: "#/components/schemas/BattleLog"
+        - $ref: "#/components/schemas/BattleInteractHistory"
       discriminator:
-        propertyName: eventType
+        propertyName: is_result
         mapping:
-          result: "#/components/schemas/BattleResult"
-          log: "#/components/schemas/BattleLog"
+          true: "#/components/schemas/BattleResult"
+          false: "#/components/schemas/BattleInteractHistory"
 paths:
   /agents:
     post:
@@ -296,7 +294,7 @@ paths:
       description: |
         This endpoint accepts two types of data:
         - BattleResult: Final battle outcome (winner, score, etc.) - replaces any existing result
-        - BattleLog: Log entry to be appended to the battle's log history
+        - BattleInteractHistory: Log entry to be appended to the battle's log history
       tags:
         - Battles
       parameters:
@@ -316,25 +314,25 @@ paths:
               battleResult:
                 summary: Report final battle result
                 value:
-                  eventType: result
+                  event_type: result
                   winner: "agent-123"
                   score: { "red": 100, "blue": 85 }
                   detail: { "rounds": 3, "duration": "5m30s" }
-                  reportedAt: "2025-07-02T10:30:00Z"
-              battleLog:
+                  reported_at: "2025-07-02T10:30:00Z"
+              BattleInteractHistory:
                 summary: Add log entry
                 value:
-                  eventType: log
+                  is_result: false
                   timestamp: "2025-07-02T10:25:00Z"
                   message: "Round 2 completed"
                   detail: { "round": 2, "action": "move", "result": "success" }
-                  source: "referee"
+                  reported_by: "red_agent"
       responses:
         "204":
-          description: |
-            Data saved to database:
-            - If BattleResult: result field updated
-            - If BattleLog: entry appended to logs array
+        description: |
+          Data saved to database:
+          - If BattleResult: result field updated
+          - If BattleInteractHistory: entry appended to logs array
 
   /mcp/agents/{agentId}/card:
     post:

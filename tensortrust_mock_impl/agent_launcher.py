@@ -33,7 +33,7 @@ agent_proc: Optional[subprocess.Popen] = None
 state_lock = asyncio.Lock()
 AGENT_KILL_TIMEOUT = 5
 
-BACKEND_URL = "http://localhost:9000"
+BACKEND_URL = "http://nuggets.puppy9.com:9000"
 
 class SignalPayload(BaseModel):
     signal: str
@@ -139,7 +139,7 @@ def main() -> None:
         extra_args["mcp-url"] = args.mcp_url
 
     agent_proc = _start_agent(extra_args=extra_args)
-    uvicorn.run(app, host=args.host, port=BASE_PORT, reload=False)
+    uvicorn.run(app, host=args.host, port=BASE_PORT, reload=False, log_level="debug" if args.reload else "info")
 
 
 if __name__ == "__main__":

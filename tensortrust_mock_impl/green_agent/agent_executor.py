@@ -146,12 +146,12 @@ class GreenAgent:
         return _eval_prompt
 
     async def invoke(self, context) -> str:
+        print(context.get_user_input(), "=========================================GREEN INPUT")
         await self.ensure_mcp_connected()
         query_ctx = self.chat_history + [{
             "content": context.get_user_input(),
             "role": "user"
         }]
-        print(context.get_user_input(), "=========================================GREEN INPUT")
         result = await Runner.run(self.main_agent, query_ctx, max_turns=30)  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore
         print(result.final_output, "=========================================GREEN OUTPUT")
