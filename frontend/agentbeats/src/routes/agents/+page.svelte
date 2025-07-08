@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import AppSidebar from "$lib/components/app-sidebar.svelte";
+	import AppSidebar from "$lib/components/sidebar-left.svelte";
 	import SiteHeader from "$lib/components/site-header.svelte";
 	import AgentCards from "$lib/components/agent-cards.svelte";
 
@@ -17,8 +17,8 @@
 		<SiteHeader title={"Agents"}/>
 		<div class="flex flex-1 flex-col">
 			<div class="@container/main flex flex-1 flex-col gap-2">
-				<div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6" style="max-width: calc(100vw - var(--sidebar-width) - 2rem);">
-					<AgentCards agents={agents}/>
+			<div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6" style="max-width: calc(100vw - var(--sidebar-width) - 2rem);">
+				<AgentCards agents={agents}/>
 				</div>
 			</div>
 		</div>
