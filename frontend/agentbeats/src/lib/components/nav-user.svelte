@@ -32,18 +32,17 @@
 					<Sidebar.MenuButton
 						{...props}
 						size="lg"
-						tooltipContent={user.name}
-						class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+						class="hover:!bg-transparent focus:!bg-transparent active:!bg-transparent"
 					>
-						<Avatar.Root class="size-8 rounded-lg">
+						<Avatar.Root class="size-12 rounded-full group-data-[collapsible=icon]:!size-10">
 							<Avatar.Image src={user.avatar} alt={user.name} />
-							<Avatar.Fallback class="rounded-lg">CN</Avatar.Fallback>
+							<Avatar.Fallback class="rounded-full">CN</Avatar.Fallback>
 						</Avatar.Root>
-						<div class="grid flex-1 text-left text-sm leading-tight">
+						<div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
 							<span class="truncate font-medium">{user.name}</span>
 							<span class="truncate text-xs">{user.email}</span>
 						</div>
-						<ChevronsUpDownIcon class="ml-auto size-4" />
+						<ChevronsUpDownIcon class="ml-auto size-4 group-data-[collapsible=icon]:!hidden" />
 					</Sidebar.MenuButton>
 				{/snippet}
 			</DropdownMenu.Trigger>
@@ -55,9 +54,9 @@
 			>
 				<DropdownMenu.Label class="p-0 font-normal">
 					<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-						<Avatar.Root class="size-8 rounded-lg">
+						<Avatar.Root class="size-12 rounded-full">
 							<Avatar.Image src={user.avatar} alt={user.name} />
-							<Avatar.Fallback class="rounded-lg">CN</Avatar.Fallback>
+							<Avatar.Fallback class="rounded-full">CN</Avatar.Fallback>
 						</Avatar.Root>
 						<div class="grid flex-1 text-left text-sm leading-tight">
 							<span class="truncate font-medium">{user.name}</span>

@@ -20,7 +20,7 @@
 		<Sidebar.Menu>
 			{#each items as item (item.title)}
 				<Sidebar.MenuItem>
-					<Sidebar.MenuButton size="sm" tooltipContent={item.title} class="[&>svg]:size-4 group-data-[collapsible=icon]:[&>svg]:!size-5 group-data-[collapsible=icon]:!size-10 group-data-[collapsible=icon]:!p-2">
+					<Sidebar.MenuButton size="sm" tooltipContent={item.title} class="[&>svg]:size-4 group-data-[collapsible=icon]:[&>svg]:!size-5">
 						{#snippet child({ props })}
 							<a href={item.url} {...props}>
 								<item.icon />
