@@ -40,8 +40,8 @@
 }
  
 .dark {
-  --background: oklch(0.147 0.004 49.25);
-  --foreground: oklch(0.985 0.001 106.423);
+  --background: oklch(15% 3% 311deg);
+  --foreground: oklch(67% 1% 348deg);
   --card: oklch(0.216 0.006 56.043);
   --card-foreground: oklch(0.985 0.001 106.423);
   --popover: oklch(0.216 0.006 56.043);
@@ -63,8 +63,8 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.216 0.006 56.043);
-  --sidebar-foreground: oklch(0.985 0.001 106.423);
+  --sidebar: oklch(20% 2% 318deg);
+  --sidebar-foreground: oklch(67% 1% 348deg);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
   --sidebar-accent: oklch(0.268 0.007 34.298);
@@ -118,4 +118,14 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+[data-side="left"] {
+  --sidebar-width: calc(var(--spacing) * 94);
+  --sidebar-width-icon: calc(var(--spacing) * 16);
+}
+
+[data-side="right"] {
+  --sidebar-width: calc(var(--spacing) * 48);
+  --sidebar-width-icon: calc(var(--spacing) * 12);
 }

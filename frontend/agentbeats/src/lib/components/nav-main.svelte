@@ -26,7 +26,7 @@
 			<Sidebar.MenuItem>
 				<Sidebar.MenuButton 
 					tooltipContent={mainItem.title} 
-					class="[&>svg]:size-4 group-data-[collapsible=icon]:[&>svg]:!size-7 group-data-[collapsible=icon]:!size-14 group-data-[collapsible=icon]:!p-3 group-data-[collapsible=icon]:!justify-center"
+					class="[&>svg]:size-4 group-data-[collapsible=icon]:[&>svg]:!size-6 group-data-[collapsible=icon]:!size-14 group-data-[collapsible=icon]:!p-3 group-data-[collapsible=icon]:!justify-center"
 				>
 					{#snippet child({ props })}
 						<a href={mainItem.url} {...props}>
@@ -41,7 +41,7 @@
 			{#if index === 2 || index === 3}
 				<Sidebar.MenuItem class="group-data-[collapsible=icon]:!block hidden">
 					<div class="flex justify-center py-1">
-						<div class="h-px w-8 bg-border" />
+						<div class="h-px w-8 bg-border group-data-[collapsible=icon]:!ml-1.5" />
 					</div>
 				</Sidebar.MenuItem>
 			{/if}

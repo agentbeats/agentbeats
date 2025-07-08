@@ -1,8 +1,8 @@
 <script lang="ts">
 	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import AppSidebar from "$lib/components/app-sidebar.svelte";
+	import AppSidebar from "$lib/components/sidebar-left.svelte";
 	import SiteHeader from "$lib/components/site-header.svelte";
-	import BattleCards from "$lib/components/battle-cards.svelte";
+	import BattleCard from "$lib/components/battle-card.svelte";
 
 	export let data: { battles: any[] };
 	let battles = data.battles;
@@ -18,7 +18,11 @@
 		<div class="flex flex-1 flex-col">
 			<div class="@container/main flex flex-1 flex-col gap-2">
 				<div class="flex flex-col gap-4 py-4 md:gap-6 md:py-6" style="max-width: calc(100vw - var(--sidebar-width) - 2rem);">
-					<BattleCards battles={battles}/>
+					<div class="grid grid-cols-1 gap-4 px-4 lg:px-6">
+						{#each battles as battle (battle.id)}
+							<BattleCard battleId={battle.id} />
+						{/each}
+					</div>
 				</div>
 			</div>
 		</div>
