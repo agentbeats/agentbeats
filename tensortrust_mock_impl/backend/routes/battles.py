@@ -235,7 +235,7 @@ async def process_battle(battle_id: str):
             db.update("battles", battle_id, battle)
             add_system_log(battle_id, "Failed to notify green agent", {
                 "green_agent_url": green_agent_url
-            }, "system")
+            })
             unlock_and_unready_agents(battle)
             return
 
@@ -267,7 +267,7 @@ def check_battle_timeout(battle_id: str, timeout: int):
     battle = db.read("battles", battle_id)
     if battle and battle["state"] == "running":
         # Battle timed out
-        add_system_log(battle_id, "Battle timed out", {"battle_timeout": timeout}, "system")
+        add_system_log(battle_id, "Battle timed out", {"battle_timeout": timeout})
         battle = db.read("battles", battle_id)
         battle["state"] = "finished"
         battle["result"] = {
