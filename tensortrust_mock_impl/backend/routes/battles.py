@@ -146,7 +146,12 @@ async def process_battle(battle_id: str):
         blue_launcher = opponents[0]["registerInfo"]["launcher"]
         red_launcher = opponents[1]["registerInfo"]["launcher"] if len(opponents) > 1 else None
         
-        green_reset = await a2a_client.reset_agent_trigger(green_launcher, agent_id=battle["greenAgentId"], extra_args={"mcp-url": "http://localhost:6000/sse/"})
+        green_reset = await a2a_client.reset_agent_trigger(
+            green_launcher, 
+            agent_id=battle["greenAgentId"], 
+            extra_args={"mcp-url": "http://localhost:9001/sse/", 
+                        "port": 9301}
+        )
         if not green_reset:
             battle = db.read("battles", battle_id)
             battle["state"] = "error"
@@ -156,7 +161,11 @@ async def process_battle(battle_id: str):
             unlock_and_unready_agents(battle)
             return
         
-        blue_reset = await a2a_client.reset_agent_trigger(blue_launcher,agent_id=battle["opponents"][0])
+        blue_reset = await a2a_client.reset_agent_trigger(
+            blue_launcher,
+            agent_id=battle["opponents"][0], 
+            extra_args={"port": 9101}
+        )
         if not blue_reset:
             battle = db.read("battles", battle_id)
             battle["state"] = "error"
@@ -167,7 +176,11 @@ async def process_battle(battle_id: str):
             return        
         
         if red_launcher:
-            red_reset = await a2a_client.reset_agent_trigger(red_launcher, agent_id=battle["opponents"][1])
+            red_reset = await a2a_client.reset_agent_trigger(
+                red_launcher, 
+                agent_id=battle["opponents"][1], 
+                extra_args={"port": 9201}
+            )
             if not red_reset:
                 battle = db.read("battles", battle_id)
                 battle["state"] = "error"

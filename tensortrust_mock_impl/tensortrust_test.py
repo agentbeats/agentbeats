@@ -11,24 +11,17 @@ import sys
 from datetime import datetime
 import os
 
-BASE_URL = "http://localhost:3001"
-GREEN_URL = "http://localhost:7001"
-GREEN_LAUNCHER = "http://localhost:7000"
-BLUE_URL = "http://localhost:8001"
-BLUE_LAUNCHER = "http://localhost:8000"
-RED_URL = "http://localhost:9001"
-RED_LAUNCHER = "http://localhost:9000"
+BASE_URL = "http://localhost:9000"
+MCP_URL = "http://0.0.0.0:9001/sse/"
 
-MCP_URL = "http://0.0.0.0:6000/sse/"
+BLUE_LAUNCHER = "http://localhost:9100"
+BLUE_URL = "http://localhost:9101"
 
-# RESET_RED_BLUE_PAYLOAD = {"signal": "reset", "agent_id": None}
-# RESET_GREEN_PAYLOAD = {
-#     "signal": "reset", 
-#     "extra_args": {
-#         "mcp-url": "http://0.0.0.0:6000/sse/"
-#     }, 
-#     "agent_id": None
-# }
+RED_LAUNCHER = "http://localhost:9200"
+RED_URL = "http://localhost:9201"
+
+GREEN_LAUNCHER = "http://localhost:9300"
+GREEN_URL = "http://localhost:9301"
 
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if backend_path not in sys.path:
@@ -59,7 +52,7 @@ async def test_api():
         # green_result = await send_reset(GREEN_LAUNCHER + "/reset", payload={
         #     "signal": "reset", 
         #     "extra_args": {
-        #         "mcp-url": "http://localhost:6000/sse/"
+        #         "mcp-url": "http://localhost:9001/sse/"
         #     }, 
         #     "agent_id": green_agent_id
         # })

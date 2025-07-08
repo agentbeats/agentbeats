@@ -75,15 +75,14 @@ def main() -> None:
     parser.add_argument(
         "--port",
         type=int,
-        default=7001,
-        help="TCP port for the HTTP server to listen on (default: 10001)",
+        help="TCP port for the HTTP server to listen on",
     )
     parser.add_argument(
         "--mcp-url",
         type=str,
         required=True, 
-        default="http://localhost:6000/sse",
-        help="URL for the MCP server (example: http://localhost:6000/sse)",
+        default="http://localhost:9001/sse",
+        help="URL for the MCP server (example: http://localhost:9001/sse)",
     )
 
     args = parser.parse_args()

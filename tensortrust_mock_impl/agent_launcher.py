@@ -33,7 +33,7 @@ agent_proc: Optional[subprocess.Popen] = None
 state_lock = asyncio.Lock()
 AGENT_KILL_TIMEOUT = 5
 
-BACKEND_URL = "http://localhost:3001"
+BACKEND_URL = "http://localhost:9000"
 
 class SignalPayload(BaseModel):
     signal: str
@@ -117,7 +117,7 @@ def _parse_cli() -> argparse.Namespace:
     p.add_argument(
         "--mcp-url",
         type=str, 
-        help="URL for the MCP server (example: http://localhost:6000/sse)",
+        help="URL for the MCP server (example: http://localhost:9001/sse)",
     )
     return p.parse_args()
 
@@ -132,7 +132,11 @@ def main() -> None:
 
     print(AGENT_FILE, BASE_PORT, CHILD_PORT, args.mcp_url)
 
-    agent_proc = _start_agent(extra_args={"mcp-url": args.mcp_url} if args.mcp_url else {})
+    extra_args = {"port": CHILD_PORT}
+    if args.mcp_url:
+        extra_args["mcp-url"] = args.mcp_url
+
+    agent_proc = _start_agent(extra_args=extra_args)
     uvicorn.run(app, host=args.host, port=BASE_PORT, reload=False)
 
 
