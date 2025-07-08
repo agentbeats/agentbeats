@@ -24,7 +24,7 @@ python logging/testing_mcp.py
 # setup agents under A2A protocol
 python agent_launcher.py --file blue_agent/main.py  --port 9010
 python agent_launcher.py --file red_agent/main.py   --port 9020
-python agent_launcher.py --file green_agent/main.py --port 9030 --mcp-url "http://localhost:9001/sse"
+python agent_launcher.py --file green_agent/main.py --port 9030 --mcp-url "http://nuggets.puppy9.com:9001/sse"
 
 # start game
 python tensortrust_test.py

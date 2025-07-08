@@ -8,7 +8,7 @@ info:
     - **Public API**: called by the web front-end / ops console  
     - **MCP API**: callbacks from the green-team referee or agents via A2A / MCP
 servers:
-  - url: http://localhost:9000
+  - url: http://nuggets.puppy9.com:9000
 tags:
   - name: Agents
     description: Agent management
