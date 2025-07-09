@@ -1,9 +1,11 @@
 import asyncio
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, WebSocket, WebSocketDisconnect
 import time
 import threading
 from datetime import datetime
+import json
+import logging
 
 from ..db.storage import db
 from ..a2a_client import a2a_client
@@ -14,28 +16,108 @@ battle_queue = []
 queue_lock = threading.Lock()
 processor_running = False
 
+<<<<<<< HEAD
+# LIVE_WS_CHANGE: Global dict to track log subscribers per battle
+log_subscribers = {}
+
+# LIVE_WS_CHANGE: WebSocket clients for /ws/battles
+battles_ws_clients = set()
+
+logger = logging.getLogger("battles_ws")
+logger.setLevel(logging.INFO)
+if not logger.hasHandlers():
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('[%(levelname)s] %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+# LIVE_WS_CHANGE: Threadsafe broadcast fix
+MAIN_EVENT_LOOP = asyncio.get_event_loop()
+
+# LIVE_WS_CHANGE: Broadcast all battles to /ws/battles clients
+def broadcast_battles_update():
+    """Send the full battles list to all connected /ws/battles clients."""
+    try:
+        battles = db.list("battles")
+        msg = json.dumps({"type": "battles_update", "battles": battles})
+        logger.info(f"[battles_ws] Broadcasting battles update to {len(battles_ws_clients)} clients")
+        for ws in list(battles_ws_clients):
+            try:
+                # LIVE_WS_CHANGE: Threadsafe broadcast fix
+                asyncio.run_coroutine_threadsafe(ws.send_text(msg), MAIN_EVENT_LOOP)
+            except Exception as e:
+                logger.warning(f"[battles_ws] Failed to send to client: {e}")
+                try:
+                    battles_ws_clients.remove(ws)
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.error(f"[battles_ws] Error in broadcast_battles_update: {e}")
+
+# LIVE_WS_CHANGE: Broadcast a single battle update to /ws/battles clients
+def broadcast_battle_update(battle):
+    """Send a single battle update to all connected /ws/battles clients."""
+    try:
+        msg = json.dumps({"type": "battle_update", "battle": battle})
+        logger.info(f"[battles_ws] Broadcasting single battle update to {len(battles_ws_clients)} clients")
+        for ws in list(battles_ws_clients):
+            try:
+                # LIVE_WS_CHANGE: Threadsafe broadcast fix
+                asyncio.run_coroutine_threadsafe(ws.send_text(msg), MAIN_EVENT_LOOP)
+            except Exception as e:
+                logger.warning(f"[battles_ws] Failed to send to client: {e}")
+                try:
+                    battles_ws_clients.remove(ws)
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.error(f"[battles_ws] Error in broadcast_battle_update: {e}")
+
+def add_battle_log(battle_id: str, message: str, detail: Dict[str, Any] = None, source: str = "system"):
+    """Helper function to add a log entry to a battle and push to WebSocket subscribers."""
+=======
 def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
     """Helper function to add a log entry to a battle."""
+>>>>>>> 30b1e56f0dc8c60e319288214718b71540763ef8
     try:
         log_dict = db.read("system", battle_id)
         if not log_dict:
             return False
+<<<<<<< HEAD
+        if "logs" not in battle:
+            battle["logs"] = []
+=======
             
         if "logs" not in log_dict:
             log_dict["logs"] = []
             
+>>>>>>> 30b1e56f0dc8c60e319288214718b71540763ef8
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "message": message,
         }
-        
         if detail:
             log_entry["detail"] = detail
+<<<<<<< HEAD
+        battle["logs"].append(log_entry)
+        db.update("battles", battle_id, battle)
+        # Push to WebSocket subscribers
+        try:
+            import asyncio
+            for ws in log_subscribers.get(battle_id, []):
+                try:
+                    asyncio.create_task(ws.send_json(log_entry))
+                except Exception:
+                    pass
+        except Exception:
+            pass
+=======
             
         log_dict["logs"].append(log_entry)
         db.update("system", battle_id, log_dict)
+>>>>>>> 30b1e56f0dc8c60e319288214718b71540763ef8
         return True
-        
     except Exception as e:
         print(f"Error adding battle log: {str(e)}")
         return False
@@ -117,6 +199,8 @@ async def process_battle(battle_id: str):
             battle["state"] = "error"
             battle["error"] = "Green agent not found"
             db.update("battles", battle_id, battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
             return
             
         # Get opponent agents
@@ -128,6 +212,8 @@ async def process_battle(battle_id: str):
                 battle["state"] = "error"
                 battle["error"] = f"Opponent agent {opponent_id} not found"
                 db.update("battles", battle_id, battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
                 return
             opponents.append(opponent)
 
@@ -156,6 +242,8 @@ async def process_battle(battle_id: str):
             db.update("battles", battle_id, battle)
             add_system_log(battle_id, "Green agent reset failed")
             unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
             return
         
         blue_reset = await a2a_client.reset_agent_trigger(
@@ -170,6 +258,8 @@ async def process_battle(battle_id: str):
             db.update("battles", battle_id, battle)
             add_system_log(battle_id, "Blue agent reset failed")
             unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
             return        
         
         if red_launcher:
@@ -185,6 +275,8 @@ async def process_battle(battle_id: str):
                 db.update("battles", battle_id, battle)
                 add_system_log(battle_id, "Red agent reset failed")
                 unlock_and_unready_agents(battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
                 return
 
         ready_timeout = battle.get("config", {}).get("ready_timeout", 300)
@@ -201,6 +293,8 @@ async def process_battle(battle_id: str):
             db.update("battles", battle_id, battle)
             add_system_log(battle_id, "Agents not ready timeout", {"ready_timeout": ready_timeout})
             unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
             return
         add_system_log(battle_id, "All agents ready", {"agent_ids": agent_ids})
                 
@@ -213,6 +307,8 @@ async def process_battle(battle_id: str):
             db.update("battles", battle_id, battle)
             add_system_log(battle_id, "Green agent url not found")
             unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
             return
         
         blue_agent_id: str = battle["opponents"][0]
@@ -237,6 +333,8 @@ async def process_battle(battle_id: str):
                 "green_agent_url": green_agent_url
             })
             unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
             return
 
         add_system_log(battle_id, "Green agent notified, battle commenced")
@@ -258,6 +356,8 @@ async def process_battle(battle_id: str):
             battle["error"] = str(e)
             db.update("battles", battle_id, battle)
             unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+            broadcast_battle_update(battle)
         
 def check_battle_timeout(battle_id: str, timeout: int):
     """Check if a battle has timed out."""
@@ -280,6 +380,8 @@ def check_battle_timeout(battle_id: str, timeout: int):
         db.update("battles", battle_id, battle)
         
         unlock_and_unready_agents(battle)
+        # LIVE_WS_CHANGE: Real-time broadcast after finish
+        broadcast_battle_update(battle)
 
 @router.post("/battles", status_code=status.HTTP_201_CREATED)
 def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
@@ -331,6 +433,8 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
             
         # Ensure processor is running
         start_battle_processor()
+        # LIVE_WS_CHANGE: Broadcast update
+        broadcast_battles_update()
         
         return created_battle
     except HTTPException:
@@ -416,9 +520,51 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
 
         
         db.update("battles", battle_id, battle)
+        # Broadcast update
+        broadcast_battle_update(battle)
         return None
         
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating battle event: {str(e)}")
+
+@router.websocket("/ws/battles/{battle_id}/logs")
+async def battle_logs_ws(websocket: WebSocket, battle_id: str):
+    logger.info(f"[logs_ws] Client connecting for battle {battle_id}")
+    await websocket.accept()
+    if battle_id not in log_subscribers:
+        log_subscribers[battle_id] = []
+    log_subscribers[battle_id].append(websocket)
+    try:
+        battle = db.read("battles", battle_id)
+        if battle and "logs" in battle:
+            for log in battle["logs"]:
+                await websocket.send_json(log)
+        logger.info(f"[logs_ws] Client connected for battle {battle_id}")
+        while True:
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        logger.info(f"[logs_ws] Client disconnected for battle {battle_id}")
+        log_subscribers[battle_id].remove(websocket)
+    except Exception as e:
+        logger.warning(f"[logs_ws] Exception for battle {battle_id}: {e}")
+        log_subscribers[battle_id].remove(websocket)
+
+@router.websocket("/ws/battles")
+async def battles_ws(websocket: WebSocket):
+    logger.info("[battles_ws] Client connecting")
+    await websocket.accept()
+    battles_ws_clients.add(websocket)
+    try:
+        battles = db.list("battles")
+        await websocket.send_text(json.dumps({"type": "battles_update", "battles": battles}))
+        logger.info(f"[battles_ws] Client connected. Total clients: {len(battles_ws_clients)}")
+        while True:
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        logger.info("[battles_ws] Client disconnected")
+        battles_ws_clients.remove(websocket)
+    except Exception as e:
+        logger.warning(f"[battles_ws] Exception: {e}")
+        battles_ws_clients.remove(websocket)

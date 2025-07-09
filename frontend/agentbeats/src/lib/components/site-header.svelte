@@ -12,7 +12,7 @@
 </script>
 
 <header
-	class={`h-(--header-height) group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) flex shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear ${className}`}
+	class={`h-(--header-height) group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) flex shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${className}`}
 >
 	<div class="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
 		<Sidebar.Trigger class="-ml-1" />

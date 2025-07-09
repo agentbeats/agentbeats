@@ -18,11 +18,11 @@ export const server_loads = [];
 export const dictionary = {
 		"/": [2],
 		"/agents": [3],
-		"/battles": [4],
-		"/dashboard": [5],
-		"/login": [6],
-		"/register-agent": [7],
-		"/stage-battle": [8],
+		"/battles": [5],
+		"/battles/ongoing": [6],
+		"/battle/[battle_id]": [4],
+		"/dashboard": [7],
+		"/login": [8],
 		"/users": [9]
 	};
 

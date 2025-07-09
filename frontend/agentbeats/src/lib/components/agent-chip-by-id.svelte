@@ -22,12 +22,14 @@ const fallbackAgent = {
 
 function mapAgentData(raw: any) {
   if (!raw) return fallbackAgent;
+  const regInfo = raw.registerInfo || raw.register_info || {};
+  const agentCard = raw.agentCard || raw.agent_card || {};
   return {
     id: raw.id,
-    name: raw.registerInfo?.name || raw.agentCard?.name || 'Unknown Agent',
+    name: regInfo.name || agentCard.name || 'Unknown Agent',
     avatarUrl: undefined, // You can add logic for avatar if available
-    type: raw.registerInfo?.meta?.type || 'unknown',
-    description: raw.agentCard?.description || '',
+    type: regInfo.meta?.type || 'unknown',
+    description: agentCard.description || '',
     notFound: false,
     raw // pass the full object for debugging if needed
   };

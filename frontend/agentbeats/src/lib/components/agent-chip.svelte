@@ -18,8 +18,24 @@ export let agent: {
 };
 
 let showModal = false;
-function openModal() { showModal = true; }
+let clickTimeout: number | null = null;
+
+function openModal() { 
+  if (clickTimeout) {
+    clearTimeout(clickTimeout);
+    clickTimeout = null;
+  }
+  showModal = true; 
+}
+
 function closeModal() { showModal = false; }
+
+function handleClick() {
+  // Small delay to allow text selection
+  clickTimeout = setTimeout(() => {
+    openModal();
+  }, 150);
+}
 
 function fallbackColor(type?: string) {
   switch ((type || '').toLowerCase()) {
@@ -41,7 +57,7 @@ function fallbackColor(type?: string) {
   <Tooltip.Provider delayDuration={1000}>
     <Tooltip.Root>
       <Tooltip.Trigger>
-        <div class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 shadow-sm hover:bg-accent cursor-pointer transition text-xs min-h-7 min-w-[6.5rem]" on:click|stopPropagation={openModal} tabindex="0" role="button">
+        <div class="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 shadow-sm hover:bg-accent cursor-pointer transition text-xs min-h-7 min-w-[6.5rem] select-text" on:click={handleClick} tabindex="0" role="button">
           <Avatar class="size-6">
             {#if agent.notFound}
               <AvatarFallback class="bg-muted text-muted-foreground"><UserIcon class="size-3" /></AvatarFallback>
@@ -51,11 +67,11 @@ function fallbackColor(type?: string) {
               <AvatarFallback class={fallbackColor(agent.type)}>{agent.name?.[0] ?? '?'}</AvatarFallback>
             {/if}
           </Avatar>
-          <span class="font-medium truncate max-w-[7rem]">{agent.notFound ? 'Agent Not Found' : agent.name}</span>
+          <span class="font-medium break-words whitespace-normal max-w-[7rem] select-text">{agent.notFound ? 'Agent Not Found' : agent.name}</span>
         </div>
         {#if showModal}
           <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" on:click={closeModal}>
-            <div class="bg-background rounded-xl shadow-2xl p-6 max-w-lg w-full relative" on:click|stopPropagation>
+            <div class="bg-background rounded-xl shadow-2xl p-6 max-w-lg w-full relative max-h-[90vh] overflow-y-auto" on:click|stopPropagation>
               <button class="absolute top-3 right-3 text-muted-foreground hover:text-foreground" on:click={closeModal} aria-label="Close">
                 <XIcon class="size-5" />
               </button>
@@ -77,7 +93,7 @@ function fallbackColor(type?: string) {
                 </div>
               </div>
               {#if agent.description && !agent.notFound}
-                <div class="mb-2 text-sm">{agent.description}</div>
+                <div class="mb-2 text-sm break-words whitespace-normal max-w-full">{agent.description}</div>
               {/if}
               <pre class="bg-muted rounded p-2 text-xs overflow-x-auto max-h-60 overflow-y-auto text-left">{JSON.stringify(agent, null, 2)}</pre>
             </div>

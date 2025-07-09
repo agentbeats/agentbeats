@@ -118,6 +118,30 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Make all text selectable by default */
+  * {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+  }
+  
+  /* Allow buttons and interactive elements to still be non-selectable where appropriate */
+  button, input, textarea, select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  
+  /* But allow text selection within input fields */
+  input[type="text"], input[type="email"], input[type="password"], input[type="url"], input[type="search"], textarea {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+  }
 }
 
 [data-side="left"] {
