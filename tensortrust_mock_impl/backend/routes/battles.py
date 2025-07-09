@@ -320,14 +320,14 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
         
         system_log = {
             "logs": [],
-            "id": created_battle['id']
+            "battle_id": created_battle['battle_id']
         }
         created_system_log = db.create("system", system_log)
         
         with queue_lock:
-            battle_queue.append(created_battle['id'])
+            battle_queue.append(created_battle['battle_id'])
             created_battle["state"] = "queued"
-            db.update("battles", created_battle['id'], created_battle)
+            db.update("battles", created_battle['battle_id'], created_battle)
             
         # Ensure processor is running
         start_battle_processor()
@@ -348,7 +348,7 @@ def list_battles() -> List[Dict[str, Any]]:
         with queue_lock:
             for i, battle_id in enumerate(battle_queue):
                 for battle in battles:
-                    if battle['id'] == battle_id:
+                    if battle['battle_id'] == battle_id:
                         battle['queue_position'] = i + 1
                         
         return battles

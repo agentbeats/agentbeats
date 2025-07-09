@@ -36,9 +36,6 @@ components:
           type: string
           format: uri
           description: launcher service URL for this agent
-        meta:
-          type: object
-          description: Arbitrary extra registration info
     AgentCard:
       type: object
       description: Capability card returned by the agent via A2A (fields are agent-defined)
@@ -47,7 +44,7 @@ components:
       type: object
       description: Persisted, complete record of an agent
       properties:
-        id:
+        agent_id:
           type: string
           format: uuid
         register_info:
@@ -87,7 +84,7 @@ components:
     BattleInfo:
       type: object
       properties:
-        id:
+        battle_id:
           type: string
           format: uuid
         green_agent_id:
