@@ -11,6 +11,7 @@ class JSONStorage:
     def __init__(self, db_dir: str):
         self.db_dir = db_dir
         os.makedirs(self.db_dir, exist_ok=True)
+        raise DeprecationWarning("JSONStorage is deprecated, use SQLiteStorage instead.")
         
     def _get_file_path(self, collection: str) -> str:
         """Get the path to a collection file."""
@@ -126,12 +127,23 @@ class SQLiteStorage:
             return json.loads(data_str)
         except json.JSONDecodeError:
             return {}
+
+    def _get_id_field(self, collection: str) -> str:
+        if collection == 'agents':
+            return 'agent_id'
+        elif collection == 'battles':
+            return 'battle_id'
+        elif collection == 'system':
+            return 'system_log_id'
+        else:
+            return 'id'
             
     def create(self, collection: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new document in a collection."""
         # Generate an ID if not provided
-        if 'id' not in data:
-            data['id'] = str(uuid.uuid4())
+        id_field = self._get_id_field(collection)
+        if id_field not in data:
+            data[id_field] = str(uuid.uuid4())
             
         # Add created timestamp if not provided
         if 'created_at' not in data:
@@ -141,7 +153,7 @@ class SQLiteStorage:
             conn.execute('''
                 INSERT OR REPLACE INTO collections (id, collection, data, created_at)
                 VALUES (?, ?, ?, ?)
-            ''', (data['id'], collection, self._serialize_data(data), data['created_at']))
+            ''', (data[id_field], collection, self._serialize_data(data), data['created_at']))
             conn.commit()
             
         return data
@@ -221,5 +233,4 @@ class SQLiteStorage:
 
 
 
-# db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
-db = JSONStorage(os.path.join(os.path.dirname(__file__), 'data'))
+db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))

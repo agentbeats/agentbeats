@@ -56,7 +56,7 @@ async def test_api():
             agents = response.json()
             print(f"✅ Found {len(agents)} agents")
             for agent in agents:
-                print(f"  - {agent['register_info']['name']} ({agent['id']})")
+                print(f"  - {agent['register_info']['name']} ({agent['agent_id']})")
         else:
             print(f"❌ Failed to list agents: {response.status_code}")
 
@@ -154,9 +154,6 @@ async def register_agent(client, name, endpoint, launcher):
         "name": name,
         "agent_url": endpoint,
         "launcher_url": launcher,  # Assuming a launcher endpoint for the agent
-        "meta": {
-            "type": name.split()[0].lower()  # green, blue, or red
-        }
     }
     
     response = await client.post(
@@ -166,8 +163,8 @@ async def register_agent(client, name, endpoint, launcher):
     
     if response.status_code == 201:
         agent = response.json()
-        print(f"✅ {name} registered with ID: {agent['id']}")
-        return agent['id']
+        print(f"✅ {name} registered with ID: {agent['agent_id']}")
+        return agent['agent_id']
     else:
         print(f"❌ Failed to register {name}: {response.status_code}")
         print(f"Response content: {response.text}")
@@ -193,9 +190,9 @@ async def create_battle(client, green_agent_id, opponent_ids):
     
     if response.status_code == 201:
         battle = response.json()
-        print(f"✅ Battle created with ID: {battle['id']}")
+        print(f"✅ Battle created with ID: {battle['battle_id']}")
         print("  - Green agent will be notified with blue and red agent cards")
-        return battle['id']
+        return battle['battle_id']
     else:
         print(f"❌ Failed to create battle: {response.status_code}")
         print(f"Response content: {response.text}")
