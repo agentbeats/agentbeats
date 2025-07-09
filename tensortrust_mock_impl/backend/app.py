@@ -31,9 +31,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(agents.router, tags=["Agents"])
-app.include_router(battles.router, tags=["Battles"])
-app.include_router(users.router, tags=["Users"])
+app.include_router(agents.router)
+app.include_router(battles.router)
+app.include_router(users.router)
 
 # Add request logging middleware
 @app.middleware("http")

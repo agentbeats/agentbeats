@@ -52,13 +52,16 @@ async function handleRegisterSubmit() {
 }
 
 function mapAgentData(raw: any): any {
+  // Support both camelCase and snake_case
+  const regInfo = raw.registerInfo || raw.register_info || {};
+  const agentCard = raw.agentCard || raw.agent_card || {};
   if (!raw) return { id: '', name: 'Agent Not Found', notFound: true };
   return {
     id: raw.id,
-    name: raw.registerInfo?.name || raw.agentCard?.name || 'Unknown Agent',
+    name: regInfo.name || agentCard.name || 'Unknown Agent',
     avatarUrl: undefined, // Add logic if you have avatar URLs
-    type: raw.registerInfo?.meta?.type || 'unknown',
-    description: raw.agentCard?.description || '',
+    type: regInfo.meta?.type || 'unknown',
+    description: agentCard.description || '',
     notFound: false,
     raw
   };
