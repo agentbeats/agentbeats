@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 import os
 
-BASE_URL = "http://localhost:9000"
+BASE_URL = "http://nuggets.puppy9.com:9000"
 
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if backend_path not in sys.path:

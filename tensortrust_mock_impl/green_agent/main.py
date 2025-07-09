@@ -20,6 +20,9 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 from agent_executor import GreenAgentExecutor
 
 
+SERVER_BASE_URL = "http://nuggets.puppy9.com"
+
+
 def build_app(listen_port: int, 
               mcp_url: str) -> A2AStarletteApplication:
 
@@ -48,7 +51,7 @@ def build_app(listen_port: int,
         description=(
             "A2A judge that hosts the battle between the blue and red agents, also  decides the winner of the battle based on the game rules."
         ),
-        url=f"http://localhost:{listen_port}/",
+        url=f"{SERVER_BASE_URL}:{listen_port}/",
         version="1.0.0",
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
@@ -82,15 +85,15 @@ def main() -> None:
         "--mcp-url",
         type=str,
         required=True, 
-        default="http://localhost:9001/sse",
-        help="URL for the MCP server (example: http://localhost:9001/sse)",
+        default="http://nuggets.puppy9.com:9001/sse",
+        help="URL for the MCP server (example: http://nuggets.puppy9.com:9001/sse)",
     )
 
     args = parser.parse_args()
 
     application = build_app(args.port, args.mcp_url)
 
-    uvicorn.run(application.build(), host="0.0.0.0", port=args.port)
+    uvicorn.run(application.build(), host="0.0.0.0", port=args.port, log_level="debug")
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ from a2a.types import (
     AgentCard,
 )
 
-BLUE_BASE_URL = "http://localhost:10001"
+GREEN_BASE_URL = "http://nuggets.puppy9.com:9031"
 PUBLIC_CARD_PATH = "/.well-known/agent.json"
 
 
@@ -70,27 +70,18 @@ async def stream_agent_response(
 async def test_plain_message() -> None:
     async with httpx.AsyncClient() as httpx_client:
         # Resolve agent card
-        resolver = A2ACardResolver(httpx_client=httpx_client, base_url=BLUE_BASE_URL)
+        resolver = A2ACardResolver(httpx_client=httpx_client, base_url=GREEN_BASE_URL)
         card: AgentCard | None = await resolver.get_agent_card(relative_card_path=PUBLIC_CARD_PATH)
         if card is None:
             raise RuntimeError("Failed to resolve agent card.")
+        print(f"Agent card resolved: {card}")
 
         # Create Green Agent connection client
         client = A2AClient(httpx_client=httpx_client, agent_card=card)
 
-        # -------- Initial Reset --------
-        print("\n=== Reset: Initial Reset ===")
-        async for text in stream_agent_response(client, "reset"):
-            print(text, end="", flush=True)
-
         # -------- Generate Defense Prompt --------
-        print("\n\n=== Ready: Host a game ===")
-        async for text in stream_agent_response(client, "Host a game"):
-            print(text, end="", flush=True)
-
-        # -------- Reset Again --------
-        print("\n\n=== Reset: Reset Again ===")
-        async for text in stream_agent_response(client, "reset"):
+        print("\n\n=== Echo test ===")
+        async for text in stream_agent_response(client, "Use your mcp to echo this message."):
             print(text, end="", flush=True)
 
 
