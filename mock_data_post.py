@@ -7,6 +7,53 @@ import random
 AGENTS_URL = 'http://localhost:9000/agents'
 USERS_URL = 'http://localhost:9000/users'
 
+def delete_all_agents():
+    print("Deleting all agents...")
+    result = subprocess.run([
+        'curl', '-s', '-X', 'DELETE', AGENTS_URL
+    ], capture_output=True, text=True)
+    print(f"Delete response: {result.stdout}")
+
+def register_mock_agents():
+    print("Registering mock agents...")
+    agents = [
+        {
+            "name": "TEST_GREEN",
+            "launcher_url": "http://localhost:9030",
+            "agent_url": "http://localhost:9031",
+            "meta": {"type": "green"}
+        },
+        {
+            "name": "TEST_BLUE",
+            "launcher_url": "http://localhost:9010",
+            "agent_url": "http://localhost:9011",
+            "meta": {"type": "blue"}
+        },
+        {
+            "name": "TEST_RED",
+            "launcher_url": "http://localhost:9020",
+            "agent_url": "http://localhost:9021",
+            "meta": {"type": "red"}
+        }
+    ]
+    for agent in agents:
+        print(f"Registering agent: {agent['name']}")
+        result = subprocess.run([
+            'curl', '-s', '-X', 'POST', AGENTS_URL,
+            '-H', 'Content-Type: application/json',
+            '-d', json.dumps(agent)
+        ], capture_output=True, text=True)
+        try:
+            response = json.loads(result.stdout)
+            agent_id = response.get('id')
+            if agent_id:
+                print(f"Created agent with id: {agent_id}")
+            else:
+                print(f"Failed to get agent id from response: {response}")
+        except Exception as e:
+            print(f"Error registering agent: {e}")
+        time.sleep(0.2)
+
 def delete_all_users():
     print("Deleting all users...")
     result = subprocess.run([
@@ -64,5 +111,7 @@ def make_mock_users_with_random_agents():
         time.sleep(0.2)
 
 if __name__ == "__main__":
+    delete_all_agents()
+    register_mock_agents()
     delete_all_users()
     make_mock_users_with_random_agents() 

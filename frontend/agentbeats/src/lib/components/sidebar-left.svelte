@@ -7,6 +7,7 @@
 	import LayoutDashboardIcon from "@lucide/svelte/icons/layout-dashboard";
 	import BotMessageSquareIcon from "@lucide/svelte/icons/bot-message-square";
 	import UserIcon from "@lucide/svelte/icons/user";
+	import agentbeatsLogo from '$lib/assets/agentbeats-logo.png';
 
 	const data = {
 		navMain: [
@@ -63,7 +64,7 @@
 							<div
 								class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-md"
 							>
-								<BotMessageSquareIcon class="size-4 group-data-[collapsible=icon]:!size-8" />
+								<img src={agentbeatsLogo} alt="AgentBeats Logo" class="w-full h-full object-cover" />
 							</div>
 							<div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
 								<span class="truncate font-medium">AgentBeats</span>

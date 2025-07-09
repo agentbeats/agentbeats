@@ -6,6 +6,8 @@
 	"/battles": [
 		"src/routes/battles/+page.ts"
 	],
+	"/battles/ongoing": [],
+	"/battle/[battle_id]": [],
 	"/dashboard": [],
 	"/login": [],
 	"/users": [
