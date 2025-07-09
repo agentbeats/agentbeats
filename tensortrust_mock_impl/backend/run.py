@@ -6,7 +6,7 @@ import uvicorn
 
 if __name__ == "__main__":
     print("Starting Agent Beats Backend...")
-    print("API will be available at http://localhost:9000")
+    print("API will be available at http://0.0.0.0:9000")
     print("Press Ctrl+C to stop the server")
     
     uvicorn.run(
