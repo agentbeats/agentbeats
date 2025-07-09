@@ -1,3 +1,3 @@
-import * as universal from "../../../../src/routes/stage-battle/+page.ts";
+import * as universal from "../../../../src/routes/users/+page.ts";
 export { universal };
-export { default as component } from "../../../../src/routes/stage-battle/+page.svelte";
+export { default as component } from "../../../../src/routes/users/+page.svelte";

@@ -8,12 +8,6 @@
 	],
 	"/dashboard": [],
 	"/login": [],
-	"/register-agent": [
-		"src/routes/register-agent/+page.ts"
-	],
-	"/stage-battle": [
-		"src/routes/stage-battle/+page.ts"
-	],
 	"/users": [
 		"src/routes/users/+page.ts"
 	]
