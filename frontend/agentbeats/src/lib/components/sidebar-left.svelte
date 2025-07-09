@@ -4,7 +4,8 @@
 	import BattleIcon from "@lucide/svelte/icons/swords";
 	import TheaterIcon from "@lucide/svelte/icons/theater";
 	import RegisterIcon from "@lucide/svelte/icons/smile-plus";
-	import ShieldIcon from "@lucide/svelte/icons/shield-half";
+	import LayoutDashboardIcon from "@lucide/svelte/icons/layout-dashboard";
+	import BotMessageSquareIcon from "@lucide/svelte/icons/bot-message-square";
 	import UserIcon from "@lucide/svelte/icons/user";
 
 	const data = {
@@ -12,7 +13,7 @@
 			{
 				title: "Dashboard",
 				url: "/dashboard",
-				icon: ShieldIcon,
+				icon: LayoutDashboardIcon,
 			},
 			{
 				title: "Battles",
@@ -33,16 +34,6 @@
 				title: "Documentation",
 				url: "#",
 				icon: BookOpenIcon,
-			},
-			{
-				title: "Stage Battle",
-				url: "/stage-battle/",
-				icon: TheaterIcon,
-			},
-			{
-				title: "Register Agent",
-				url: "/register-agent/",
-				icon: RegisterIcon,
 			},
 		],
 	};
@@ -72,7 +63,7 @@
 							<div
 								class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-md"
 							>
-								<ShieldIcon class="size-4 group-data-[collapsible=icon]:!size-8" />
+								<BotMessageSquareIcon class="size-4 group-data-[collapsible=icon]:!size-8" />
 							</div>
 							<div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:!hidden">
 								<span class="truncate font-medium">AgentBeats</span>

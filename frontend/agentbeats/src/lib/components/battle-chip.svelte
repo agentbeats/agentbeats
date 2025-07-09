@@ -57,10 +57,10 @@ $: blueId = battle?.opponents?.[1];
   <Tooltip.Provider>
     <Tooltip.Root>
       <Tooltip.Trigger>
-        <div class="flex flex-col gap-2 rounded-xl border bg-card px-6 py-4 shadow-md text-xs min-h-24 min-w-[22rem] max-w-full hover:bg-accent cursor-pointer transition select-none w-full" on:click={openModal} tabindex="0" role="button">
-          <div class="w-full text-center mb-1">
-            <div class="text-base font-semibold text-primary truncate">{battle.topic ?? 'Battle Topic Placeholder'}</div>
-            <div class="text-xs text-muted-foreground font-mono truncate">{battle.id}</div>
+        <div class="flex flex-col gap-2 rounded-xl border bg-card px-6 py-4 shadow-md text-xs min-h-24 min-w-[22rem] max-w-full hover:bg-accent cursor-pointer transition select-text w-full" on:click={openModal} tabindex="0" role="button">
+          <div class="w-full mb-1">
+            <div class="text-base font-semibold text-primary break-words whitespace-normal">{battle.topic ?? 'Battle Topic Placeholder'}</div>
+            <div class="text-xs text-muted-foreground font-mono break-words whitespace-normal">{battle.id}</div>
           </div>
           <div class="flex flex-row items-center justify-between w-full h-full">
             <div class="flex flex-col items-start gap-2">
@@ -87,15 +87,15 @@ $: blueId = battle?.opponents?.[1];
           <XIcon class="size-5" />
         </button>
         <div class="mb-4">
-          <div class="text-lg font-bold text-center mb-1">{battle.topic ?? 'Battle Topic Placeholder'}</div>
-          <div class="text-xs text-muted-foreground text-center mb-2">Battle ID: <span class="font-mono">{battle.id}</span></div>
+          <div class="text-lg font-bold mb-1 break-words whitespace-normal">{battle.topic ?? 'Battle Topic Placeholder'}</div>
+          <div class="text-xs text-muted-foreground mb-2">Battle ID: <span class="font-mono">{battle.id}</span></div>
         </div>
         <div class="mb-4 flex flex-col gap-2">
-          <div class="flex flex-row items-center justify-center gap-2">
+          <div class="flex flex-row items-start gap-2">
             <AgentChipById agentId={redId} />
             <AgentChipById agentId={blueId} />
           </div>
-          <div class="flex flex-row items-center justify-center gap-2">
+          <div class="flex flex-row items-start gap-2">
             <AgentChipById agentId={greenId} />
             <span class="ml-2 flex items-center gap-1">
               <svelte:component this={resultInfo.icon} class={`size-5 ${resultInfo.color}`} />
