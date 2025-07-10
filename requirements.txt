@@ -1,0 +1,18 @@
+# Core dependencies
+a2a-sdk
+uvicorn
+fastmcp
+openai-agents
+
+# FastAPI and related
+fastapi
+pydantic
+
+# HTTP client
+httpx
+
+# Async support
+asyncio
+
+# Logging and utilities
+python-multipart 

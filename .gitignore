@@ -3,3 +3,6 @@
 **/data/
 venv/
 .DS_Store
+
+# Battle log files
+*.log

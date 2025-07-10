@@ -1,30 +1,38 @@
-# AgentBeats Frontend
+# sv
 
-## Prerequisites
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-- **Node.js** (version 18 or higher)
-- **npm** or **yarn** package manager
+## Creating a project
 
-## Getting Started
-
-### 1. Navigate to the Frontend Directory
+If you're seeing this, you've probably already done this step. Congrats!
 
 ```bash
-cd frontend/agentbeats
+# create a new project in the current directory
+npx sv create
+
+# create a new project in my-app
+npx sv create my-app
 ```
 
-### 2. Install Dependencies
+## Developing
 
-Install all required packages:
-
-```bash
-npm install
-```
-
-### 3. Run the Development Server
-
-Start the localhost development server: (should be on port 5173 by default)
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
 ```bash
 npm run dev
+
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
 ```
+
+## Building
+
+To create a production version of your app:
+
+```bash
+npm run build
+```
+
+You can preview the production build with `npm run preview`.
+
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
