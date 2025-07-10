@@ -93,13 +93,13 @@ class AgentBeatsExecutor(AgentExecutor):
 def main() -> None:
     # parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Run the Blue Agent (Defender) server with a configurable port.",
+        description="Run the Agent server with a configurable port and agent_card.",
     )
     parser.add_argument(
         "--agent-card",
         type=str,
         default="tensortrust_mock_impl/blue_agent/agent_card.yaml",
-        help="Path to the agent card YAML file.",
+        help="Path to the agent card YAML file. (default to blue_agent_card.yaml)",
     )
     args = parser.parse_args()
 
