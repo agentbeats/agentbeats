@@ -1,0 +1,36 @@
+name: Your Agent Name
+description: |-
+  Your agent description here.
+
+url: Your Agent URL
+provider: null
+version: "1.0.0"
+documentationUrl: null
+
+capabilities:
+  streaming: "True"
+  pushNotifications: "False"
+  stateTransitionHistory: "False"
+
+authentication:
+  credentials: null
+  schemes:
+    - public
+
+defaultInputModes:
+  - text
+defaultOutputModes:
+  - text
+
+skills:
+  - id: your_skill_id
+    name: Your Skill Name
+    description: Your skill description here.
+    tags:
+      - your
+      - tags
+      - here
+    examples:
+      - Your example usage here.
+    inputModes: null
+    outputModes: null
