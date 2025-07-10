@@ -39,9 +39,19 @@ async def test_api():
             print(f"❌ Health check failed: {response.status_code}")
             return
 
-        green_agent_id = await register_agent(client, "Green Team Agent", GREEN_URL, GREEN_LAUNCHER)
-        blue_agent_id = await register_agent(client, "Blue Team Agent", BLUE_URL, BLUE_LAUNCHER)
-        red_agent_id = await register_agent(client, "Red Team Agent", RED_URL, RED_LAUNCHER)
+        green_agent_id = await register_agent(client, "Green Team Agent", GREEN_URL, GREEN_LAUNCHER, True,
+                                              participant_requirements=[{
+            "role": "blue_agent",
+            "name": "guardrail_generator",
+            "required": True
+        }, {
+            "role": "red_agent",
+            "name": "prompt_injector",
+            "required": True
+                                              }])
+        
+        blue_agent_id = await register_agent(client, "Blue Team Agent", BLUE_URL, BLUE_LAUNCHER, False)
+        red_agent_id = await register_agent(client, "Red Team Agent", RED_URL, RED_LAUNCHER, False)
         
         if not all([green_agent_id, blue_agent_id, red_agent_id]):
             print("❌ Failed to register all agents")
@@ -66,7 +76,14 @@ async def test_api():
         battle_id = await create_battle(
             client,
             green_agent_id,
-            [blue_agent_id, red_agent_id]
+            [{
+                "agent_id": blue_agent_id,
+                "name": "guardrail_generator",
+            },
+             {
+                "agent_id": red_agent_id,
+                "name": "prompt_injector",
+             }]
         )
         if not battle_id:
             print("❌ Failed to create battle")
@@ -81,8 +98,6 @@ async def test_api():
             battle = response.json()
             print(f"✅ Battle {battle_id} created")
             print(f"  - State: {battle['state']}")
-            print(f"  - Green Agent: {battle['green_agent_id']}")
-            print(f"  - Opponents: {', '.join(battle['opponents'])}")
         else:
             print(f"❌ Failed to get battle details: {response.status_code}")
 
@@ -145,7 +160,7 @@ async def test_api():
 #         print(f"Response content: {response.text}")
 #     return response.status_code == 204
 
-async def register_agent(client, name, endpoint, launcher):
+async def register_agent(client, name, endpoint, launcher, is_green, participant_requirements=None):
     """Register a real agent and return its ID."""
     print(f"\nRegistering {name}...")
     
@@ -154,7 +169,11 @@ async def register_agent(client, name, endpoint, launcher):
         "name": name,
         "agent_url": endpoint,
         "launcher_url": launcher,  # Assuming a launcher endpoint for the agent
+        "is_green": is_green,
     }
+
+    if is_green:
+        agent_info["participant_requirements"] = participant_requirements
     
     response = await client.post(
         f"{BASE_URL}/agents",
@@ -170,13 +189,13 @@ async def register_agent(client, name, endpoint, launcher):
         print(f"Response content: {response.text}")
         return None
         
-async def create_battle(client, green_agent_id, opponent_ids):
+async def create_battle(client, green_agent_id, opponents):
     """Create a battle and return its ID."""
     print("\nCreating battle...")
     
     battle_request = {
         "green_agent_id": green_agent_id,
-        "opponents": opponent_ids,
+        "opponents": opponents,
         "config": {
             "battle_timeout": 300,
             "ready_timeout": 300,            

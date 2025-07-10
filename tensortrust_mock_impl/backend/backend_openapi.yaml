@@ -18,12 +18,50 @@ tags:
     description: Callbacks from the green-team referee / agents
 components:
   schemas:
+    ParticipantRequirement:
+      type: object
+      required:
+        - role
+        - name
+        - required
+      properties:
+        role:
+          type: string
+          enum:
+            - red_agent
+            - blue_agent
+            - purple_agent
+            - other
+          description: The role/team this participant will play
+        name:
+          type: string
+          description: Name/identifier for this participant type
+        description:
+          type: string
+          description: Description of what this participant does
+        required:
+          type: boolean
+          description: Whether this participant is required for the game
+    BattleParticipant:
+      type: object
+      required:
+        - name
+        - agent_id
+      properties:
+        name:
+          type: string
+          description: Role name that matches one of the green agent's participant requirements
+        agent_id:
+          type: string
+          format: uuid
+          description: UUID of the agent playing this role
     AgentRegisterInfo:
       type: object
       required:
         - name
         - agent_url
         - launcher_url
+        - is_green
       properties:
         name:
           type: string
@@ -36,6 +74,26 @@ components:
           type: string
           format: uri
           description: launcher service URL for this agent
+        is_green:
+          type: boolean
+          description: Whether this agent is a green team agent (vs. red / blue / purple ...)
+        participant_requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParticipantRequirement"
+          description: |
+            Required only for green agents. Defines what types of participants 
+            this game needs. Ignored for non-green agents.
+          example:
+            - role: red_agent
+              name: prompt_injector
+              description: Acts as the prompt injector
+              required: true
+            - role: blue_agent
+              name: guardrail_generator
+              description: Acts as the guardrail generator
+              required: true
+
     AgentCard:
       type: object
       description: Capability card returned by the agent via A2A (fields are agent-defined)
@@ -76,8 +134,13 @@ components:
         opponents:
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: "#/components/schemas/BattleParticipant"
+          description: List of participating agents with their assigned names
+          example:
+            - name: prompt_injector
+              agent_id: "550e8400-e29b-41d4-a716-446655440001"
+            - name: guardrail_generator
+              agent_id: "550e8400-e29b-41d4-a716-446655440002"
         config:
           type: object
           description: Match parameters (rounds / time limits / etc.)
@@ -93,8 +156,7 @@ components:
         opponents:
           type: array
           items:
-            type: string
-            format: uuid
+            $ref: "#/components/schemas/BattleParticipant"
         config:
           type: object
         state:
@@ -124,18 +186,21 @@ components:
         is_result:
           type: boolean
           description: Whether this entry represents a final result or just a log
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          description: Log message or event description
         winner:
           type: string
-          description: Agent ID or 'draw'
-        score:
-          type: object
-          description: Scoring details provided by the green team
+          description: Agent name or 'draw'
         detail:
           type: object
           description: Any extra referee information
-        reported_at:
+        reported_by:
           type: string
-          format: date-time
+          description: Name of the agent this information primarily involves
     BattleInteractHistory:
       type: object
       required:
@@ -307,23 +372,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BattleEvent"
-            examples:
-              battleResult:
-                summary: Report final battle result
-                value:
-                  event_type: result
-                  winner: "agent-123"
-                  score: { "red": 100, "blue": 85 }
-                  detail: { "rounds": 3, "duration": "5m30s" }
-                  reported_at: "2025-07-02T10:30:00Z"
-              BattleInteractHistory:
-                summary: Add log entry
-                value:
-                  is_result: false
-                  timestamp: "2025-07-02T10:25:00Z"
-                  message: "Round 2 completed"
-                  detail: { "round": 2, "action": "move", "result": "success" }
-                  reported_by: "red_agent"
       responses:
         "204":
         description: |
