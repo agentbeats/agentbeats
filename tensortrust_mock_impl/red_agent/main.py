@@ -15,7 +15,7 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 from agent_executor import RedAgentExecutor
 
 
-SERVER_BASE_URL = "http://nuggets.puppy9.com"
+SERVER_BASE_URL = "http://localhost"
 
 
 def build_app(listen_port: int) -> A2AStarletteApplication:
@@ -67,7 +67,7 @@ def main() -> None:
     parser.add_argument(
         "--port",
         type=int,
-        default=9021,
+        default=6021,
         help="TCP port for the HTTP server to listen on (default: 9001)",
     )
 

@@ -19,7 +19,7 @@ server = FastMCP(
 
 SESSIONS: dict[str, dict[str, str]] = {}
 
-BACKEND_URL = "http://nuggets.puppy9.com:9000"
+BACKEND_URL = "http://localhost:9000"
 
 @server.tool()
 def echo(message: str) -> str:
@@ -97,14 +97,14 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
         return 'logged locally (network error)'
 
 @server.tool()
-def report_on_battle_end(battle_id: str, winner: str, score: dict, detail: dict = None) -> str:
+def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict = None) -> str:
     """
     Report the final battle result to backend API. YOU MUST CALL THIS AT THE END OF THE BATTLE.
     
     Args:
         battle_id: The battle ID
+        message: Simple, human-readable description of what happened
         winner: The winner of the battle ("green", "blue", "red", or "draw")
-        score: Score information (dict with reason, points, etc.)
         detail: Additional detail information (optional)
     """
     logger.info("Reporting battle result for %s: winner=%s", battle_id, winner)
@@ -112,9 +112,10 @@ def report_on_battle_end(battle_id: str, winner: str, score: dict, detail: dict 
     # Prepare result event data for backend API
     result_data = {
         "is_result": True,
+        "message": message,
         "winner": winner,
-        "score": score,
-        "reported_at": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "reported_by": "green_agent"  # Assuming the green agent reports the result
     }
     
     if detail:
@@ -136,7 +137,7 @@ def report_on_battle_end(battle_id: str, winner: str, score: dict, detail: dict 
             logger.error("Failed to report battle result to backend for battle %s: %s", battle_id, response.text)
             # Fallback to local file logging
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            line = f"[RESULT] [{timestamp}] Winner: {winner}, Score: {score}\n"
+            line = f"[RESULT] [{timestamp}] Winner: {winner}\n"
             with open(f"{battle_id}.log", "a", encoding="utf-8") as f:
                 f.write(line)
             return 'result logged locally (backend failed)'
@@ -145,7 +146,7 @@ def report_on_battle_end(battle_id: str, winner: str, score: dict, detail: dict 
         logger.error("Network error when reporting battle result for battle %s: %s", battle_id, str(e))
         # Fallback to local file logging
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        line = f"[RESULT] [{timestamp}] Winner: {winner}, Score: {score}\n"
+        line = f"[RESULT] [{timestamp}] Winner: {winner}\n"
         with open(f"{battle_id}.log", "a", encoding="utf-8") as f:
             f.write(line)
         return 'result logged locally (network error)'
