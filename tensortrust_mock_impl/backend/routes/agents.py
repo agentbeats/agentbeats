@@ -12,8 +12,19 @@ async def register_agent(agent_info: Dict[str, Any]):
     """Register a new agent."""
     try:
         # Validate required fields
-        if 'name' not in agent_info or 'agent_url' not in agent_info or 'launcher_url' not in agent_info:
+        if 'name' not in agent_info or 'agent_url' not in agent_info or 'launcher_url' not in agent_info or 'is_green' not in agent_info:
             raise HTTPException(status_code=400, detail="Missing required fields: name and agent_url")
+
+        if not isinstance(agent_info.get('is_green'), bool):
+            raise HTTPException(status_code=400, detail="is_green must be a boolean value")
+
+        if agent_info['is_green'] and 'participant_requirements' not in agent_info:
+            raise HTTPException(status_code=400, detail="Green agents must provide participant_requirements")
+
+        # Check if each requirement is valid
+        for req in agent_info.get('participant_requirements', []):
+            if not isinstance(req, dict) or 'role' not in req or 'name' not in req or 'required' not in req:
+                raise HTTPException(status_code=400, detail="Each participant requirement must be a dict with 'role' and 'name' and 'required' fields")
             
         # Get agent card from the agent_url
         agent_card = await a2a_client.get_agent_card(agent_info['agent_url'])
