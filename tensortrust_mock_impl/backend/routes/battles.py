@@ -17,7 +17,9 @@ processor_running = False
 def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
     """Helper function to add a log entry to a battle."""
     try:
-        log_dict = db.read("system", battle_id)
+        battle = db.read("battles", battle_id)
+        system_log_id = battle.get("system_log_id")
+        log_dict = db.read("system", system_log_id)
         if not log_dict:
             return False
             
@@ -33,7 +35,7 @@ def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
             log_entry["detail"] = detail
             
         log_dict["logs"].append(log_entry)
-        db.update("system", battle_id, log_dict)
+        db.update("system", system_log_id, log_dict)
         return True
         
     except Exception as e:
@@ -88,7 +90,8 @@ async def wait_agents_ready(agent_ids: list, timeout: int = 300, poll_interval: 
     return False
 
 def unlock_and_unready_agents(battle: Dict[str, Any]):
-    for agent_id in [battle["green_agent_id"]] + battle["opponents"]:
+    opponent_ids = [op["agent_id"] for op in battle["opponents"]]
+    for agent_id in [battle["green_agent_id"]] + opponent_ids:
         agent = db.read("agents", agent_id)
         if agent:
             agent["status"] = "unlocked"
@@ -120,8 +123,9 @@ async def process_battle(battle_id: str):
             return
             
         # Get opponent agents
-        opponents = []
-        for opponent_id in battle["opponents"]:
+        opponent_ids = []
+        for opponent_info in battle["opponents"]:
+            opponent_id = opponent_info["agent_id"]
             opponent = db.read("agents", opponent_id)
             if not opponent:
                 battle = db.read("battles", battle_id)
@@ -129,10 +133,10 @@ async def process_battle(battle_id: str):
                 battle["error"] = f"Opponent agent {opponent_id} not found"
                 db.update("battles", battle_id, battle)
                 return
-            opponents.append(opponent)
+            opponent_ids.append(opponent_id)
 
         # Lock the agents
-        for agent_id in [battle["green_agent_id"]] + battle["opponents"]:
+        for agent_id in [battle["green_agent_id"]] + opponent_ids:
             agent = db.read("agents", agent_id)
             if agent:
                 agent["status"] = "locked"
@@ -140,10 +144,7 @@ async def process_battle(battle_id: str):
         add_system_log(battle_id, "Agents locked")
 
         # Reset the agents
-        green_launcher = green_agent["register_info"]["launcher_url"]
-        blue_launcher = opponents[0]["register_info"]["launcher_url"]
-        red_launcher = opponents[1]["register_info"]["launcher_url"] if len(opponents) > 1 else None
-        
+        green_launcher = green_agent["register_info"]["launcher_url"]        
         green_reset = await a2a_client.reset_agent_trigger(
             green_launcher, 
             agent_id=battle["green_agent_id"], 
@@ -157,38 +158,33 @@ async def process_battle(battle_id: str):
             add_system_log(battle_id, "Green agent reset failed")
             unlock_and_unready_agents(battle)
             return
-        
-        blue_reset = await a2a_client.reset_agent_trigger(
-            blue_launcher,
-            agent_id=battle["opponents"][0], 
-            extra_args={}
-        )
-        if not blue_reset:
-            battle = db.read("battles", battle_id)
-            battle["state"] = "error"
-            battle["error"] = "Failed to reset blue agent"
-            db.update("battles", battle_id, battle)
-            add_system_log(battle_id, "Blue agent reset failed")
-            unlock_and_unready_agents(battle)
-            return        
-        
-        if red_launcher:
-            red_reset = await a2a_client.reset_agent_trigger(
-                red_launcher, 
-                agent_id=battle["opponents"][1], 
-                extra_args={}
+
+        # Reset opponent agents and get their URLs
+        opponent_info_send_to_green = [{'name': op["name"]} for op in battle["opponents"]]
+        for idx, op_id in enumerate(opponent_ids):
+            op = db.read("agents", op_id)
+            op_launcher = op["register_info"].get("launcher_url")
+            op_reset = await a2a_client.reset_agent_trigger(
+                op_launcher, 
+                agent_id=op_id, 
             )
-            if not red_reset:
+            if not op_reset:
                 battle = db.read("battles", battle_id)
                 battle["state"] = "error"
-                battle["error"] = "Failed to reset red agent"
+                battle["error"] = f"Failed to reset {battle['opponents'][idx].get('name')}: {op_id}"
                 db.update("battles", battle_id, battle)
-                add_system_log(battle_id, "Red agent reset failed")
+                add_system_log(battle_id, f"{battle['opponents'][idx].get('name')} reset failed", {
+                    "opponent_id": op_id,
+                    "opponent_name": battle["opponents"][idx].get("name")
+                })
                 unlock_and_unready_agents(battle)
                 return
 
+            opponent_info_send_to_green[idx]["agent_url"] = op["register_info"].get("agent_url")
+            
+
         ready_timeout = battle.get("config", {}).get("ready_timeout", 300)
-        agent_ids = [battle["green_agent_id"]] + battle["opponents"]
+        agent_ids = [battle["green_agent_id"]] + opponent_ids
         add_system_log(battle_id, "Waiting for agents to be ready", {
             "ready_timeout": ready_timeout
         })
@@ -215,16 +211,9 @@ async def process_battle(battle_id: str):
             unlock_and_unready_agents(battle)
             return
         
-        blue_agent_id: str = battle["opponents"][0]
-        red_agent_id: str = battle["opponents"][1] if len(opponents) > 1 else None
-        
-        blue_agent_url = db.read("agents", blue_agent_id)["register_info"]["agent_url"]
-        red_agent_url = db.read("agents", red_agent_id)["register_info"]["agent_url"] if red_agent_id else None
-
         notify_success = await a2a_client.notify_green_agent(
             green_agent_url,
-            blue_agent_url,
-            red_agent_url,
+            opponent_info_send_to_green,
             battle_id
         )
         
@@ -299,30 +288,63 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
                 status_code=404, 
                 detail=f"Green agent with ID {battle_request['green_agent_id']} not found"
             )
-        for opponent_id in battle_request['opponents']:
-            opponent = db.read("agents", opponent_id)
-            if not opponent:
+
+        # Validate opponent agents
+        participant_requirements = green_agent.get("register_info", {}).get("participant_requirements", [])
+        participant_requirements_names = [p['name'] for p in participant_requirements]
+        participants = battle_request.get('opponents', [])
+        if not isinstance(participants, list) or len(participants) < 1:
+            raise HTTPException(
+                status_code=400, 
+                detail="Opponents must be a list with at least one participant"
+            )
+        for p in participants:
+            if not isinstance(p, dict) and 'name' not in p or 'agent_id' not in p:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Each opponent must be a dictionary with 'name' and 'agent_id'"
+                )
+            if p['name'] not in participant_requirements_names:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Opponent agent {p['name']}:{p['agent_id']} does not in participant requirements"
+                )
+
+            opponent_agent = db.read("agents", p['agent_id'])
+            if not opponent_agent:
                 raise HTTPException(
                     status_code=404, 
-                    detail=f"Opponent agent with ID {opponent_id} not found"
+                    detail=f"Opponent agent {p['name']} with ID {p['agent_id']} not found"
                 )
-                  # Create battle record
+
+        for p_req in participant_requirements:
+            if p_req['required'] and not any(
+                p['name'] == p_req['name']
+                for p in participants
+            ):
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Required participant {p_req['name']} not found in opponents"
+                )
+            
+        # Create battle record
         battle_record = {
             "green_agent_id": battle_request['green_agent_id'],
-            "opponents": battle_request['opponents'],
+            "opponents": battle_request['opponents'], # list of dicts with 'name' and 'agent_id'
             "config": battle_request.get('config', {}),
             "state": "pending",
             "created_at": datetime.utcnow().isoformat(),
             "interact_history": []
         }
 
+        created_system_log = db.create("system", {"logs": [], "battle_id": None})
+
+        battle_record["system_log_id"] = created_system_log['system_log_id']
         created_battle = db.create("battles", battle_record)
         
-        system_log = {
-            "logs": [],
-            "battle_id": created_battle['battle_id']
-        }
-        created_system_log = db.create("system", system_log)
+        # Update the system log with the battle ID
+        created_system_log["battle_id"] = created_battle['battle_id']
+        db.update("system", created_system_log['system_log_id'], created_system_log)
         
         with queue_lock:
             battle_queue.append(created_battle['battle_id'])
@@ -401,7 +423,6 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
 
             battle["result"] = {
                 "winner": event.get("winner", "draw"),
-                "score": event.get("score", {}),
                 "detail": event.get("detail", {}),
                 "finish_time": event.get("timestamp", datetime.utcnow().isoformat()),
             }

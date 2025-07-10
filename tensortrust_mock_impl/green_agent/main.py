@@ -10,6 +10,7 @@ state and the states of the blue and red agents when needed.
 
 import argparse
 import uvicorn
+import json
 
 from uuid import uuid4
 from a2a.server.apps import A2AStarletteApplication
@@ -20,7 +21,7 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 from agent_executor import GreenAgentExecutor
 
 
-SERVER_BASE_URL = "http://nuggets.puppy9.com"
+SERVER_BASE_URL = "http://localhost"
 
 
 def build_app(listen_port: int, 

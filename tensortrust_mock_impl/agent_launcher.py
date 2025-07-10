@@ -33,7 +33,7 @@ agent_proc: Optional[subprocess.Popen] = None
 state_lock = asyncio.Lock()
 AGENT_KILL_TIMEOUT = 5
 
-BACKEND_URL = "http://nuggets.puppy9.com:9000"
+BACKEND_URL = "http://localhost:9000"
 
 class SignalPayload(BaseModel):
     signal: str
