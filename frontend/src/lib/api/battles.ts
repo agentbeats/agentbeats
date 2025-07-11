@@ -1,6 +1,6 @@
 export async function createBattle(battleInfo: any) {
 	try {
-		const res = await fetch('http://localhost:9000/battles', {
+		const res = await fetch('http://nuggets.puppy9.com:9000/battles', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
