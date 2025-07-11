@@ -74,3 +74,28 @@ etc/letsencrypt/
 
 # Local Vite config (dev proxy)
 frontend/vite.config.ts
+
+# --- Docker and Battle Royale specific ignores ---
+# Docker volumes and data
+scenarios/battle_royale/docker/shared/
+scenarios/battle_royale/docker/logs/
+scenarios/battle_royale/docker/dev-logs/
+scenarios/battle_royale/docker/dev-shared/
+scenarios/battle_royale/docker/dev-monitor-html/
+
+# Docker build artifacts
+scenarios/battle_royale/docker/.dockerignore.bak
+scenarios/battle_royale/docker/docker-compose.override.yml.bak
+
+# Battle Royale test artifacts
+scenarios/battle_royale/test_*.log
+scenarios/battle_royale/*_service.log
+scenarios/battle_royale/*_service.py
+
+# SSH keys and credentials (if any are generated)
+scenarios/battle_royale/ssh_keys/
+scenarios/battle_royale/credentials/
+
+# Container-specific files
+scenarios/battle_royale/container_data/
+scenarios/battle_royale/monitor-html/
