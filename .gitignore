@@ -71,3 +71,6 @@ frontend/.output/
 
 # Certbot/letsencrypt (if you ever back up configs)
 etc/letsencrypt/
+
+# Local Vite config (dev proxy)
+frontend/vite.config.ts
