@@ -3,6 +3,7 @@ a2a-sdk
 uvicorn
 fastmcp
 openai-agents
+sqlalchemy
 
 # FastAPI and related
 fastapi
