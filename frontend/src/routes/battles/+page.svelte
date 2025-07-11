@@ -100,5 +100,4 @@ let pastBattles: any[] = [];
 	</div>
 </div>
 
-<style>
-</style>
+
