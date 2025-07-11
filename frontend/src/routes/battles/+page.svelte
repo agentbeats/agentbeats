@@ -91,10 +91,4 @@ let pastBattles: any[] = [];
 </div>
 
 <style>
-.past-battle-chip {
-	font-size: 0.85rem;
-	padding: 0.5rem 0.75rem;
-	line-height: 1.2;
-	gap: 0.25rem;
-}
 </style>

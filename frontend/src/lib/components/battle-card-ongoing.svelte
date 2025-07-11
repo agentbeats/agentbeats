@@ -165,8 +165,4 @@ function stateColor(state: string) {
       <span class="text-[10px] text-muted-foreground select-all">Battle ID: {battle.battle_id || battle.id}</span>
     </Card.Footer>
   </Card.Root>
-{/if}
-
-<style>
-  .select-all { user-select: all; }
-</style> 
+{/if} 
