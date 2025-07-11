@@ -16,13 +16,17 @@ function recalcBattles() {
 }
 
 onMount(() => {
-  fetch("http://localhost:9000/battles")
+  fetch("/api/battles")
     .then(res => res.json())
     .then(data => {
       battles = data;
       recalcBattles();
     });
-  ws = new WebSocket("ws://localhost:9000/ws/battles");
+  ws = new WebSocket(
+    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+    window.location.host +
+    '/ws/battles'
+  );
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
