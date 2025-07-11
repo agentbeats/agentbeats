@@ -28,7 +28,7 @@ tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate &&
 
 # Select Pane 4 (the last created) and split horizontally for frontend (Pane 5)
 tmux select-pane -t $SESSION:0.4
-tmux split-window -h -t $SESSION "cd $PROJECT_DIR/frontend && sudo npm run dev -- --port 80"
+tmux split-window -h -t $SESSION "cd $PROJECT_DIR/frontend && sudo npm run dev -- --port 80 --host 0.0.0.0"
 
 # Arrange panes in tiled layout
 tmux select-layout -t $SESSION tiled
