@@ -79,3 +79,34 @@ backend/db/storage.py
     - backend/routes/battles.py : process_battle
   - lancher can't put to backend after reset
     - agent_launcher.py
+
+# Production Deployment (auto generated)
+
+## Dependencies
+- Python 3.x (with venv)
+- Node.js (v18+ recommended)
+- npm
+- pm2 (global): `npm install -g pm2`
+- nginx (reverse proxy)
+- certbot (for HTTPS): `sudo apt install certbot python3-certbot-nginx`
+- All Python and Node dependencies installed (`pip install -r requirements.txt`, `npm install` in frontend)
+
+## Steps
+1. **Clone the repo and set up Python/Node environments.**
+2. **Install all dependencies:**
+   - Python: `python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt`
+   - Node: `cd frontend && npm install`
+3. **Configure your domain DNS to point to this server.**
+4. **Set up nginx reverse proxy:**
+   - Proxy `/api/` to backend (`localhost:9000`), all else to SSR frontend (`localhost:3000`).
+5. **Obtain HTTPS certificate:**
+   - `sudo certbot --nginx -d yourdomain.com`
+6. **Run the full stack:**
+   - `bash server-setup.sh` (starts backend, agents, SSR frontend with pm2, and reloads nginx)
+7. **Access your app at `https://yourdomain.com`**
+
+## Notes
+- All build artifacts, logs, and secrets are gitignored.
+- pm2 manages the SSR frontend for reliability.
+- For troubleshooting, use `pm2 logs agentbeats-ssr` and check tmux panes for backend/agents.
+
