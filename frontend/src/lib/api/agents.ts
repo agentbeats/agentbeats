@@ -1,6 +1,6 @@
 export async function registerAgent(registerInfo: any) {
 	try {
-		const res = await fetch('http://localhost:9000/agents', {
+		const res = await fetch('http://nuggets.puppy9.com:9000/agents', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ export async function registerAgent(registerInfo: any) {
 
 export async function getAgentById(agentId: string) {
   try {
-    const res = await fetch(`http://localhost:9000/agents/${agentId}`);
+    const res = await fetch(`http://nuggets.puppy9.com:9000/agents/${agentId}`);
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.detail || 'Failed to fetch agent');
@@ -37,7 +37,7 @@ export async function getAgentById(agentId: string) {
 
 export async function getAllAgents() {
   try {
-    const res = await fetch('http://localhost:9000/agents');
+    const res = await fetch('http://nuggets.puppy9.com:9000/agents');
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.detail || 'Failed to fetch agents');
