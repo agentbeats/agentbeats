@@ -1,3 +1,4 @@
+# Existing ignores
 **/__pycache__/
 **/tmp/
 **/data/
@@ -6,3 +7,34 @@ venv/
 
 # Battle log files
 *.log
+
+# Node.js dependencies
+frontend/node_modules/
+
+# npm/yarn/pnpm lock files
+frontend/package-lock.json
+frontend/yarn.lock
+frontend/pnpm-lock.yaml
+
+# Build output
+frontend/build/
+frontend/dist/
+frontend/.svelte-kit/
+
+# ccache
+ccache/
+*.ccache
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+
+# Misc
+*.bak
+*.tmp
