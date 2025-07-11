@@ -26,9 +26,9 @@ tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate &&
 tmux select-pane -t $SESSION:0.2
 tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\$OPENAI_API_KEY python example_agents/agent_launcher.py --file example_agents/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
 
-# Split Pane 3 vertically for frontend (Pane 5)
-tmux select-pane -t $SESSION:0.3
-tmux split-window -v -t $SESSION "cd $PROJECT_DIR/frontend && sudo npm run dev -- --port 80"
+# Select Pane 4 (the last created) and split horizontally for frontend (Pane 5)
+tmux select-pane -t $SESSION:0.4
+tmux split-window -h -t $SESSION "cd $PROJECT_DIR/frontend && sudo npm run dev -- --port 80"
 
 # Arrange panes in tiled layout
 tmux select-layout -t $SESSION tiled
