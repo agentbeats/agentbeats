@@ -16,15 +16,15 @@ tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate &&
 
 # Split Pane 0 vertically for blue_agent (Pane 2)
 tmux select-pane -t $SESSION:0.0
-tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && python example_agents/agent_launcher.py --file example_agents/blue_agent/main.py --port 9010"
+tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010"
 
 # Split Pane 1 vertically for red_agent (Pane 3)
 tmux select-pane -t $SESSION:0.1
-tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && python example_agents/agent_launcher.py --file example_agents/red_agent/main.py --port 9020"
+tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020"
 
 # Split Pane 2 vertically for green_agent (Pane 4)
 tmux select-pane -t $SESSION:0.2
-tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\$OPENAI_API_KEY python example_agents/agent_launcher.py --file example_agents/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
+tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\$OPENAI_API_KEY python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
 
 # --- Frontend SSR build and start (no tmux pane needed, runs with pm2) ---
 # Build the SSR frontend (safe to run even if already built)
