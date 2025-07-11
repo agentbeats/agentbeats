@@ -6,5 +6,8 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	optimizeDeps: {
 		exclude: ['@lucide/svelte']
+	},
+	server: {
+    		allowedHosts: ['nuggets.puppy9.com']
 	}
 });
