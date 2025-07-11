@@ -56,9 +56,9 @@ python -m src.backend.run
 python src/logging/testing_mcp.py
 
 # Agents (in separate terminals)
-python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010
-python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020
-python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url "http://localhost:9001/sse"
+python scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010
+python scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020
+python scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url "http://localhost:9001/sse"
 
 # Frontend (in separate terminal)
 cd frontend && npm run dev
@@ -78,7 +78,7 @@ src/backend/db/storage.py
   - backend can't correctly post reset request to lancher
     - src/backend/routes/battles.py : process_battle
   - lancher can't put to backend after reset
-    - scenarios/agent_launcher.py
+    - scenarios/tensortrust_mock/agent_launcher.py
 
 # Production Deployment (auto generated)
 

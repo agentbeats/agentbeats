@@ -32,21 +32,21 @@ SERVICES = {
         "use_venv": True
     },
     "blue_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/blue_agent/main.py", "--port", "9010"],
+        "command": ["python", "scenarios/tensortrust_mock/agent_launcher.py", "--file", "scenarios/tensortrust_mock/blue_agent/main.py", "--port", "9010"],
         "cwd": ".",
         "env": {},
         "description": "Blue Agent (Defender) - port 9010",
         "use_venv": True
     },
     "red_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/red_agent/main.py", "--port", "9020"],
+        "command": ["python", "scenarios/tensortrust_mock/agent_launcher.py", "--file", "scenarios/tensortrust_mock/red_agent/main.py", "--port", "9020"],
         "cwd": ".",
         "env": {},
         "description": "Red Agent (Attacker) - port 9020",
         "use_venv": True
     },
     "green_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/green_agent/main.py", "--port", "9030", "--mcp-url", "http://localhost:9001/sse"],
+        "command": ["python", "scenarios/tensortrust_mock/agent_launcher.py", "--file", "scenarios/tensortrust_mock/green_agent/main.py", "--port", "9030", "--mcp-url", "http://localhost:9001/sse"],
         "cwd": ".",
         "env": {"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", "")},
         "description": "Green Agent (Judge) - port 9030",
@@ -200,7 +200,7 @@ class ServiceManager:
                     try:
                         subprocess.run(["pkill", "-f", "python.*src.backend.run"], check=False)
                         subprocess.run(["pkill", "-f", "python.*src/logging/testing_mcp.py"], check=False)
-                        subprocess.run(["pkill", "-f", "python.*scenarios/agent_launcher.py"], check=False)
+                        subprocess.run(["pkill", "-f", "python.*scenarios/tensortrust_mock/agent_launcher.py"], check=False)
                         subprocess.run(["pkill", "-f", "npm.*run.*dev"], check=False)
                         print("✅ All services stopped")
                     except Exception as e:
@@ -218,7 +218,7 @@ class ServiceManager:
                             elif service_name == "mcp_server":
                                 subprocess.run(["pkill", "-f", "python.*src/logging/testing_mcp.py"], check=False)
                             elif service_name in ["blue_agent", "red_agent", "green_agent"]:
-                                subprocess.run(["pkill", "-f", "python.*scenarios/agent_launcher.py"], check=False)
+                                subprocess.run(["pkill", "-f", "python.*scenarios/tensortrust_mock/agent_launcher.py"], check=False)
                             elif service_name == "frontend":
                                 subprocess.run(["pkill", "-f", "npm.*run.*dev"], check=False)
                             
@@ -377,7 +377,7 @@ class ServiceManager:
             subprocess.run(["pkill", "-f", "python.*src/logging/testing_mcp.py"], check=False)
             
             # Kill agent launcher processes (controllers)
-            subprocess.run(["pkill", "-f", "python.*scenarios/agent_launcher.py"], check=False)
+            subprocess.run(["pkill", "-f", "python.*scenarios/tensortrust_mock/agent_launcher.py"], check=False)
             
             # Kill child agent processes (the actual agents on ports 9011, 9021, 9031)
             subprocess.run(["pkill", "-f", "python.*tensortrust_mock/blue_agent/main.py"], check=False)
