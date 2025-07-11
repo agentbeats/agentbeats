@@ -4,6 +4,7 @@ uvicorn
 fastmcp
 openai-agents
 sqlalchemy
+websockets
 
 # FastAPI and related
 fastapi
