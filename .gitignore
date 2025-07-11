@@ -37,4 +37,37 @@ Thumbs.db
 
 # Misc
 *.bak
-*.tmp
+*.tmpi
+
+# --- Additional ignores for SvelteKit, Vite, Node, Python, pm2, and SSL ---
+# SvelteKit output (if not already ignored)
+frontend/.svelte-kit-output/
+frontend/.vite/
+frontend/.vite-temp/
+frontend/.output/
+
+# pm2 logs and dump
+~/.pm2/
+pm2.log
+pm2.pid
+dump.pm2.json
+
+# Python egg info
+*.egg-info/
+.eggs/
+
+# Python bytecode (in case not caught by previous rules)
+*.pyc
+*.pyo
+*.pyd
+
+# SvelteKit preview output (if using adapters that output .output/)
+frontend/.output/
+
+# SSL keys/certs (never commit these!)
+*.pem
+*.crt
+*.key
+
+# Certbot/letsencrypt (if you ever back up configs)
+etc/letsencrypt/
