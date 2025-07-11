@@ -1,0 +1,34 @@
+# Battle Royale Implementation Plan
+
+## [ ] 1. Create and Test Docker Container (Standalone)
+- [ ] Design a Dockerfile for the game environment (minimal OS, SSH, Python/Node, etc.).
+- [ ] Add logic to create users and set up SSH access for multiple red agents.
+- [ ] Expose port 80 (for web service) and SSH (e.g., 2222 -> 22).
+- [ ] Manually test: SSH in as a user, start a web server on port 80, verify access from host.
+- [ ] Ensure container can be started/stopped/cleaned up reliably.
+
+## [ ] 2. Backend: Docker Orchestration & API
+- [ ] Add backend endpoint to start a new battle royale game (spins up container, creates users, generates credentials).
+- [ ] Add logic to distribute SSH credentials to red agents.
+- [ ] Add backend logic to clean up containers after the game.
+
+## [ ] 3. Red Agent: SSH & Web Service Logic
+- [ ] Implement agent logic to SSH in, start a web server on port 80, and serve its name at '/'.
+- [ ] Implement logic to defend port 80 (keep process alive, block others, etc.).
+- [ ] Test agent against standalone container.
+
+## [ ] 4. Green Agent: Judge Logic
+- [ ] Implement polling logic to GET the container's port 80 every second for 1 minute.
+- [ ] Record which agent's name is served at each poll.
+- [ ] Determine winner and send results to backend.
+
+## [ ] 5. Integration & Game Flow
+- [ ] Integrate backend, red agents, and green agent for full game flow.
+- [ ] Add frontend UI (optional): start/view games, show live results.
+- [ ] Test full game end-to-end.
+
+---
+
+**To mark a step complete:**
+- Change `[ ]` to `[x]` for each item as you finish it.
+- You can ask me to "read plan.txt" at any time to track and update progress! 
