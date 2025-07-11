@@ -16,6 +16,12 @@ function recalcBattles() {
 	pastBattles = battles.filter(b => pastStatuses.includes((b.state || '').toLowerCase()));
 	const finishedIds = new Set(pastBattles.map(b => b.battle_id));
 	ongoingBattles = ongoingBattles.filter(b => !finishedIds.has(b.battle_id));
+	// Sort pastBattles by finish_time or created_at descending (most recent first)
+	pastBattles.sort((a, b) => {
+		const aTime = new Date(a.result?.finish_time || a.created_at || 0).getTime();
+		const bTime = new Date(b.result?.finish_time || b.created_at || 0).getTime();
+		return bTime - aTime;
+	});
 }
 
 onMount(() => {
@@ -94,5 +100,4 @@ let pastBattles: any[] = [];
 	</div>
 </div>
 
-<style>
-</style>
+
