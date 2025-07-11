@@ -14,6 +14,10 @@ pip install -r requirements.txt
 
 # 4. Set your OpenAI API key
 export OPENAI_API_KEY='your-api-key-here'
+
+# 5. Install frontend dependencies
+cd frontend
+npm install
 ```
 
 ## How-to run?
