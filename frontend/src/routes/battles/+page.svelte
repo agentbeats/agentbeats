@@ -20,7 +20,11 @@ function recalcBattles() {
 
 onMount(() => {
 	recalcBattles();
-	ws = new WebSocket('ws://localhost:9000/ws/battles');
+	ws = new WebSocket(
+		(window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+		window.location.host +
+		'/ws/battles'
+	);
 	ws.onmessage = (event) => {
 		try {
 			const msg = JSON.parse(event.data);
