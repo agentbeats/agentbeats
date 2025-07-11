@@ -26,9 +26,15 @@ tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate &&
 tmux select-pane -t $SESSION:0.2
 tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\$OPENAI_API_KEY python example_agents/agent_launcher.py --file example_agents/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
 
-# Select Pane 4 (the last created) and split horizontally for frontend (Pane 5)
-tmux select-pane -t $SESSION:0.4
-tmux split-window -h -t $SESSION "cd $PROJECT_DIR/frontend && sudo npm run dev -- --port 80 --host 0.0.0.0"
+# --- Frontend SSR build and start (no tmux pane needed, runs with pm2) ---
+# Build the SSR frontend (safe to run even if already built)
+cd $PROJECT_DIR/frontend && npm run build
+# Start or restart the SSR server with pm2
+cd $PROJECT_DIR/frontend && pm2 start build/index.js --name agentbeats-ssr || pm2 restart agentbeats-ssr
+# --- End frontend SSR ---
+
+# Reload nginx to ensure latest config/certs are active
+sudo nginx -t && sudo systemctl reload nginx
 
 # Arrange panes in tiled layout
 tmux select-layout -t $SESSION tiled
