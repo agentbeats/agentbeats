@@ -15,7 +15,7 @@ onMount(async () => {
   loading = true;
   error = null;
   try {
-    const res = await fetch(`http://localhost:9000/battles/${battleId}`);
+    const res = await fetch(`/api/battles/${battleId}`);
     if (!res.ok) throw new Error('Failed to fetch battle');
     battle = await res.json();
     // Fetch green agent

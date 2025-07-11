@@ -13,7 +13,7 @@ $: battleId = $page.params.battle_id;
 
 async function fetchAgentName(agentId: string): Promise<string> {
   try {
-    const res = await fetch(`http://localhost:9000/agents/${agentId}`);
+    const res = await fetch(`/api/agents/${agentId}`);
     if (!res.ok) return agentId;
     const agent = await res.json();
     return agent.register_info?.name || agent.registerInfo?.name || agent.agent_card?.name || agent.agentCard?.name || agentId;
@@ -26,7 +26,7 @@ onMount(async () => {
   loading = true;
   error = '';
   try {
-    const res = await fetch(`http://localhost:9000/battles/${battleId}`);
+    const res = await fetch(`/api/battles/${battleId}`);
     if (!res.ok) throw new Error('Failed to fetch battle');
     battle = await res.json();
     greenAgentName = await fetchAgentName(battle.green_agent_id || battle.greenAgentId);
@@ -43,7 +43,11 @@ onMount(async () => {
       }
     }
     // --- WebSocket for live updates ---
-    ws = new WebSocket('ws://localhost:9000/ws/battles');
+    ws = new WebSocket(
+      (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+      window.location.host +
+      '/ws/battles'
+    );
     ws.onmessage = async (event) => {
       try {
         const msg = JSON.parse(event.data);
