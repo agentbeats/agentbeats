@@ -61,7 +61,7 @@ let pastBattles: any[] = [];
 
 <div class="w-full flex flex-col items-center justify-center mt-10 mb-8">
 	<h1 class="text-2xl font-bold text-center mb-8">Battles</h1>
-	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition" onclick={() => goto('/battles/stage-battle')}>
+	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition cursor-pointer" onclick={() => goto('/battles/stage-battle')}>
 		Stage a Battle
 	</button>
 </div>
