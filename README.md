@@ -14,6 +14,10 @@ pip install -r requirements.txt
 
 # 4. Set your OpenAI API key
 export OPENAI_API_KEY='your-api-key-here'
+
+# 5. Install frontend dependencies
+cd frontend
+npm install
 ```
 
 ## How-to run?
@@ -52,9 +56,9 @@ python -m src.backend.run
 python src/logging/testing_mcp.py
 
 # Agents (in separate terminals)
-python example_agents/agent_launcher.py --file example_agents/blue_agent/main.py --port 9010
-python example_agents/agent_launcher.py --file example_agents/red_agent/main.py --port 9020
-python example_agents/agent_launcher.py --file example_agents/green_agent/main.py --port 9030 --mcp-url "http://localhost:9001/sse"
+python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010
+python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020
+python scenarios/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url "http://localhost:9001/sse"
 
 # Frontend (in separate terminal)
 cd frontend && npm run dev
@@ -67,11 +71,42 @@ python testing_scripts/tensortrust_test.py
 
 - SQLite
 ```
-backend/db/storage.py
+src/backend/db/storage.py
 ```
 
 - Bug: 
   - backend can't correctly post reset request to lancher
-    - backend/routes/battles.py : process_battle
+    - src/backend/routes/battles.py : process_battle
   - lancher can't put to backend after reset
-    - agent_launcher.py
+    - scenarios/agent_launcher.py
+
+# Production Deployment (auto generated)
+
+## Dependencies
+- Python 3.x (with venv)
+- Node.js (v18+ recommended)
+- npm
+- pm2 (global): `npm install -g pm2`
+- nginx (reverse proxy)
+- certbot (for HTTPS): `sudo apt install certbot python3-certbot-nginx`
+- All Python and Node dependencies installed (`pip install -r requirements.txt`, `npm install` in frontend)
+
+## Steps
+1. **Clone the repo and set up Python/Node environments.**
+2. **Install all dependencies:**
+   - Python: `python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt`
+   - Node: `cd frontend && npm install`
+3. **Configure your domain DNS to point to this server.**
+4. **Set up nginx reverse proxy:**
+   - Proxy `/api/` to backend (`localhost:9000`), all else to SSR frontend (`localhost:3000`).
+5. **Obtain HTTPS certificate:**
+   - `sudo certbot --nginx -d yourdomain.com`
+6. **Run the full stack:**
+   - `bash server-setup.sh` (starts backend, agents, SSR frontend with pm2, and reloads nginx)
+7. **Access your app at `https://yourdomain.com`**
+
+## Notes
+- All build artifacts, logs, and secrets are gitignored.
+- pm2 manages the SSR frontend for reliability.
+- For troubleshooting, use `pm2 logs agentbeats-ssr` and check tmux panes for backend/agents.
+

@@ -1,3 +1,4 @@
+# Existing ignores
 **/__pycache__/
 **/tmp/
 **/data/
@@ -6,6 +7,74 @@ venv/
 
 # Battle log files
 *.log
+
+# Node.js dependencies
+frontend/node_modules/
+
+# npm/yarn/pnpm lock files
+frontend/package-lock.json
+frontend/yarn.lock
+frontend/pnpm-lock.yaml
+
+# Build output
+frontend/build/
+frontend/dist/
+frontend/.svelte-kit/
+
+# ccache
+ccache/
+*.ccache
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+
+# Misc
+*.bak
+*.tmpi
+
+# --- Additional ignores for SvelteKit, Vite, Node, Python, pm2, and SSL ---
+# SvelteKit output (if not already ignored)
+frontend/.svelte-kit-output/
+frontend/.vite/
+frontend/.vite-temp/
+frontend/.output/
+
+# pm2 logs and dump
+~/.pm2/
+pm2.log
+pm2.pid
+dump.pm2.json
+
+# Python egg info
+*.egg-info/
+.eggs/
+
+# Python bytecode (in case not caught by previous rules)
+*.pyc
+*.pyo
+*.pyd
+
+# SvelteKit preview output (if using adapters that output .output/)
+frontend/.output/
+
+# SSL keys/certs (never commit these!)
+*.pem
+*.crt
+*.key
+
+# Certbot/letsencrypt (if you ever back up configs)
+etc/letsencrypt/
+
+# Local Vite config (dev proxy)
+frontend/vite.config.ts
+
 
 **/venv/
 **/.DS_Store
