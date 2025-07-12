@@ -61,7 +61,7 @@ let pastBattles: any[] = [];
 
 <div class="w-full flex flex-col items-center justify-center mt-10 mb-8">
 	<h1 class="text-2xl font-bold text-center mb-8">Battles</h1>
-	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition" on:click={() => goto('/battles/stage-battle')}>
+	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition" onclick={() => goto('/battles/stage-battle')}>
 		Stage a Battle
 	</button>
 </div>
@@ -74,7 +74,7 @@ let pastBattles: any[] = [];
 					<h2 class="text-2xl font-bold text-center mb-10 mt-10">Ongoing Battles</h2>
 					<div class="flex flex-col gap-4 w-full">
 						{#each ongoingBattles as battle (battle.battle_id)}
-							<div role="button" tabindex="0" class="cursor-pointer w-full" on:click={() => goto(`/battles/${battle.battle_id}`)}>
+							<div role="button" tabindex="0" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
 								<BattleCard battleId={battle.battle_id} />
 							</div>
 						{/each}
@@ -86,7 +86,7 @@ let pastBattles: any[] = [];
 					<h2 class="text-2xl font-bold text-center mb-8 mt-8">Past Battles</h2>
 					<div class="flex flex-col gap-4 w-full">
 						{#each pastBattles as battle (battle.battle_id)}
-							<div role="button" tabindex="0" class="cursor-pointer w-full" on:click={() => goto(`/battles/${battle.battle_id}`)}>
+							<div role="button" tabindex="0" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
 								<BattleChip battleId={battle.battle_id} />
 							</div>
 						{/each}
