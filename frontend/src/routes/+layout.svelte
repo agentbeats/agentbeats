@@ -21,7 +21,7 @@
 </script>
 
 <style>
-  html, body {
+  :global(html), :global(body) {
     overflow: hidden;
     height: 100%;
   }

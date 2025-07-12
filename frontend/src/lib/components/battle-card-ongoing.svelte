@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte";
+import { onMount, onDestroy } from "svelte";
 import * as Card from "./ui/card/index.js";
 import { getAgentById } from "$lib/api/agents";
 
@@ -9,6 +9,36 @@ let loading = true;
 let error: string | null = null;
 let greenAgent: any = null;
 let opponentAgents: { name: string; role: string }[] = [];
+let duration = '';
+let timer: any = null;
+
+function shortId(id: string) {
+  return id ? id.slice(0, 8) : '';
+}
+function formatDate(dt: string) {
+  if (!dt) return 'N/A';
+  const d = new Date(dt);
+  return d.toLocaleString();
+}
+function stateColor(state: string) {
+  switch ((state||'').toLowerCase()) {
+    case 'pending': return 'text-yellow-600';
+    case 'queued': return 'text-yellow-600';
+    case 'running': return 'text-blue-600';
+    default: return 'text-muted-foreground';
+  }
+}
+function calcDuration(start: string) {
+  if (!start) return '';
+  const s = new Date(start).getTime();
+  const now = Date.now();
+  if (isNaN(s)) return '';
+  let sec = Math.round((now - s) / 1000);
+  if (sec < 0) sec = 0;
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec/60)}m ${sec%60}s`;
+  return `${Math.floor(sec/3600)}h ${Math.floor((sec%3600)/60)}m`;
+}
 
 onMount(async () => {
   loading = true;
@@ -39,6 +69,9 @@ onMount(async () => {
         }
       }
     }
+    // Start duration timer
+    updateDuration();
+    timer = setInterval(updateDuration, 1000);
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to load battle';
   } finally {
@@ -46,20 +79,15 @@ onMount(async () => {
   }
 });
 
-function shortId(id: string) {
-  return id ? id.slice(0, 8) : '';
-}
-function formatDate(dt: string) {
-  if (!dt) return 'N/A';
-  const d = new Date(dt);
-  return d.toLocaleString();
-}
-function stateColor(state: string) {
-  switch ((state||'').toLowerCase()) {
-    case 'pending': return 'text-yellow-600';
-    case 'queued': return 'text-yellow-600';
-    case 'running': return 'text-blue-600';
-    default: return 'text-muted-foreground';
+onDestroy(() => {
+  if (timer) clearInterval(timer);
+});
+
+function updateDuration() {
+  if (battle && (battle.created_at || battle.createdAt)) {
+    duration = calcDuration(battle.created_at || battle.createdAt);
+  } else {
+    duration = '';
   }
 }
 </script>
@@ -121,7 +149,7 @@ function stateColor(state: string) {
             Battle #{shortId(battle.battle_id || battle.id)}
           </span>
           <span class="text-xs text-muted-foreground">{formatDate(battle.created_at || battle.createdAt)}</span>
-          <span class="text-xs text-muted-foreground italic">Ongoing</span>
+          <!-- No 'Ongoing' or 'XXs ago' label here -->
         </div>
       </div>
     </Card.Header>
@@ -129,7 +157,7 @@ function stateColor(state: string) {
     <Card.Footer class="pt-4 flex flex-row items-between justify-between w-full mb-0 px-2">
       <div class="flex flex-row items-center gap-3">
         <span class="text-xs font-semibold {stateColor(battle.state)}">{battle.state}</span>
-        <!-- No winner or duration for ongoing -->
+        <span class="text-xs text-muted-foreground">Duration: {duration}</span>
       </div>
       <span class="text-[10px] text-muted-foreground font-mono select-all">
         Battle ID: {battle.battle_id || battle.id}
