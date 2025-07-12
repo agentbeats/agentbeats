@@ -6,19 +6,19 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
 
-  export let data: { agents: any[] };
+  export const data: { agents: any[] } = $props();
 
-  let formData: any = {
+  let formData: any = $state({
     name: '',
     agent_url: '',
     launcher_url: '',
     is_green: false,
     participant_requirements: []
-  };
+  });
 
-  let isSubmitting = false;
-  let error: string | null = null;
-  let success = false;
+  let isSubmitting = $state(false);
+  let error: string | null = $state(null);
+  let success = $state(false);
 
   function addParticipantRequirement() {
     formData.participant_requirements = [
@@ -93,7 +93,7 @@
         <CardDescription>Enter the details for your new agent</CardDescription>
       </CardHeader>
       <CardContent>
-        <form on:submit|preventDefault={handleSubmit} class="space-y-4">
+        <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Agent Name</Label>
             <Input id="name" type="text" bind:value={formData.name} placeholder="My Agent" required />
@@ -112,7 +112,7 @@
           </div>
           <div class="flex gap-2 pt-4">
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Registering...' : 'Register Agent'}</Button>
-            <button type="button" class="btn btn-outline" on:click={() => goto('/agents')}>Cancel</button>
+            <Button variant="outline" onclick={() => goto('/agents')}>Cancel</Button>
           </div>
         </form>
       </CardContent>
@@ -125,7 +125,7 @@
         <CardDescription>Define required roles for this green agent</CardDescription>
       </CardHeader>
       <CardContent class="space-y-6">
-        <button type="button" class="btn btn-outline" on:click={addParticipantRequirement}>Add Requirement</button>
+        <Button variant="outline" disabled={!formData.is_green} onclick={addParticipantRequirement}>Add Requirement</Button>
         {#if formData.is_green && formData.participant_requirements.length > 0}
           <div class="space-y-4">
             {#each formData.participant_requirements as requirement, index (index)}
@@ -136,7 +136,7 @@
                   <input type="checkbox" bind:checked={requirement.required} id={`required-${index}`} />
                   <Label for={`required-${index}`}>Required</Label>
                 </div>
-                <button type="button" class="btn btn-outline btn-small" on:click={() => removeParticipantRequirement(index)}>Remove</button>
+                <Button variant="outline" onclick={() => removeParticipantRequirement(index)}>Remove</Button>
               </div>
             {/each}
           </div>
