@@ -32,21 +32,21 @@ SERVICES = {
         "use_venv": True
     },
     "blue_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/blue_agent/main.py", "--port", "9010"],
+        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/wasp/blue_agent/main.py", "--port", "9010"],
         "cwd": ".",
         "env": {},
         "description": "Blue Agent (Defender) - port 9010",
         "use_venv": True
     },
     "red_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/red_agent/main.py", "--port", "9020"],
+        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/wasp/red_agent/main.py", "--port", "9020"],
         "cwd": ".",
         "env": {},
         "description": "Red Agent (Attacker) - port 9020",
         "use_venv": True
     },
     "green_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/green_agent/main.py", "--port", "9030", "--mcp-url", "http://localhost:9001/sse"],
+        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/wasp/green_agent/main.py", "--port", "9030", "--mcp-url", "http://localhost:9001/sse"],
         "cwd": ".",
         "env": {"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", "")},
         "description": "Green Agent (Judge) - port 9030",
