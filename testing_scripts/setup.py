@@ -19,42 +19,51 @@ from pathlib import Path
 SERVICES = {
     "backend": {
         "command": ["python", "-m", "src.backend.run"],
-        "cwd": ".",
+        "cwd": "..",
         "env": {},
         "description": "FastAPI Backend Server (port 9000)",
         "use_venv": True
     },
     "mcp_server": {
         "command": ["python", "src/logging/testing_mcp.py"],
-        "cwd": ".",
-        "env": {"PYTHONPATH": "."},
+        "cwd": "..",
+        "env": {"PYTHONPATH": ".."},
         "description": "MCP Logging Server (port 9001)",
         "use_venv": True
     },
     "blue_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/blue_agent/main.py", "--port", "9010"],
-        "cwd": ".",
-        "env": {},
+        "command": ["python", "scenarios/tensortrust_mock/agent_launcher.py", "--file", "scenarios/tensortrust_mock/blue_agent/main.py", "--port", "9010"],
+        "cwd": "..",
+        "env": {
+            "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+            "OPENAI_API_BASE": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        },
         "description": "Blue Agent (Defender) - port 9010",
         "use_venv": True
     },
     "red_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/red_agent/main.py", "--port", "9020"],
-        "cwd": ".",
-        "env": {},
+        "command": ["python", "scenarios/tensortrust_mock/agent_launcher.py", "--file", "scenarios/tensortrust_mock/red_agent/main.py", "--port", "9020"],
+        "cwd": "..",
+        "env": {
+            "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+            "OPENAI_API_BASE": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        },
         "description": "Red Agent (Attacker) - port 9020",
         "use_venv": True
     },
     "green_agent": {
-        "command": ["python", "scenarios/agent_launcher.py", "--file", "scenarios/tensortrust_mock/green_agent/main.py", "--port", "9030", "--mcp-url", "http://localhost:9001/sse"],
-        "cwd": ".",
-        "env": {"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", "")},
+        "command": ["python", "scenarios/tensortrust_mock/agent_launcher.py", "--file", "scenarios/tensortrust_mock/green_agent/main.py", "--port", "9030", "--mcp-url", "http://localhost:9001/sse"],
+        "cwd": "..",
+        "env": {
+            "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+            "OPENAI_API_BASE": os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        },
         "description": "Green Agent (Judge) - port 9030",
         "use_venv": True
     },
     "frontend": {
         "command": ["npm", "run", "dev"],
-        "cwd": "frontend",
+        "cwd": "../frontend",
         "env": {},
         "description": "Svelte Frontend (port 5173)",
         "use_venv": False
@@ -68,14 +77,15 @@ class ServiceManager:
         
     def check_environment(self):
         """Check if virtual environment is set up"""
-        # Check if venv exists
-        venv_path = Path("venv")
+        # Check if venv exists in parent directory (project root)
+        venv_path = Path("../venv")
         if not venv_path.exists():
             print("❌ Virtual environment not found!")
             print("   Please create a virtual environment first:")
+            print("   cd ..  # Go to project root")
             print("   python -m venv venv")
             print("   source venv/bin/activate  # On Windows: venv\\Scripts\\activate")
-            print("   pip install -r requirements.txt")
+            print("   pip install -r ../requirements.txt")
             sys.exit(1)
         else:
             print("✅ Virtual environment found")
@@ -83,15 +93,22 @@ class ServiceManager:
     def check_openai_key(self):
         """Check if OpenAI API key is set"""
         api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        
         if not api_key:
             print("⚠️  WARNING: OPENAI_API_KEY environment variable is not set!")
             print("   The green agent will fail to start without it.")
             print("   Set it with: export OPENAI_API_KEY='your-api-key-here'")
+            print("   For OpenRouter: export OPENAI_API_BASE='https://openrouter.ai/api/v1'")
             response = input("Continue anyway? (y/N): ")
             if response.lower() != 'y':
                 sys.exit(1)
         else:
             print("✅ OpenAI API key is set")
+            if base_url != "https://api.openai.com/v1":
+                print(f"✅ Using custom API base: {base_url}")
+            else:
+                print("✅ Using OpenAI API")
     
     def start_service_macos(self, name, config):
         """Start service on macOS using osascript to open new terminal windows"""
@@ -105,7 +122,7 @@ class ServiceManager:
         
         # Add virtual environment activation for Python services
         if config.get('use_venv', False):
-            venv_activate = "source venv/bin/activate && "
+            venv_activate = "source ../venv/bin/activate && "
             cmd_str = f"{venv_activate}{cmd_str}"
         
         # Create osascript command
@@ -200,7 +217,7 @@ class ServiceManager:
                     try:
                         subprocess.run(["pkill", "-f", "python.*src.backend.run"], check=False)
                         subprocess.run(["pkill", "-f", "python.*src/logging/testing_mcp.py"], check=False)
-                        subprocess.run(["pkill", "-f", "python.*scenarios/agent_launcher.py"], check=False)
+                        subprocess.run(["pkill", "-f", "python.*scenarios/tensortrust_mock/agent_launcher.py"], check=False)
                         subprocess.run(["pkill", "-f", "npm.*run.*dev"], check=False)
                         print("✅ All services stopped")
                     except Exception as e:
@@ -218,7 +235,7 @@ class ServiceManager:
                             elif service_name == "mcp_server":
                                 subprocess.run(["pkill", "-f", "python.*src/logging/testing_mcp.py"], check=False)
                             elif service_name in ["blue_agent", "red_agent", "green_agent"]:
-                                subprocess.run(["pkill", "-f", "python.*scenarios/agent_launcher.py"], check=False)
+                                subprocess.run(["pkill", "-f", "python.*scenarios/tensortrust_mock/agent_launcher.py"], check=False)
                             elif service_name == "frontend":
                                 subprocess.run(["pkill", "-f", "npm.*run.*dev"], check=False)
                             
@@ -286,7 +303,7 @@ class ServiceManager:
         
         # Add virtual environment activation for Python services
         if config.get('use_venv', False):
-            venv_activate = "source venv/bin/activate && "
+            venv_activate = "source ../venv/bin/activate && "
             cmd_str = f"{venv_activate}{cmd_str}"
         
         try:
@@ -377,7 +394,7 @@ class ServiceManager:
             subprocess.run(["pkill", "-f", "python.*src/logging/testing_mcp.py"], check=False)
             
             # Kill agent launcher processes (controllers)
-            subprocess.run(["pkill", "-f", "python.*scenarios/agent_launcher.py"], check=False)
+            subprocess.run(["pkill", "-f", "python.*scenarios/tensortrust_mock/agent_launcher.py"], check=False)
             
             # Kill child agent processes (the actual agents on ports 9011, 9021, 9031)
             subprocess.run(["pkill", "-f", "python.*tensortrust_mock/blue_agent/main.py"], check=False)
@@ -454,13 +471,15 @@ def main():
         print("  • Virtual environment (venv/) with dependencies installed")
         print("  • requirements.txt file present")
         print("  • Set OPENAI_API_KEY environment variable")
+        print("  • For OpenRouter, also set OPENAI_API_BASE='https://openrouter.ai/api/v1'")
         print("  • Install Node.js dependencies in frontend/")
         print()
         print("Setup:")
         print("  python -m venv venv")
         print("  source venv/bin/activate  # On Windows: venv\\Scripts\\activate")
-        print("  pip install -r requirements.txt")
+        print("  pip install -r ../requirements.txt")
         print("  export OPENAI_API_KEY='your-api-key-here'")
+        print("  # For OpenRouter: export OPENAI_API_BASE='https://openrouter.ai/api/v1'")
         print("  python setup.py")
         return
     
