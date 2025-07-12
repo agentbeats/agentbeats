@@ -27,58 +27,74 @@ onMount(async () => {
   error = '';
   try {
     const res = await fetch(`/api/battles/${battleId}`);
-    if (!res.ok) throw new Error('Failed to fetch battle');
-    battle = await res.json();
-    greenAgentName = await fetchAgentName(battle.green_agent_id || battle.greenAgentId);
-    opponentNames = [];
-    for (const op of (battle.opponents || [])) {
-      if (op && typeof op === 'object' && op.agent_id) {
-        const agentName = await fetchAgentName(op.agent_id);
-        opponentNames.push(`${agentName} (${op.name})`);
-      } else if (typeof op === 'string') {
-        // fallback for string IDs
-        opponentNames.push(await fetchAgentName(op));
-      } else {
-        opponentNames.push('Unknown');
-      }
+    if (!res.ok) {
+      error = 'Failed to load battle';
+      return;
     }
-    // --- WebSocket for live updates ---
-    ws = new WebSocket(
-      (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
-      window.location.host +
-      '/ws/battles'
-    );
-    ws.onmessage = async (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg && msg.type === 'battle_update' && msg.battle && msg.battle.battle_id === battleId) {
-          battle = msg.battle;
-          greenAgentName = await fetchAgentName(battle.green_agent_id || battle.greenAgentId);
-          opponentNames = [];
-          for (const op of (battle.opponents || [])) {
-            if (op && typeof op === 'object' && op.agent_id) {
-              const agentName = await fetchAgentName(op.agent_id);
-              opponentNames.push(`${agentName} (${op.name})`);
-            } else if (typeof op === 'string') {
-              opponentNames.push(await fetchAgentName(op));
-            } else {
-              opponentNames.push('Unknown');
-            }
-          }
+    battle = await res.json();
+    
+    // Fetch agent names
+    if (battle.green_agent_id) {
+      greenAgentName = await fetchAgentName(battle.green_agent_id);
+    }
+    if (battle.opponents && Array.isArray(battle.opponents)) {
+      opponentNames = await Promise.all(
+        battle.opponents.map(async (opponent: any) => {
+          const agentName = await fetchAgentName(opponent.agent_id);
+          return `${agentName} (${opponent.name})`;
+        })
+      );
+    }
+    
+    // Connect to WebSocket for real-time updates
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/battles`;
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log('Connected to battles WebSocket');
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'battle_update' && data.battle.battle_id === battleId) {
+        battle = data.battle;
+        // Update agent names if needed
+        if (battle.green_agent_id && !greenAgentName) {
+          fetchAgentName(battle.green_agent_id).then(name => greenAgentName = name);
         }
-      } catch (e) {
-        // ignore
+        if (battle.opponents && Array.isArray(battle.opponents)) {
+          Promise.all(battle.opponents.map(async (opponent: any) => {
+            const agentName = await fetchAgentName(opponent.agent_id);
+            return `${agentName} (${opponent.name})`;
+          })).then(names => opponentNames = names);
+        }
       }
     };
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Unknown error';
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+    
+  } catch (err) {
+    error = 'Failed to load battle';
+    console.error(err);
   } finally {
     loading = false;
   }
 });
 
+// Cleanup function
 import { onDestroy } from 'svelte';
-onDestroy(() => { if (ws) ws.close(); });
+onDestroy(() => {
+  if (ws) {
+    ws.close();
+  }
+});
 </script>
 
 <main class="p-4 flex flex-col min-h-[60vh] max-w-xl mx-auto">
