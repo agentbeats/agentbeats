@@ -3,6 +3,17 @@
 # AgentBeats Server Setup Script
 # This script starts all AgentBeats services in a tmux session
 # Supports both OpenAI and OpenRouter APIs
+# Kill any process using ports 9010, 9011, 9020, 9021, 9030, 9031
+
+for x in 1 2 3; do
+  for port in 90${x}0 90${x}1; do
+    pid=$(lsof -ti tcp:$port)
+    if [ -n "$pid" ]; then
+      echo "Killing process on port $port (PID $pid)"
+      kill -9 $pid
+    fi
+  done
+done
 
 SESSION="agentbeats"
 PROJECT_DIR="$HOME/agentbeats"
