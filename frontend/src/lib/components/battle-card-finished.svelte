@@ -121,7 +121,7 @@ function stateColor(state: string) {
 function winnerText(battle: any) {
   if (battle?.result?.winner === 'draw') return 'Draw';
   if (battle?.result?.winner) return `${battle.result.winner} Victory`;
-  if (battle?.state === 'error') return 'Error';
+  if (battle?.state === 'error') return battle?.error ? `Error: ${battle.error}` : 'Error';
   return '';
 }
 

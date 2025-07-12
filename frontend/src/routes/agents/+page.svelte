@@ -21,9 +21,11 @@ function mapAgentData(raw: any): any {
     id: raw.id,
     name: regInfo.name || agentCard.name || 'Unknown Agent',
     agent_url: regInfo.agent_url || '',
-    launcher_url: regInfo.launcher_url || '',
     is_green: regInfo.is_green === true ? 'Yes' : 'No',
     description: agentCard.description || '',
+    status: raw.status || '',
+    created_at: raw.created_at || '',
+    agent_id: raw.agent_id || '',
     notFound: false,
     raw
   };
@@ -33,9 +35,11 @@ type AgentRow = {
   id: string;
   name: string;
   agent_url: string;
-  launcher_url: string;
   is_green: string;
   description: string;
+  status: string;
+  created_at: string;
+  agent_id: string;
   notFound?: boolean;
   avatarUrl?: string;
   raw?: any;
@@ -43,16 +47,18 @@ type AgentRow = {
 let agents: AgentRow[] = data.agents.map(mapAgentData);
 let filter = $state("");
 
-// Filter agents by name (registerInfo.name or agentCard.name)
-const getFilteredAgents = $derived((): any[] =>
-  agents.filter((agent: any) => {
-    const name = agent.name || '';
-    return name.toLowerCase().includes(filter.toLowerCase());
-  })
-);
-const filteredAgents: any[] = getFilteredAgents();
-
 const columnHelper = createColumnHelper<any>();
+function getAgentAge(created_at: string): string {
+  if (!created_at) return '';
+  const created = new Date(created_at);
+  const now = new Date();
+  // Use UTC to avoid timezone issues
+  const utcCreated = Date.UTC(created.getUTCFullYear(), created.getUTCMonth(), created.getUTCDate());
+  const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const diffMs = utcNow - utcCreated;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return `${Math.max(0, diffDays)}d`;
+}
 const columns = [
   columnHelper.accessor('name', {
     id: 'name',
@@ -74,20 +80,44 @@ const columns = [
     header: 'Is Green',
     cell: cell => cell.getValue() || '',
   }),
+  columnHelper.accessor('status', {
+    id: 'status',
+    header: 'Status',
+    cell: cell => cell.getValue() || '',
+  }),
   columnHelper.accessor('description', {
     id: 'description',
     header: 'Description',
+    cell: cell => cell.getValue() || '',
+  }),
+  columnHelper.accessor('age', {
+    id: 'age',
+    header: 'Age',
+    cell: cell => getAgentAge(cell.row.original.created_at),
+  }),
+  columnHelper.accessor('created_at', {
+    id: 'created_at',
+    header: 'Created At',
+    cell: cell => cell.getValue() || '',
+  }),
+  columnHelper.accessor('agent_id', {
+    id: 'agent_id',
+    header: 'Agent ID',
     cell: cell => cell.getValue() || '',
   })
 ];
 
 let pagination = $state({ pageIndex: 0, pageSize: 10 });
 let sorting: import("@tanstack/table-core").SortingState = $state([]);
-let columnVisibility = $state({});
+let columnVisibility: { [key: string]: boolean } = $state({
+  launcher_url: false,
+  agent_id: false,
+  created_at: false
+});
 
 const table = createSvelteTable({
   get data() {
-    return filteredAgents;
+    return agents;
   },
   columns,
   state: {
@@ -99,11 +129,20 @@ const table = createSvelteTable({
     },
     get columnVisibility() {
       return columnVisibility;
+    },
+    get globalFilter() {
+      return filter;
     }
   },
   getCoreRowModel: getCoreRowModel(),
   getPaginationRowModel: getPaginationRowModel(),
   getSortedRowModel: getSortedRowModel(),
+  globalFilterFn: (row, columnId, filterValue) => {
+    if (columnId !== 'name') return true;
+    const value = row.getValue('name');
+    const valueStr = typeof value === 'string' ? value : '';
+    return valueStr.toLowerCase().includes((filterValue || '').toLowerCase());
+  },
   onPaginationChange: (updater) => {
     if (typeof updater === "function") {
       pagination = updater(pagination);
@@ -124,13 +163,20 @@ const table = createSvelteTable({
     } else {
       columnVisibility = updater;
     }
+  },
+  onGlobalFilterChange: (updater) => {
+    if (typeof updater === "function") {
+      filter = updater(filter);
+    } else {
+      filter = updater;
+    }
   }
 });
 </script>
 
 <div class="w-full flex flex-col items-center justify-center mt-10 mb-8">
 	<h1 class="text-2xl font-bold text-center mb-8">Agents</h1>
-	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition" on:click={() => goto('/agents/register-agent')}>
+	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition" onclick={() => goto('/agents/register-agent')}>
 		Register Agent
 	</button>
 </div>
