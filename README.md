@@ -12,8 +12,11 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Set your OpenAI API key
+# 4. Set your OpenAI API key (or OpenRouter API key)
 export OPENAI_API_KEY='your-api-key-here'
+
+# For OpenRouter, also set the base URL:
+export OPENAI_API_BASE='https://openrouter.ai/api/v1'
 
 # 5. Install frontend dependencies
 cd frontend
