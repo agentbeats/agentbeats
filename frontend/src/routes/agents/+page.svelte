@@ -176,7 +176,7 @@ const table = createSvelteTable({
 
 <div class="w-full flex flex-col items-center justify-center mt-10 mb-8">
 	<h1 class="text-2xl font-bold text-center mb-8">Agents</h1>
-	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition" onclick={() => goto('/agents/register-agent')}>
+	<button type="button" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-primary-foreground text-base font-semibold shadow hover:bg-primary/90 transition cursor-pointer" onclick={() => goto('/agents/register-agent')}>
 		Register Agent
 	</button>
 </div>
