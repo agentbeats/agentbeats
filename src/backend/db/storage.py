@@ -45,7 +45,7 @@ class JSONStorage:
             
         # Add created timestamp if not provided
         if 'created_at' not in data:
-            data['created_at'] = datetime.utcnow().isoformat()
+            data['created_at'] = datetime.utcnow().isoformat() + 'Z'
             
         collection_data[data['id']] = data
         self._write_collection(collection, collection_data)
@@ -147,7 +147,7 @@ class SQLiteStorage:
             
         # Add created timestamp if not provided
         if 'created_at' not in data:
-            data['created_at'] = datetime.utcnow().isoformat()
+            data['created_at'] = datetime.utcnow().isoformat() + 'Z'
         
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''

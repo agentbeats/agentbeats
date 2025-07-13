@@ -17,7 +17,9 @@ function shortId(id: string) {
 }
 function formatDate(dt: string) {
   if (!dt) return 'N/A';
-  const d = new Date(dt);
+  let dtFixed = dt;
+  if (dt && !dt.endsWith('Z')) dtFixed = dt + 'Z';
+  const d = new Date(dtFixed);
   return d.toLocaleString();
 }
 function stateColor(state: string) {
@@ -157,7 +159,7 @@ function updateDuration() {
     <Card.Footer class="pt-4 flex flex-row items-between justify-between w-full mb-0 px-2">
       <div class="flex flex-row items-center gap-3">
         <span class="text-xs font-semibold {stateColor(battle.state)}">{battle.state}</span>
-        <span class="text-xs text-muted-foreground">Duration: {duration}</span>
+        <!-- Removed duration display -->
       </div>
       <span class="text-[10px] text-muted-foreground font-mono select-all">
         Battle ID: {battle.battle_id || battle.id}
