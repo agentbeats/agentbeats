@@ -84,7 +84,7 @@ def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
             battle["interact_history"] = []
             
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.utcnow().isoformat() + "Z",
             "message": message,
         }
         if detail:
@@ -339,7 +339,7 @@ def check_battle_timeout(battle_id: str, timeout: int):
             "winner": "draw",
             "score": {"reason": "timeout"},
             "detail": {"message": "Battle timed out"},
-            "reported_at": datetime.utcnow().isoformat()
+            "reported_at": datetime.utcnow().isoformat() + "Z"
         }
         db.update("battles", battle_id, battle)
         
@@ -407,7 +407,7 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
             "opponents": battle_request['opponents'], # list of dicts with 'name' and 'agent_id'
             "config": battle_request.get('config', {}),
             "state": "pending",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.utcnow().isoformat() + "Z",
             "interact_history": []
         }
 
@@ -500,14 +500,14 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
             battle["result"] = {
                 "winner": event.get("winner", "draw"),
                 "detail": event.get("detail", {}),
-                "finish_time": event.get("timestamp", datetime.utcnow().isoformat()),
+                "finish_time": event.get("timestamp", datetime.utcnow().isoformat() + "Z"),
             }
             battle["state"] = "finished"
             unlock_and_unready_agents(battle)
         else:
             # timestamp, is_result, message, detail
             if "timestamp" not in event:
-                event["timestamp"] = datetime.utcnow().isoformat()
+                event["timestamp"] = datetime.utcnow().isoformat() + "Z"
     
             battle["interact_history"].append(event)
 

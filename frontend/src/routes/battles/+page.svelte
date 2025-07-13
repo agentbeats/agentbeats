@@ -16,11 +16,23 @@ function recalcBattles() {
 	pastBattles = battles.filter(b => pastStatuses.includes((b.state || '').toLowerCase()));
 	const finishedIds = new Set(pastBattles.map(b => b.battle_id));
 	ongoingBattles = ongoingBattles.filter(b => !finishedIds.has(b.battle_id));
+	
+	// Sort ongoingBattles by created_at descending (most recent first)
+	ongoingBattles.sort((a, b) => {
+		const aTime = new Date(a.created_at || 0).getTime();
+		const bTime = new Date(b.created_at || 0).getTime();
+		return bTime - aTime;
+	});
+	
 	// Sort pastBattles by finish_time or created_at descending (most recent first)
 	pastBattles.sort((a, b) => {
-		const aTime = new Date(a.result?.finish_time || a.created_at || 0).getTime();
-		const bTime = new Date(b.result?.finish_time || b.created_at || 0).getTime();
-		return bTime - aTime;
+		function getTime(battle: any) {
+			let dt = battle.result?.finish_time || battle.created_at || 0;
+			if (typeof dt === 'string' && dt && !dt.endsWith('Z')) dt = dt + 'Z';
+			const t = new Date(dt).getTime();
+			return isNaN(t) ? 0 : t;
+		}
+		return getTime(b) - getTime(a);
 	});
 }
 
