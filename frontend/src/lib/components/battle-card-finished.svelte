@@ -9,6 +9,7 @@ let loading = false;
 let error: string | null = null;
 let greenAgentName = '';
 let opponentNames: string[] = [];
+let durationStr = '';
 
 onMount(async () => {
   await loadBattleData();
@@ -63,6 +64,17 @@ async function loadBattleData() {
       }
     }
     opponentNames = names;
+
+    if (battle.created_at && battle.result?.finish_time) {
+      const created = new Date(battle.created_at);
+      const finished = new Date(battle.result.finish_time);
+      if (!isNaN(created.getTime()) && !isNaN(finished.getTime())) {
+        const seconds = Math.round((finished.getTime() - created.getTime()) / 1000);
+        durationStr = seconds < 0 ? 'err' : seconds + 's';
+      } else {
+        durationStr = '';
+      }
+    }
   }
 }
 
@@ -90,6 +102,21 @@ function timeAgo(dt: string) {
   if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
+}
+
+function displayTime(battle: any) {
+  let dt = '';
+  if (battle?.result?.finish_time) {
+    dt = battle.result.finish_time;
+  } else if (battle?.created_at || battle?.createdAt) {
+    dt = battle.created_at || battle.createdAt;
+  }
+  if (dt && !dt.endsWith('Z')) dt = dt + 'Z';
+  if (dt) {
+    const d = new Date(dt);
+    return d.toLocaleString();
+  }
+  return '';
 }
 
 function getEndTime(battle: any) {
@@ -122,18 +149,6 @@ function winnerText(battle: any) {
   if (battle?.result?.winner === 'draw') return 'Draw';
   if (battle?.result?.winner) return `${battle.result.winner} Victory`;
   if (battle?.state === 'error') return battle?.error ? `Error: ${battle.error}` : 'Error';
-  return '';
-}
-
-function displayTime(battle: any) {
-  if (battle?.result?.finish_time) {
-    const d = new Date(battle.result.finish_time);
-    return d.toLocaleString();
-  }
-  if (battle?.created_at || battle?.createdAt) {
-    const d = new Date(battle.created_at || battle.createdAt);
-    return d.toLocaleString();
-  }
   return '';
 }
 
@@ -219,7 +234,7 @@ function getOpponentParts(name: string): [string, string] | null {
         <span class="text-xs text-muted-foreground">{winnerText(battle)}</span>
         {#if battle.result && battle.result.finish_time}
           <span class="text-xs text-muted-foreground">
-            Duration: {duration(battle.created_at || battle.createdAt, battle.result.finish_time)}
+            Duration: {durationStr}
           </span>
         {/if}
       </div>
