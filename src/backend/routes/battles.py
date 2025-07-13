@@ -77,13 +77,11 @@ def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
     """Helper function to add a log entry to a battle and push to WebSocket subscribers."""
     try:
         battle = db.read("battles", battle_id)
-        system_log_id = battle.get("system_log_id")
-        log_dict = db.read("system", system_log_id)
-        if not log_dict:
+        if not battle:
             return False
             
-        if "logs" not in log_dict:
-            log_dict["logs"] = []
+        if "interact_history" not in battle:
+            battle["interact_history"] = []
             
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -91,22 +89,15 @@ def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
         }
         if detail:
             log_entry["detail"] = detail
-        log_dict["logs"].append(log_entry)
-        db.update("system", system_log_id, log_dict)
-        # Push to WebSocket subscribers
-        try:
-            import asyncio
-            for ws in log_subscribers.get(battle_id, []):
-                try:
-                    asyncio.create_task(ws.send_json(log_entry))
-                except Exception:
-                    pass
-        except Exception:
-            pass
-            
+        battle["interact_history"].append(log_entry)
+        db.update("battles", battle_id, battle)
+        
+        # Broadcast the updated battle to all subscribers
+        broadcast_battle_update(battle)
+        
         return True
     except Exception as e:
-        print(f"Error adding battle log: {str(e)}")
+        logger.error(f"Error adding system log: {e}")
         return False
 
 def start_battle_processor():
@@ -539,10 +530,14 @@ async def battle_logs_ws(websocket: WebSocket, battle_id: str):
         log_subscribers[battle_id] = []
     log_subscribers[battle_id].append(websocket)
     try:
+        # Get the battle to find the system_log_id
         battle = db.read("battles", battle_id)
-        if battle and "logs" in battle:
-            for log in battle["logs"]:
-                await websocket.send_json(log)
+        if battle and battle.get("system_log_id"):
+            system_log = db.read("system", battle["system_log_id"])
+            if system_log and "logs" in system_log:
+                # Send existing logs to the client
+                for log in system_log["logs"]:
+                    await websocket.send_json(log)
         logger.info(f"[logs_ws] Client connected for battle {battle_id}")
         while True:
             await asyncio.sleep(1)
