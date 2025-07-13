@@ -81,6 +81,9 @@ def build_app(listen_port: int) -> A2AStarletteApplication:
         ),
     )
 
+    # No manual patching for /.well-known/agent.json needed.
+    # A2AStarletteApplication will expose the agent card automatically if compatible.
+
     return app
 
 
@@ -91,8 +94,8 @@ def main() -> None:
     parser.add_argument(
         "--port",
         type=int,
-        default=9021,
-        help="TCP port for the HTTP server to listen on (default: 9021)",
+        default=8001,
+        help="TCP port for the HTTP server to listen on (default: 8001)",
     )
 
     args = parser.parse_args()
