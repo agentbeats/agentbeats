@@ -13,11 +13,11 @@
 
   let formData: any = {
     green_agent_id: '',
-    config: {
-      battle_timeout: 300,
-      ready_timeout: 300
-    }
+    config: {}
   };
+
+  let configJsonInput = '';
+  let configJsonError = '';
 
   let isSubmitting = false;
   let error: string | null = null;
@@ -56,6 +56,36 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
       }
     }
     roleAssignments[roleName] = agentId;
+  }
+
+  function handleConfigJsonInput() {
+    configJsonError = '';
+    
+    if (!configJsonInput.trim()) {
+      formData.config = {};
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(configJsonInput);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        formData.config = parsed;
+        formData = { ...formData }; // Trigger reactivity
+      } else {
+        configJsonError = 'Config must be a valid JSON object';
+      }
+    } catch (error) {
+      configJsonError = 'Invalid JSON syntax';
+    }
+  }
+
+  // Update JSON input when config changes externally
+  $: {
+    if (Object.keys(formData.config).length === 0) {
+      configJsonInput = '';
+    } else {
+      configJsonInput = JSON.stringify(formData.config, null, 2);
+    }
   }
 
   async function handleSubmit() {
@@ -153,7 +183,7 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
           </div>
 
           <!-- Battle Timeout -->
-          <div class="space-y-2">
+          <!-- <div class="space-y-2">
             <Label for="battle_timeout">Battle Timeout (seconds)</Label>
             <Input
               id="battle_timeout"
@@ -162,10 +192,10 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
               min="1"
               required
             />
-          </div>
+          </div> -->
 
           <!-- Ready Timeout -->
-          <div class="space-y-2">
+          <!-- <div class="space-y-2">
             <Label for="ready_timeout">Ready Timeout (seconds)</Label>
             <Input
               id="ready_timeout"
@@ -174,6 +204,26 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
               min="1"
               required
             />
+          </div> -->
+
+          <!-- Custom Configuration JSON Input -->
+          <div class="space-y-2">
+            <Label for="config_json">Custom Configuration (JSON)</Label>
+            <textarea
+              id="config_json"
+              bind:value={configJsonInput}
+              on:blur={handleConfigJsonInput}
+              placeholder={JSON.stringify({battle_config: 'content', max_rounds: 10, debug_mode: true})}
+              class="w-full px-3 py-2 border border-input rounded-md text-sm font-mono resize-vertical min-h-[80px]"
+              rows="4"
+            ></textarea>
+            {#if configJsonError}
+              <div class="text-destructive text-sm">{configJsonError}</div>
+            {:else}
+              <div class="text-muted-foreground text-sm">
+                Enter a valid JSON object for battle configuration
+              </div>
+            {/if}
           </div>
 
           <!-- Submit Button -->
