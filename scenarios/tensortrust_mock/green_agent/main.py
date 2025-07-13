@@ -50,6 +50,7 @@ def build_app(listen_port: int,
         name="Green Agent (Judge)",
         description=(
             "A2A judge that hosts the battle between the blue and red agents, also  decides the winner of the battle based on the game rules."
+            "Blue agent is the defender, also called guardrail_generator, and red agent is the attacker, also called prompt_injector."
         ),
         url=f"{SERVER_BASE_URL}:{listen_port}/",
         version="1.0.0",
