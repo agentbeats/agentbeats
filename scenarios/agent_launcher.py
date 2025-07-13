@@ -82,7 +82,12 @@ async def reset(payload: SignalPayload):
     async with state_lock:
         if agent_proc and agent_proc.poll() is None:
             _terminate_agent(agent_proc)
-        agent_proc = _start_agent(extra_args=payload.extra_args or {})
+
+        payload.extra_args = payload.extra_args or {}
+        if "port" not in payload.extra_args:
+            payload.extra_args["port"] = CHILD_PORT
+            
+        agent_proc = _start_agent(extra_args=payload.extra_args)
         agent_id = payload.agent_id
         
         # try:
