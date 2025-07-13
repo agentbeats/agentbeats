@@ -16,19 +16,19 @@
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
 
-  export let data: { agents: any[] };
+  export const data: { agents: any[] } = $props();
 
-  let formData: any = {
+  let formData: any = $state({
     name: '',
     agent_url: '',
     launcher_url: '',
     is_green: false,
     participant_requirements: []
-  };
+  });
 
-  let isSubmitting = false;
-  let error: string | null = null;
-  let success = false;
+  let isSubmitting = $state(false);
+  let error: string | null = $state(null);
+  let success = $state(false);
 
   let isLoadingAgentCard = false;
   let agentCardError: string | null = null;
@@ -192,7 +192,11 @@
         <CardDescription>Enter the details for your new agent</CardDescription>
       </CardHeader>
       <CardContent>
-        <form on:submit|preventDefault={handleSubmit} class="space-y-4">
+        <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }} class="space-y-4">
+          <div class="space-y-2">
+            <Label for="name">Agent Name</Label>
+            <Input id="name" type="text" bind:value={formData.name} placeholder="My Agent" required />
+          </div>
           <div class="space-y-2">
             <Label for="agent_url">Agent URL</Label>
             <input
@@ -229,14 +233,11 @@
             </div>
           </div>
           <div class="flex gap-2 pt-4">
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Registering...' : 'Register Agent'}</Button>
             <Button type="submit" disabled={isSubmitting || !canRegister}>
               {isSubmitting ? "Registering..." : "Register Agent"}
             </Button>
-            <button
-              type="button"
-              class="btn btn-outline"
-              on:click={() => goto("/agents")}>Cancel</button
-            >
+            <Button variant="outline" onclick={() => goto('/agents')}>Cancel</Button>
           </div>
         </form>
       </CardContent>

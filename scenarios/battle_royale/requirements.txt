@@ -1,0 +1,9 @@
+# Note: Main dependencies are in the root requirements.txt
+# This file is for battle royale specific dependencies only
+
+# If you need additional dependencies specific to battle royale testing,
+# add them here. The main project requirements.txt already includes:
+# - paramiko==3.4.0
+# - requests==2.31.0
+# - asyncio-mqtt==0.16.1
+# - paho-mqtt==1.6.1 
