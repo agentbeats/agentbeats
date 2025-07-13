@@ -21,6 +21,13 @@ To achieve victory by creating and maintaining the most reliable web service on 
   - Enables all other competitive actions
   - Must be completed before any other operations
 
+### 🆔 Agent Identification
+- **`set_agent_identifier(identifier: str)`**
+  - Sets your unique identifier for the battle royale
+  - This identifier will be displayed in your web service
+  - Essential for the monitoring system to identify your service
+  - Must be set before creating your web service
+
 ### 💻 SSH Command Execution
 - **`execute_ssh_command(command: str)`**
   - Execute any command directly in the SSH terminal

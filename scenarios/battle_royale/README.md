@@ -114,14 +114,14 @@ curl -X POST http://localhost:8011/a2a \
 
 ### Run Comprehensive Tests
 
-```bash
+   ```bash
 cd tests
 python test_battle_royale_comprehensive.py
 ```
 
 ### Individual Component Tests
 
-```bash
+   ```bash
 # Test agent basics
 python test_agent_basics.py
 
@@ -308,7 +308,7 @@ docker-compose down && docker-compose up -d
 ```
 
 **SSH connection issues**:
-```bash
+   ```bash
 # Test SSH manually
 ssh -p 2222 root@localhost
 
@@ -317,7 +317,7 @@ ls -la docker/ssh/
 ```
 
 **API communication errors**:
-```bash
+   ```bash
 # Check agent health
 curl http://localhost:8011/.well-known/agent.json
 
@@ -329,10 +329,10 @@ tail -f battle_royale.log
 
 Enable debug logging:
 
-```bash
+   ```bash
 export LOG_LEVEL=DEBUG
 python battle_orchestrator.py
-```
+   ```
 
 ### Reset Environment
 

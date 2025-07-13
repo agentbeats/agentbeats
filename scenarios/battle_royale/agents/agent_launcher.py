@@ -78,11 +78,17 @@ async def reset(payload: SignalPayload):
     if payload.signal != "reset":
         raise HTTPException(status_code=400, detail="unsupported signal")
 
-    global agent_proc
+    global agent_proc, CHILD_PORT
     async with state_lock:
         if agent_proc and agent_proc.poll() is None:
             _terminate_agent(agent_proc)
-        agent_proc = _start_agent(extra_args=payload.extra_args or {})
+        
+        # Always include the correct port for the child agent
+        extra_args = payload.extra_args or {}
+        if "port" not in extra_args:
+            extra_args["port"] = CHILD_PORT
+            
+        agent_proc = _start_agent(extra_args=extra_args)
         agent_id = payload.agent_id
         
         try:
@@ -123,6 +129,8 @@ def main() -> None:
     BASE_PORT = args.port
     CHILD_PORT = BASE_PORT + 1
 
+    print(f"[LAUNCHER] Controller running on port {BASE_PORT}")
+    print(f"[LAUNCHER] Agent running on port {CHILD_PORT} (use this for /.well-known/agent.json and /a2a)")
     print(AGENT_FILE, BASE_PORT, CHILD_PORT, args.mcp_url)
 
     extra_args = {"port": CHILD_PORT}

@@ -29,13 +29,13 @@ def test_service_manager():
     print("🔍 Testing service manager...")
     try:
         # Test health endpoint
-        response = requests.get("http://localhost:9000/health", timeout=10)
+        response = requests.get("http://localhost:9099/health", timeout=10)
         if response.status_code != 200:
             print(f"❌ Service manager health failed: {response.status_code}")
             return False
         
         # Test services endpoint
-        response = requests.get("http://localhost:9000/services", timeout=10)
+        response = requests.get("http://localhost:9099/services", timeout=10)
         if response.status_code == 200:
             services = response.json()
             print(f"✅ Service manager working, {len(services)} services registered")
@@ -80,7 +80,7 @@ def test_web_service_creation():
             "port": 80
         }
         response = requests.post(
-            "http://localhost:9000/register",
+            "http://localhost:9099/register",
             json=register_data,
             timeout=10
         )
@@ -99,7 +99,7 @@ def test_web_service_creation():
             "command": "python3 -c \"import http.server, socketserver; socketserver.TCPServer(('', 80), http.server.SimpleHTTPRequestHandler).serve_forever()\""
         }
         response = requests.post(
-            "http://localhost:9000/start",
+            "http://localhost:9099/start",
             json=start_data,
             timeout=10
         )
@@ -116,7 +116,7 @@ def test_web_service_creation():
         # Check service health
         check_data = {"service_id": service_id}
         response = requests.post(
-            "http://localhost:9000/check",
+            "http://localhost:9099/check",
             json=check_data,
             timeout=10
         )
@@ -135,7 +135,7 @@ def test_web_service_creation():
         # Stop the service
         stop_data = {"service_id": service_id}
         response = requests.post(
-            "http://localhost:9000/stop",
+            "http://localhost:9099/stop",
             json=stop_data,
             timeout=10
         )
