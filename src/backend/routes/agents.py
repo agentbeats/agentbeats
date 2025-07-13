@@ -17,13 +17,13 @@ async def register_agent(agent_info: Dict[str, Any]):
     try:
         # Validate required fields
         if (
-            "name" not in agent_info
+            "alias" not in agent_info
             or "agent_url" not in agent_info
             or "launcher_url" not in agent_info
             or "is_green" not in agent_info
         ):
             raise HTTPException(
-                status_code=400, detail="Missing required fields: name and agent_url"
+                status_code=400, detail="Missing required fields: alias, agent_url, launcher_url, is_green"
             )
 
         if not isinstance(agent_info.get("is_green"), bool):
