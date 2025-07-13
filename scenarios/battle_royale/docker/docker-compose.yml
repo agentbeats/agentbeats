@@ -2,38 +2,24 @@ version: '3.8'
 
 services:
   battle-arena:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: battle-royale-arena
     ports:
-      - "2222:22"      # SSH access
-      - "8080:80"      # Web services
-      - "8081:8080"    # Monitor endpoint
+      - "2222:22"      # SSH
+      - "8080:8080"    # Health check
+      - "9099:9099"    # Service manager (host 9099 -> container 9099)
+      - "80:80"        # Web services
+    volumes:
+      - ./shared:/battle/shared
+      - ./logs:/battle/logs
     environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ./shared:/battle_arena/shared
-      - ./logs:/battle_arena/logs
+      - BATTLE_MODE=ready
     restart: unless-stopped
-    networks:
-      - battle-network
-
-  # Optional: Add a simple web interface to monitor the battle
-  battle-monitor:
-    image: nginx:alpine
-    container_name: battle-monitor
-    ports:
-      - "8082:80"
-    volumes:
-      - ./monitor-html:/usr/share/nginx/html
-    depends_on:
-      - battle-arena
     networks:
       - battle-network
 
 networks:
   battle-network:
     driver: bridge
-
-volumes:
-  shared:
-  logs: 

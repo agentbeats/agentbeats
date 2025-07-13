@@ -1,0 +1,24 @@
+[agent]
+name = "Battle Royale Red Agent"
+description = "A red agent that competes by SSHing into the battle arena, creating a web service on port 80 serving its name, and blocking other agents' services."
+version = "1.0.0"
+
+[skills.ssh_connect]
+description = "Connect to the battle arena via SSH using provided credentials."
+examples = ["Connect to the battle arena via SSH", "SSH into the container"]
+
+[skills.create_web_service]
+description = "Create a web service on port 80 serving the agent's name."
+examples = ["Create a web service on port 80", "Start a web server serving my name"]
+
+[skills.block_others]
+description = "Attempt to block other agents' web services from running."
+examples = ["Block other agents' services", "Stop competing web services"]
+
+[skills.check_web_service_status]
+description = "Check if the agent's web service is running and accessible."
+examples = ["Check my web service status", "Is my web service up?"]
+
+[skills.reset]
+description = "Reset red agent state to initial state."
+examples = ["reset", "reset your server", "reset the agent"] 

@@ -8,15 +8,15 @@ export default defineConfig({
 		exclude: ['@lucide/svelte']
 	},
 	server: {
-    allowedHosts: ['nuggets.puppy9.com'],
     proxy: {
       '/api': {
-        target: 'https://nuggets.puppy9.com',
+        target: 'http://localhost:9000',
         changeOrigin: true,
-        secure: false // set to true if your server uses a valid SSL cert
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/ws': {
-        target: 'wss://nuggets.puppy9.com',
+        target: 'ws://localhost:9000',
         ws: true,
         changeOrigin: true,
         secure: false
