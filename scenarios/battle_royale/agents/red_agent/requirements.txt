@@ -1,7 +1,0 @@
-# Battle Royale Red Agent Dependencies
-a2a>=0.1.0
-uvicorn>=0.24.0
-paramiko>=3.3.0
-requests>=2.31.0
-agents>=0.1.0
-openai>=1.0.0 

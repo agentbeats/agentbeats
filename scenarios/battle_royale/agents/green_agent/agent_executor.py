@@ -2,8 +2,6 @@
 
 import json
 import re
-import requests
-import time
 from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Dict, List, Sequence
@@ -38,133 +36,14 @@ CUSTOM_MODEL_PROVIDER = CustomModelProvider()
 
 
 class GreenAgent:
-    def __init__(self, mcp_url: str) -> None:
+    def __init__(self) -> None:
         """Initialize the Green Agent with its prompt and tools."""
         self.chat_history: List[Dict[str, str]] = []
-        self.mcp_url = mcp_url
-        self.monitoring_results = {}
-        self.agent_names = ["RedAgent_Alpha", "RedAgent_Beta", "RedAgent_Gamma"]  # Default agents
         self.main_agent = Agent(
             name="Green Agent", 
             instructions=GREEN_AGENT_PROMPT, 
             model="o4-mini", 
         )
-
-    @function_tool
-    def monitor_web_services(self, agent_names: List[str] = None, duration: int = 60) -> str:
-        """Monitor web services for all agents for a specified duration."""
-        if agent_names is None:
-            agent_names = self.agent_names
-        
-        results = {agent: [] for agent in agent_names}
-        start_time = time.time()
-        interval = 1  # Check every second
-        
-        try:
-            for i in range(duration):
-                timestamp = time.time()
-                
-                for agent_name in agent_names:
-                    try:
-                        response = requests.get("http://localhost:8080/", timeout=5)
-                        is_running = agent_name.lower() in response.text.lower()
-                        results[agent_name].append({
-                            "timestamp": timestamp,
-                            "running": is_running
-                        })
-                    except:
-                        results[agent_name].append({
-                            "timestamp": timestamp,
-                            "running": False
-                        })
-                
-                time.sleep(interval)
-            
-            self.monitoring_results = results
-            return f"Monitoring completed for {len(agent_names)} agents over {duration} seconds"
-            
-        except Exception as e:
-            return f"Monitoring failed: {str(e)}"
-
-    @function_tool
-    def calculate_scores(self) -> str:
-        """Calculate scores for each agent based on monitoring results."""
-        if not self.monitoring_results:
-            return "No monitoring results available. Please run monitoring first."
-        
-        scores = {}
-        
-        for agent_name, results in self.monitoring_results.items():
-            running_count = sum(1 for result in results if result["running"])
-            total_checks = len(results)
-            uptime_percentage = (running_count / total_checks) * 100 if total_checks > 0 else 0
-            
-            scores[agent_name] = {
-                "uptime_percentage": uptime_percentage,
-                "running_checks": running_count,
-                "total_checks": total_checks
-            }
-        
-        return json.dumps(scores, indent=2)
-
-    @function_tool
-    def determine_winner(self) -> str:
-        """Determine the winner based on scores."""
-        if not self.monitoring_results:
-            return "No monitoring results available. Please run monitoring first."
-        
-        scores = {}
-        for agent_name, results in self.monitoring_results.items():
-            running_count = sum(1 for result in results if result["running"])
-            total_checks = len(results)
-            uptime_percentage = (running_count / total_checks) * 100 if total_checks > 0 else 0
-            scores[agent_name] = uptime_percentage
-        
-        if not scores:
-            return "No agents to evaluate"
-        
-        winner = max(scores.items(), key=lambda x: x[1])
-        winner_name = winner[0]
-        winner_score = winner[1]
-        
-        result = {
-            "winner": winner_name,
-            "winner_score": winner_score,
-            "all_scores": scores
-        }
-        
-        return json.dumps(result, indent=2)
-
-    @function_tool
-    def check_web_service_status(self, agent_name: str) -> str:
-        """Check if a specific agent's web service is currently running."""
-        try:
-            response = requests.get("http://localhost:8080/", timeout=5)
-            if response.status_code == 200:
-                content = response.text.lower()
-                agent_name_lower = agent_name.lower()
-                if agent_name_lower in content:
-                    return f"✅ {agent_name} web service is currently running"
-                else:
-                    return f"❌ {agent_name} web service is not currently running"
-            else:
-                return f"❌ Web service returned status {response.status_code}"
-        except Exception as e:
-            return f"❌ Failed to check web service: {str(e)}"
-
-    @function_tool
-    def get_battle_summary(self) -> str:
-        """Get a summary of the battle royale results."""
-        if not self.monitoring_results:
-            return "No battle data available. Please run monitoring first."
-        
-        summary = {
-            "battle_duration": len(list(self.monitoring_results.values())[0]) if self.monitoring_results else 0,
-            "agents_participated": list(self.monitoring_results.keys()),
-            "monitoring_results": self.monitoring_results
-        }
-        
-        return json.dumps(summary, indent=2)
 
     async def invoke(self, context) -> str: 
         """Invoke the main agent with the given context."""
@@ -189,7 +68,7 @@ class GreenAgent:
 class GreenAgentExecutor(AgentExecutor):
     def __init__(self, mcp_url: str) -> None:
         """Initialize the Green Agent Executor."""
-        self.green_agent = GreenAgent(mcp_url)
+        self.green_agent = GreenAgent()
 
     async def execute(
         self,

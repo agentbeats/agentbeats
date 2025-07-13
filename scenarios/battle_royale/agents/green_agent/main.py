@@ -15,9 +15,7 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 
 from agent_executor import GreenAgentExecutor
 
-
 SERVER_BASE_URL = "http://localhost"
-
 
 def build_app(listen_port: int, mcp_url: str) -> A2AStarletteApplication:
     reset_skill = AgentSkill(
@@ -81,8 +79,10 @@ def build_app(listen_port: int, mcp_url: str) -> A2AStarletteApplication:
         ),
     )
 
-    return app
+    # No manual patching for /.well-known/agent.json needed.
+    # A2AStarletteApplication will expose the agent card automatically if compatible.
 
+    return app
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -92,7 +92,7 @@ def main() -> None:
         "--port",
         type=int,
         help="TCP port for the HTTP server to listen on",
-        default=9031,
+        default=8011,
     )
     parser.add_argument(
         "--mcp-url",
@@ -107,7 +107,6 @@ def main() -> None:
     application = build_app(args.port, args.mcp_url)
 
     uvicorn.run(application.build(), host="0.0.0.0", port=args.port, log_level="debug")
-
 
 if __name__ == "__main__":
     main() 
