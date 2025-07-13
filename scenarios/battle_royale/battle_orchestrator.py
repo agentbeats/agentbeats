@@ -12,6 +12,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 import aiohttp
 import requests
+import itertools
+import uuid
 
 # Configure logging
 logging.basicConfig(
@@ -26,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class BattleOrchestrator:
     def __init__(self):
+        # Use the correct child port for the green agent
         self.green_agent_url = "http://localhost:8011"
         self.red_agent_urls = [
             "http://localhost:8001",
@@ -33,8 +36,9 @@ class BattleOrchestrator:
             "http://localhost:8003"
         ]
         self.docker_arena_url = "http://localhost:9001"
-        self.battle_duration = 300  # 5 minutes
+        self.battle_duration = 60  # 1 minute
         self.monitoring_interval = 30  # 30 seconds
+        self.rpc_id_counter = itertools.count(1)
         
     async def check_agent_health(self, agent_url: str) -> bool:
         """Check if an agent is healthy and responding."""
@@ -84,13 +88,27 @@ class BattleOrchestrator:
         logger.info("Creating battle arena...")
         try:
             async with aiohttp.ClientSession() as session:
+                rpc_id = next(self.rpc_id_counter)
                 payload = {
-                    "messages": [{
-                        "role": "user",
-                        "content": "Create a new battle arena for the red agents to compete in."
-                    }]
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "messageId": uuid.uuid4().hex,
+                            "role": "user",
+                            "parts": [{"text": "Create a new battle arena for the red agents to compete in."}]
+                        }
+                    }
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                logger.info(f"[DEBUG] Posting to {self.green_agent_url}/ with payload: {json.dumps(payload)}")
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
+                    logger.info(f"[DEBUG] Response status: {response.status}")
+                    try:
+                        resp_text = await response.text()
+                        logger.info(f"[DEBUG] Response body: {resp_text}")
+                    except Exception as e:
+                        logger.info(f"[DEBUG] Could not read response body: {e}")
                     if response.status == 200:
                         result = await response.json()
                         logger.info(f"Battle arena created: {result}")
@@ -99,7 +117,7 @@ class BattleOrchestrator:
                         logger.error(f"Failed to create battle arena: {response.status}")
                         return False
         except Exception as e:
-            logger.error(f"Error creating battle arena: {e}")
+            logger.error(f"Exception in create_battle_arena: {e}")
             return False
     
     async def start_red_agents(self) -> List[bool]:
@@ -129,13 +147,20 @@ class BattleOrchestrator:
         logger.info("Starting battle...")
         try:
             async with aiohttp.ClientSession() as session:
+                rpc_id = next(self.rpc_id_counter)
                 payload = {
-                    "messages": [{
-                        "role": "user", 
-                        "content": "Start the battle royale competition. Red agents should now begin creating their web services."
-                    }]
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "messageId": uuid.uuid4().hex,
+                            "role": "user",
+                            "parts": [{"text": "Start the battle royale competition. Red agents should now begin creating their web services."}]
+                        }
+                    }
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         logger.info(f"Battle started: {result}")
@@ -157,13 +182,20 @@ class BattleOrchestrator:
             try:
                 # Get battle status from green agent
                 async with aiohttp.ClientSession() as session:
+                    rpc_id = next(self.rpc_id_counter)
                     payload = {
-                        "messages": [{
-                            "role": "user",
-                            "content": "Provide current battle status and scores."
-                        }]
+                        "jsonrpc": "2.0",
+                        "id": rpc_id,
+                        "method": "message/send",
+                        "params": {
+                            "message": {
+                                "messageId": uuid.uuid4().hex,
+                                "role": "user",
+                                "parts": [{"text": "Provide current battle status and scores."}]
+                            }
+                        }
                     }
-                    async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                    async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                         if response.status == 200:
                             result = await response.json()
                             monitoring_data.append({
@@ -186,13 +218,20 @@ class BattleOrchestrator:
         logger.info("Ending battle...")
         try:
             async with aiohttp.ClientSession() as session:
+                rpc_id = next(self.rpc_id_counter)
                 payload = {
-                    "messages": [{
-                        "role": "user",
-                        "content": "End the battle and determine the winner based on service uptime and performance."
-                    }]
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "method": "message/send",
+                    "params": {
+                        "message": {
+                            "messageId": uuid.uuid4().hex,
+                            "role": "user",
+                            "parts": [{"text": "End the battle and determine the winner based on service uptime and performance."}]
+                        }
+                    }
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         logger.info(f"Battle ended: {result}")
@@ -223,6 +262,39 @@ class BattleOrchestrator:
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")
     
+    async def check_a2a_endpoint(self) -> bool:
+        """Check if the / endpoint is available on the green agent (was /a2a)."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                test_payload = {"messages": [{"role": "user", "content": "ping"}]}
+                async with session.post(f"{self.green_agent_url}/", json=test_payload) as response:
+                    logger.info(f"[DEBUG] / endpoint check status: {response.status}")
+                    if response.status in (200, 400):
+                        return True
+                    else:
+                        logger.error(f"[ERROR] / endpoint not available, status: {response.status}")
+                        return False
+        except Exception as e:
+            logger.error(f"[ERROR] Exception checking / endpoint: {e}")
+            return False
+
+    def post_battle_log(self, battle_id, message, detail=None, reported_by="battle_royale_orchestrator", api_url="http://localhost:9000"):
+        log_entry = {
+            "is_result": False,
+            "timestamp": datetime.utcnow().isoformat(),
+            "message": message,
+            "reported_by": reported_by,
+        }
+        if detail:
+            log_entry["detail"] = detail
+        url = f"{api_url}/battles/{battle_id}"
+        try:
+            resp = requests.post(url, json=log_entry, timeout=5)
+            resp.raise_for_status()
+            logger.info(f"Posted log to backend: {message}")
+        except Exception as e:
+            logger.warning(f"Failed to post log to backend: {e}")
+
     async def run_full_battle(self):
         """Run the complete battle royale simulation."""
         logger.info("=== Starting Battle Royale Simulation ===")
@@ -233,6 +305,10 @@ class BattleOrchestrator:
             green_healthy = await self.check_agent_health(self.green_agent_url)
             if not green_healthy:
                 logger.error("Green agent is not healthy")
+                return False
+            # Check / endpoint
+            if not await self.check_a2a_endpoint():
+                logger.error("/ endpoint is not available on the green agent. Check the agent process and port.")
                 return False
             
             docker_healthy = await self.check_docker_arena()

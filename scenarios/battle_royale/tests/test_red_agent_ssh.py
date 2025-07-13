@@ -31,7 +31,7 @@ def test_red_agent_ssh_command():
     
     try:
         response = requests.post(
-            f"{red_agent_url}/a2a",
+            f"{red_agent_url}/",
             json=ssh_command,
             headers={"Content-Type": "application/json"},
             timeout=30

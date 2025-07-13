@@ -160,16 +160,18 @@ start_agents() {
     # Wait for green agent to start
     wait_for_service "http://localhost:8011/.well-known/agent.json" "Green Agent"
     
-    # Start red agents in background
-    for i in {1..3}; do
-        port=$((8000 + i))
-        print_status "Starting red agent $i on port $port..."
-        python3 agent_launcher.py red_agent --port $port >../red_agent_$i.log 2>&1 &
+    # Start red agents in background with correct ports
+    red_agent_ports=(8001 8002 8020)  # Match green agent expectations
+    for i in {0..2}; do
+        port=${red_agent_ports[$i]}
+        print_status "Starting red agent $((i+1)) on port $port..."
+        python3 agent_launcher.py red_agent --port $port >../red_agent_$((i+1)).log 2>&1 &
         RED_AGENT_PID=$!
-        echo $RED_AGENT_PID > ../red_agent_$i.pid
+        echo $RED_AGENT_PID > ../red_agent_$((i+1)).pid
         
-        # Wait for red agent to start
-        wait_for_service "http://localhost:$port/.well-known/agent.json" "Red Agent $i"
+        # Wait for red agent to start (child port is BASE_PORT + 1)
+        child_port=$((port + 1))
+        wait_for_service "http://localhost:$child_port/.well-known/agent.json" "Red Agent $((i+1))"
     done
     
     cd ..
