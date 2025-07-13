@@ -24,6 +24,7 @@
     launcher_url: "",
     is_green: false,
     participant_requirements: [],
+    battle_timeout: 300,
   });
 
   let isSubmitting = $state(false);
@@ -95,6 +96,7 @@
         formData.is_green = true;
         formData.participant_requirements =
           analysis.participant_requirements || [];
+        formData.battle_timeout = analysis.battle_timeout || 300;
       }
     } catch (err) {
       analysisError =
@@ -408,6 +410,23 @@
                   No participant requirements defined
                 </p>
               {/if}
+            </div>
+            <div class="border-t pt-4">
+              <h4 class="font-medium mb-2">Battle Configuration</h4>
+              <div class="space-y-2">
+                <Label for="battle_timeout">Battle Timeout (seconds)</Label>
+                <Input
+                  id="battle_timeout"
+                  type="number"
+                  bind:value={formData.battle_timeout}
+                  placeholder="300"
+                  min="1"
+                  class="w-full"
+                />
+                <div class="text-xs text-muted-foreground">
+                  Maximum time allowed for the battle to complete
+                </div>
+              </div>
             </div>
           {:else}
             <p class="text-muted-foreground text-sm">
