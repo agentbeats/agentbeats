@@ -6,11 +6,30 @@ import threading
 from datetime import datetime
 import json
 import logging
+import toml
+import os
 
 from ..db.storage import db
 from ..a2a_client import a2a_client
 
 router = APIRouter()
+
+# Configuration loading
+def load_config():
+    """Load configuration from backend_cfg.toml"""
+    config_path = os.path.join(os.path.dirname(__file__), "..", "backend_cfg.toml")
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            return toml.load(f)
+    except FileNotFoundError:
+        logger.warning(f"Config file not found at {config_path}, using defaults")
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading config: {e}, using defaults")
+        return {}
+
+# Load configuration once at module level
+CONFIG = load_config()
 
 battle_queue = []
 queue_lock = threading.Lock()
@@ -158,7 +177,6 @@ def unlock_and_unready_agents(battle: Dict[str, Any]):
             
 async def process_battle(battle_id: str):
     
-    # TODO: call unlock_and_reset_agents too many times...
     try:
         # Get the battle info
         battle = db.read("battles", battle_id)
@@ -250,7 +268,7 @@ async def process_battle(battle_id: str):
             opponent_info_send_to_green[idx]["agent_url"] = op["register_info"].get("agent_url")
             
 
-        ready_timeout = battle.get("config", {}).get("ready_timeout", 300)
+        ready_timeout = CONFIG.get("battle").get("ready_timeout")
         agent_ids = [battle["green_agent_id"]] + opponent_ids
         add_system_log(battle_id, "Waiting for agents to be ready", {
             "ready_timeout": ready_timeout
@@ -303,7 +321,7 @@ async def process_battle(battle_id: str):
 
         add_system_log(battle_id, "Green agent notified, battle commenced")
             
-        battle_timeout = battle.get("config", {}).get("battle_timeout", 300)
+        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle").get("default_battle_timeout"))
         timeout_thread = threading.Thread(
             target=check_battle_timeout,
             args=(battle_id, battle_timeout),

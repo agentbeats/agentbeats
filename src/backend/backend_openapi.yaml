@@ -93,6 +93,11 @@ components:
               name: guardrail_generator
               description: Acts as the guardrail generator
               required: true
+        battle_timeout:
+          type: integer
+          description: Timeout in seconds for the battle to complete
+          default: 300
+          example: 300
 
     AgentCard:
       type: object
