@@ -62,7 +62,7 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
         "is_result": False,
         "message": message,
         "reported_by": reported_by,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat() + "Z"
     }
     if detail:
         event_data["detail"] = detail
@@ -114,7 +114,7 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
         "is_result": True,
         "message": message,
         "winner": winner,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.utcnow().isoformat() + "Z",
         "reported_by": "green_agent"  # Assuming the green agent reports the result
     }
     

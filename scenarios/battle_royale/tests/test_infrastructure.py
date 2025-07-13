@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Battle Royale Test Script
-Tests the Docker container setup and simulates agent interactions.
+Battle Royale Infrastructure Test Script
+Tests the Docker container setup, SSH connections, and basic infrastructure.
+Consolidated from the redundant parts of test_battle_royale.py and test_battle_royale_agents.py
 """
 
 import asyncio
@@ -32,7 +33,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class BattleRoyaleTester:
+class BattleRoyaleInfrastructureTester:
     def __init__(self):
         self.container_name = "battle-royale-arena"
         self.ssh_host = "localhost"
@@ -41,6 +42,7 @@ class BattleRoyaleTester:
         self.ssh_password = "password123"
         self.web_port = 8080
         self.monitor_port = 8081
+        self.battle_arena_url = "http://localhost:8080"
         
     def check_docker_status(self) -> bool:
         """Check if the Docker container is running."""
@@ -60,7 +62,7 @@ class BattleRoyaleTester:
             logger.info("Starting battle royale container...")
             subprocess.run(
                 ["docker-compose", "up", "-d"],
-                cwd="docker",
+                cwd="../docker",
                 check=True
             )
             time.sleep(5)  # Wait for container to start
@@ -75,7 +77,7 @@ class BattleRoyaleTester:
             logger.info("Stopping battle royale container...")
             subprocess.run(
                 ["docker-compose", "down"],
-                cwd="docker",
+                cwd="../docker",
                 check=True
             )
             return True
@@ -117,6 +119,22 @@ class BattleRoyaleTester:
                 return False
         except Exception as e:
             logger.error(f"❌ Monitor endpoint test failed: {e}")
+            return False
+    
+    def test_battle_arena_status(self) -> bool:
+        """Test if the battle arena container is running and accessible."""
+        try:
+            logger.info("Testing Battle Arena status...")
+            response = requests.get(f"{self.battle_arena_url}/status", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ Battle Arena is running: {data}")
+                return True
+            else:
+                logger.error(f"❌ Battle Arena returned status {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"❌ Battle Arena status check failed: {e}")
             return False
     
     def simulate_agent_ssh_session(self, agent_name: str) -> bool:
@@ -240,11 +258,11 @@ with socketserver.TCPServer(("", PORT), AgentHandler) as httpd:
             logger.error(f"❌ {agent_name} web service access failed: {e}")
             return False
     
-    def run_full_test(self) -> Dict[str, bool]:
-        """Run the complete test suite."""
+    def run_infrastructure_tests(self) -> Dict[str, bool]:
+        """Run the complete infrastructure test suite."""
         results = {}
         
-        logger.info("🚀 Starting Battle Royale Test Suite")
+        logger.info("🚀 Starting Battle Royale Infrastructure Test Suite")
         logger.info("=" * 50)
         
         # Test 1: Check if container is running
@@ -267,8 +285,12 @@ with socketserver.TCPServer(("", PORT), AgentHandler) as httpd:
         logger.info("Test 3: Testing monitor endpoint...")
         results["monitor_endpoint"] = self.test_monitor_endpoint()
         
-        # Test 4: Simulate multiple agents
-        logger.info("Test 4: Simulating multiple agent sessions...")
+        # Test 4: Battle arena status
+        logger.info("Test 4: Testing battle arena status...")
+        results["battle_arena_status"] = self.test_battle_arena_status()
+        
+        # Test 5: Simulate multiple agents
+        logger.info("Test 5: Simulating multiple agent sessions...")
         agents = ["RedAgent_Alpha", "RedAgent_Beta", "RedAgent_Gamma"]
         
         results["agent_sessions"] = True
@@ -276,23 +298,23 @@ with socketserver.TCPServer(("", PORT), AgentHandler) as httpd:
             if not self.simulate_agent_ssh_session(agent):
                 results["agent_sessions"] = False
         
-        # Test 5: Simulate web service creation
-        logger.info("Test 5: Simulating web service creation...")
+        # Test 6: Simulate web service creation
+        logger.info("Test 6: Simulating web service creation...")
         results["web_service_creation"] = True
         for agent in agents:
             if not self.simulate_web_service_creation(agent):
                 results["web_service_creation"] = False
         
-        # Test 6: Test web service access
-        logger.info("Test 6: Testing web service access...")
+        # Test 7: Test web service access
+        logger.info("Test 7: Testing web service access...")
         results["web_service_access"] = self.test_web_service_access(agents[0])
         
-        # Test 7: Check final status
-        logger.info("Test 7: Checking final container status...")
+        # Test 8: Check final status
+        logger.info("Test 8: Checking final container status...")
         results["final_status"] = self.test_monitor_endpoint()
         
         logger.info("=" * 50)
-        logger.info("📊 Test Results Summary:")
+        logger.info("📊 Infrastructure Test Results Summary:")
         for test_name, result in results.items():
             status = "✅ PASS" if result else "❌ FAIL"
             logger.info(f"  {test_name}: {status}")
@@ -301,10 +323,10 @@ with socketserver.TCPServer(("", PORT), AgentHandler) as httpd:
 
 async def main():
     """Main test function."""
-    tester = BattleRoyaleTester()
+    tester = BattleRoyaleInfrastructureTester()
     
     try:
-        results = tester.run_full_test()
+        results = tester.run_infrastructure_tests()
         
         # Calculate overall success
         passed = sum(results.values())
@@ -314,11 +336,11 @@ async def main():
         logger.info(f"\n🎯 Overall Success Rate: {success_rate:.1f}% ({passed}/{total})")
         
         if success_rate >= 80:
-            logger.info("🎉 Battle Royale setup is working well!")
+            logger.info("🎉 Battle Royale infrastructure is working well!")
         elif success_rate >= 60:
-            logger.info("⚠️ Battle Royale setup has some issues but is mostly functional")
+            logger.info("⚠️ Battle Royale infrastructure has some issues but is mostly functional")
         else:
-            logger.error("❌ Battle Royale setup has significant issues")
+            logger.error("❌ Battle Royale infrastructure has significant issues")
         
         # Ask if user wants to stop the container
         response = input("\nDo you want to stop the container? (y/N): ")
