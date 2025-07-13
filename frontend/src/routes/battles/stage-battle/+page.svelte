@@ -80,7 +80,7 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
       const result = await createBattle(payload);
       console.log('[stage-battle/+page.svelte] Battle created successfully:', result);
       success = true;
-      setTimeout(() => { goto('/battles'); }, 2000);
+      setTimeout(() => { goto(`/battles/${result.battle_id}`); }, 2000);
     } catch (err) {
       console.error('[stage-battle/+page.svelte] Error creating battle:', err);
       error = err instanceof Error ? err.message : 'Failed to create battle';

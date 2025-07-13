@@ -18,3 +18,27 @@ EDITS
 red agents are suppose to ssh to server and start a web service on port 80, serving its own name string under the root routing
 not the first one complete the task wins, but rather it needs to also block access from others
 the green will scan that web service every 1 second during a 1 min time range
+
+MORE INFO ABOUT CREATING AGENTS
+
+Daniel Miao
+  9:29 PM
+Hi hi! Sorry to bother you, but I just wanted to confirm something really quick, as my memory is not the best and I sort of forgot some of the meeting details lol; would the agent template you made perhaps be available to develop with as of right now? Thanks!
+
+Siyuan Xie
+  9:32 PM
+Sry its not available right now. I've made progress on simon/ branch but its still a bit distance from the final version since it looks complex. I will notify you soon if i finished debugging the current version! Btw i have some other meeting recently so i'm a little bit low-productive lol
+9:32
+But i guess you can refer to this for what final version might look like
+9:32
+import agentbeats as ab
+ab_agent = ab.BeatsAgent(__name__)
+@ab_agent.tool()
+def helloworld_tool():
+    """Blablabla"""
+    return "Hello from the agent tool!"
+if __name__ == "__main__":
+    ab_agent.load_agent_card("ideal_agent/agent_card.toml")
+    ab_agent.add_mcp_server("http://localhost:9123/sse")
+    ab_agent.run()
+# agentbeats run_agent blabla.toml --mcp http://localhost:9123/sse ...
