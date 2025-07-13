@@ -166,7 +166,7 @@ async def register_agent(client, name, endpoint, launcher, is_green, participant
     
     # Register the agent
     agent_info = {
-        "name": name,
+        "alias": name,
         "agent_url": endpoint,
         "launcher_url": launcher,  # Assuming a launcher endpoint for the agent
         "is_green": is_green,

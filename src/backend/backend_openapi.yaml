@@ -58,14 +58,14 @@ components:
     AgentRegisterInfo:
       type: object
       required:
-        - name
+        - alias
         - agent_url
         - launcher_url
         - is_green
       properties:
-        name:
+        alias:
           type: string
-          description: Agent display name
+          description: Agent display alias. Not equal to agent name on agent card.
         agent_url:
           type: string
           format: uri
