@@ -66,20 +66,20 @@ def test_requirements_files():
     """Test that the main requirements file exists and is readable."""
     print("🔍 Testing main requirements file...")
     req_file = os.path.join(AGENTS_DIR, "..", "requirements.txt")
-    if not os.path.exists(req_file):
+        if not os.path.exists(req_file):
         print(f"❌ Main requirements file not found: {req_file}")
-        return False
-    try:
-        with open(req_file, 'r') as f:
-            content = f.read()
-            if len(content.strip()) > 0:
+            return False
+        try:
+            with open(req_file, 'r') as f:
+                content = f.read()
+                if len(content.strip()) > 0:
                 print(f"✅ Main requirements file is valid")
-            else:
+                else:
                 print(f"❌ Main requirements file is empty")
-                return False
-    except Exception as e:
+                    return False
+        except Exception as e:
         print(f"❌ Failed to read main requirements file: {e}")
-        return False
+            return False
     return True
 
 def test_agent_card(agent_url, agent_name):

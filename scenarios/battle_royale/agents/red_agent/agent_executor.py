@@ -84,6 +84,7 @@ class RedAgent:
             self._create_service_blocking_tool(),
             self._create_service_status_tool(),
             self._create_reset_tool(),
+            self._create_set_identifier_tool(),
         ]
 
     async def ensure_mcp_connected(self) -> None:
@@ -228,10 +229,16 @@ class BattleService(http.server.SimpleHTTPRequestHandler):
                 <h1>🏆 {service_name}</h1>
                 <p>This is a web service created by a red agent in the battle royale.</p>
                 <p>Time: {time.strftime('%Y-%m-%d %H:%M:%S')}</p>
-                <p>Agent ID: {self.agent_id or 'Unknown'}</p>
+                <p><strong>Agent ID: {self.agent_id or 'Unknown'}</strong></p>
+                <p>Service Status: Active and Running</p>
             </body>
             </html>
             """
+            
+            # Simple text response for easier monitoring
+            text_response = f"RedAgent: Alive and Kicking\nService: Battle Royale on port 80\nAgent ID: {self.agent_id or 'Unknown'}"
+            
+            response = html_response
             self.wfile.write(response.encode())
         else:
             self.send_response(404)
@@ -348,7 +355,7 @@ if __name__ == "__main__":
                 
                 # Check service manager
                 try:
-                    services_response = requests.get("http://localhost:9000/services", timeout=5)
+                    services_response = requests.get("http://localhost:9099/services", timeout=5)
                     if services_response.status_code == 200:
                         services = services_response.json()
                         status_report["registered_services"] = len(services)
@@ -393,6 +400,18 @@ if __name__ == "__main__":
         
         return reset_agent_state
 
+    def _create_set_identifier_tool(self):
+        @function_tool(name_override="set_agent_identifier")
+        def set_agent_identifier(identifier: str) -> str:
+            """
+            Set the agent's identifier for the battle arena.
+            This is used to ensure the web service serves the correct agent.
+            """
+            self.agent_id = identifier
+            return f"✅ Agent identifier set to: {identifier}"
+        
+        return set_agent_identifier
+
     async def invoke(self, context) -> str:
         print(context.get_user_input(), "=========================================RED INPUT")
         await self.ensure_mcp_connected()
@@ -403,7 +422,7 @@ if __name__ == "__main__":
         result = await Runner.run(
             self.main_agent,
             query_ctx,
-            max_turns=30,
+            max_turns=100,
             run_config=RunConfig(model_provider=CUSTOM_MODEL_PROVIDER)
         )  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore

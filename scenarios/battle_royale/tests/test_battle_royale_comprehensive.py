@@ -64,7 +64,7 @@ class BattleRoyaleTestSuite:
                         "content": "Hello, this is a test message."
                     }]
                 }
-                async with session.post(f"{agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test(f"{agent_name} A2A Communication", True,
@@ -89,7 +89,7 @@ class BattleRoyaleTestSuite:
                         "content": "Check if the Docker battle arena is running."
                     }]
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Green Agent Docker Tools", True,
@@ -114,7 +114,7 @@ class BattleRoyaleTestSuite:
                         "content": "Test SSH connection to the battle arena."
                     }]
                 }
-                async with session.post(f"{self.red_agent_urls[0]}/a2a", json=payload) as response:
+                async with session.post(f"{self.red_agent_urls[0]}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Red Agent SSH Tools", True,
@@ -178,7 +178,7 @@ class BattleRoyaleTestSuite:
                         "content": "Create a test battle arena."
                     }]
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Battle Arena Creation", True,
@@ -203,7 +203,7 @@ class BattleRoyaleTestSuite:
                         "content": "Send a test message to red agent 1."
                     }]
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Agent Communication", True,
@@ -227,7 +227,7 @@ class BattleRoyaleTestSuite:
                         "content": "Create a test web service on port 8080."
                     }]
                 }
-                async with session.post(f"{self.red_agent_urls[0]}/a2a", json=payload) as response:
+                async with session.post(f"{self.red_agent_urls[0]}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Web Service Creation", True,
@@ -251,7 +251,7 @@ class BattleRoyaleTestSuite:
                         "content": "Monitor all web services and provide status."
                     }]
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Service Monitoring", True,
@@ -276,7 +276,7 @@ class BattleRoyaleTestSuite:
                         "content": "Start a test battle with 30-second duration."
                     }]
                 }
-                async with session.post(f"{self.green_agent_url}/a2a", json=payload) as response:
+                async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
                         self.log_test("Battle Orchestration", True,
