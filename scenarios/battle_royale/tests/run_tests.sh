@@ -30,8 +30,8 @@ print_error() {
 }
 
 # Check if we're in the right directory
-if [ ! -f "test_battle_royale.py" ]; then
-    print_error "Please run this script from the battle_royale directory"
+if [ ! -f "test_battle_royale_infrastructure.py" ]; then
+    print_error "Please run this script from the tests directory"
     exit 1
 fi
 
@@ -50,8 +50,8 @@ fi
 # Function to install Python dependencies
 install_dependencies() {
     print_status "Installing Python dependencies..."
-    if [ -f "requirements.txt" ]; then
-        pip install -r requirements.txt
+    if [ -f "../requirements.txt" ]; then
+        pip install -r ../requirements.txt
         print_success "Dependencies installed"
     else
         print_warning "No requirements.txt found, skipping dependency installation"
@@ -61,48 +61,79 @@ install_dependencies() {
 # Function to build and start the container
 start_container() {
     print_status "Building and starting battle royale container..."
-    cd docker
+    cd ../docker
     docker-compose up --build -d
-    cd ..
+    cd ../tests
     print_success "Container started"
 }
 
 # Function to stop the container
 stop_container() {
     print_status "Stopping battle royale container..."
-    cd docker
+    cd ../docker
     docker-compose down
-    cd ..
+    cd ../tests
     print_success "Container stopped"
 }
 
 # Function to run the tests
 run_tests() {
-    print_status "Running battle royale tests..."
-    python3 test_battle_royale.py
+    local test_type="${1:-all}"
+    
+    case "$test_type" in
+        "all")
+            print_status "Running all battle royale tests..."
+            echo ""
+            print_status "1. Running agent structure tests..."
+            python3 test_agent_basics.py
+            echo ""
+            print_status "2. Running battle royale infrastructure tests..."
+            python3 test_battle_royale_infrastructure.py
+            echo ""
+            print_status "3. Running agent interaction tests..."
+            python3 test_battle_royale_agents.py
+            ;;
+        "basics")
+            print_status "Running agent structure tests..."
+            python3 test_agent_basics.py
+            ;;
+        "infrastructure")
+            print_status "Running battle royale infrastructure tests..."
+            python3 test_battle_royale_infrastructure.py
+            ;;
+        "agents")
+            print_status "Running agent interaction tests..."
+            python3 test_battle_royale_agents.py
+            ;;
+        *)
+            print_error "Unknown test type: $test_type"
+            print_status "Available test types: all, basics, infrastructure, agents"
+            exit 1
+            ;;
+    esac
 }
 
 # Function to show container status
 show_status() {
     print_status "Container status:"
-    cd docker
+    cd ../docker
     docker-compose ps
-    cd ..
+    cd ../tests
 }
 
 # Function to show logs
 show_logs() {
     print_status "Container logs:"
-    cd docker
+    cd ../docker
     docker-compose logs
-    cd ..
+    cd ../tests
 }
 
 # Function to show help
 show_help() {
     echo "Battle Royale Test Runner"
     echo ""
-    echo "Usage: $0 [COMMAND]"
+    echo "Usage: $0 [COMMAND] [OPTIONS]"
     echo ""
     echo "Commands:"
     echo "  install     Install Python dependencies"
@@ -114,10 +145,19 @@ show_help() {
     echo "  full        Install dependencies, start container, and run tests"
     echo "  help        Show this help message"
     echo ""
+    echo "Test Types (for 'test' command):"
+    echo "  all         Run all tests (default)"
+    echo "  basics      Run only agent structure tests"
+    echo "  infrastructure  Run only battle royale infrastructure tests"
+    echo "  agents      Run only agent interaction tests"
+    echo ""
     echo "Examples:"
-    echo "  $0 full     # Complete setup and test"
-    echo "  $0 test     # Run tests only (assumes container is running)"
-    echo "  $0 stop     # Stop the container"
+    echo "  $0 full                    # Complete setup and all tests"
+    echo "  $0 test                    # Run all tests (assumes container is running)"
+    echo "  $0 test basics             # Run only agent structure tests"
+    echo "  $0 test infrastructure     # Run only infrastructure tests"
+    echo "  $0 test agents             # Run only agent interaction tests"
+    echo "  $0 stop                    # Stop the container"
 }
 
 # Main script logic
@@ -132,7 +172,7 @@ case "${1:-help}" in
         stop_container
         ;;
     "test")
-        run_tests
+        run_tests "$2"
         ;;
     "status")
         show_status
@@ -145,7 +185,7 @@ case "${1:-help}" in
         install_dependencies
         start_container
         sleep 5  # Wait for container to be ready
-        run_tests
+        run_tests "all"
         ;;
     "help"|*)
         show_help
