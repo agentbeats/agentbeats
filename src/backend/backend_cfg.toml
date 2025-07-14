@@ -2,5 +2,5 @@
 
 [battle]
 # Timeout in seconds for agents to be ready before battle starts
-ready_timeout = 300
+ready_timeout = 600
 default_battle_timeout = 300
