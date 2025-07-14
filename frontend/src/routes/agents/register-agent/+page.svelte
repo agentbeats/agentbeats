@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import { goto } from "$app/navigation";
   import {
     registerAgent,
@@ -15,8 +16,36 @@
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
+  import { user, loading } from "$lib/stores/auth";
+  import { supabase } from "$lib/auth/supabase";
 
   export const data: { agents: any[] } = $props();
+
+  let unsubscribe: (() => void) | null = null;
+
+  onMount(async () => {
+    // Check authentication immediately
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('Register agent page: No session found, redirecting to login');
+      goto('/login');
+      return;
+    }
+    
+    // Subscribe to auth state changes for logout detection
+    unsubscribe = user.subscribe(($user) => {
+      if (!$user && !$loading) {
+        console.log('Register agent page: User logged out, redirecting to login');
+        goto('/login');
+      }
+    });
+  });
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  });
 
   let formData: any = $state({
     alias: "",

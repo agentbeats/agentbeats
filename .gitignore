@@ -99,3 +99,6 @@ scenarios/battle_royale/credentials/
 # Container-specific files
 scenarios/battle_royale/container_data/
 scenarios/battle_royale/monitor-html/
+
+# .env files
+.env
