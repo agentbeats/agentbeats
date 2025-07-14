@@ -34,8 +34,16 @@ echo "Port cleanup complete."
 
 # Start Docker service manager (battle_royale)
 echo -e "\n[1/3] Starting Docker service manager (battle_royale)..."
-(cd scenarios/battle_royale/docker && docker-compose up -d)
-echo "Docker service manager started."
+if command -v docker compose >/dev/null 2>&1; then
+  echo "Using 'docker compose' (plugin)..."
+  (cd scenarios/battle_royale/docker && docker compose up -d)
+elif command -v docker-compose >/dev/null 2>&1; then
+  echo "Using 'docker-compose' (standalone)..."
+  (cd scenarios/battle_royale/docker && docker-compose up -d)
+else
+  echo "Docker Compose not found! Skipping Docker service manager startup."
+fi
+echo "Docker service manager step complete."
 
 # Start red agents for battle_royale (3 agents: 8010/8011, 8020/8021, 8030/8031)
 echo -e "\n[2/3] Starting battle_royale red agents in background..."
