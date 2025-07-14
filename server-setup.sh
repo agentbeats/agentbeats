@@ -31,13 +31,15 @@ fi
 PORTS=(8000 8010 8011 8020 8021 8030 8031 8040 8041 9010 9011 9020 9021 9030 9031)
 echo -e "\nKilling any processes on relevant ports..."
 for port in "${PORTS[@]}"; do
-  pid=$(lsof -ti tcp:$port)
-  if [ -n "$pid" ]; then
-    echo "Killing process on port $port (PID $pid)"
-    kill -9 $pid
+  pids=$(lsof -ti tcp:$port)
+  if [ -n "$pids" ]; then
+    echo "Killing process(es) on port $port (PID(s) $pids)"
+    for pid in $pids; do
+      kill -9 $pid 2>/dev/null || true
+    done
   fi
 done
-echo "Port cleanup complete."
+echo "Port cleanup complete. Proceeding to Docker and agent startup..."
 
 # Start Docker service manager (battle_royale)
 echo -e "\n[1/3] Starting Docker service manager (battle_royale)..."
