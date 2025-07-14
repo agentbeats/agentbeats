@@ -79,6 +79,66 @@
       default: return 'outline';
     }
   }
+
+  // Calculate agent statistics from battle history
+  function calculateAgentStats(agent: any) {
+    if (!agent?.elo?.battle_history) {
+      return {
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        errors: 0,
+        total_battles: 0,
+        win_rate: 0.0,
+        loss_rate: 0.0,
+        draw_rate: 0.0,
+        error_rate: 0.0
+      };
+    }
+
+    const history = agent.elo.battle_history;
+    const stats = {
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      errors: 0,
+      total_battles: history.length,
+      win_rate: 0.0,
+      loss_rate: 0.0,
+      draw_rate: 0.0,
+      error_rate: 0.0
+    };
+
+    history.forEach((battle: any) => {
+      switch (battle.result) {
+        case 'win':
+          stats.wins++;
+          break;
+        case 'loss':
+          stats.losses++;
+          break;
+        case 'draw':
+          stats.draws++;
+          break;
+        case 'error':
+          stats.errors++;
+          break;
+      }
+    });
+
+    // Calculate rates
+    if (stats.total_battles > 0) {
+      stats.win_rate = Math.round((stats.wins / stats.total_battles) * 100 * 100) / 100;
+      stats.loss_rate = Math.round((stats.losses / stats.total_battles) * 100 * 100) / 100;
+      stats.draw_rate = Math.round((stats.draws / stats.total_battles) * 100 * 100) / 100;
+      stats.error_rate = Math.round((stats.errors / stats.total_battles) * 100 * 100) / 100;
+    }
+
+    return stats;
+  }
+
+  // Get calculated stats
+  $: agentStats = calculateAgentStats(agent);
 </script>
 
 <svelte:head>
@@ -190,11 +250,11 @@
       </CardContent>
     </Card>
 
-    <!-- ELO Rating -->
+    <!-- ELO Rating & Statistics -->
     <Card>
       <CardHeader>
-        <CardTitle>ELO Rating</CardTitle>
-        <CardDescription>Agent's competitive rating and battle history</CardDescription>
+        <CardTitle>ELO Rating & Statistics</CardTitle>
+        <CardDescription>Agent's competitive rating and battle performance</CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="text-center">
@@ -202,6 +262,36 @@
             {agent?.elo?.rating || 1000}
           </div>
           <p class="text-muted-foreground text-sm">Current Rating</p>
+        </div>
+        
+        <Separator />
+        
+        <!-- Statistics Grid -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="text-center p-3 bg-green-50 rounded-lg">
+            <div class="text-2xl font-bold text-green-600">{agentStats.wins}</div>
+            <div class="text-sm text-muted-foreground">Wins</div>
+            <div class="text-xs text-green-600">{agentStats.win_rate}%</div>
+          </div>
+          <div class="text-center p-3 bg-red-50 rounded-lg">
+            <div class="text-2xl font-bold text-red-600">{agentStats.losses}</div>
+            <div class="text-sm text-muted-foreground">Losses</div>
+            <div class="text-xs text-red-600">{agentStats.loss_rate}%</div>
+          </div>
+          <div class="text-center p-3 bg-yellow-50 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-600">{agentStats.draws}</div>
+            <div class="text-sm text-muted-foreground">Draws</div>
+            <div class="text-xs text-yellow-600">{agentStats.draw_rate}%</div>
+          </div>
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-gray-600">{agentStats.errors}</div>
+            <div class="text-sm text-muted-foreground">Errors</div>
+            <div class="text-xs text-gray-600">{agentStats.error_rate}%</div>
+          </div>
+        </div>
+        
+        <div class="text-center text-sm text-muted-foreground">
+          Total Battles: {agentStats.total_battles}
         </div>
         
         <Separator />

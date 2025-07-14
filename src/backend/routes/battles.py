@@ -94,7 +94,7 @@ def broadcast_battle_update(battle: Optional[Dict[str, Any]]):
     except Exception as e:
         logger.error(f"[battles_ws] Error in broadcast_battle_update: {e}")
 
-def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
+def add_system_log(battle_id: str, message: str, detail: Optional[Dict[str, Any]] = None):
     """Helper function to add a log entry to a battle and push to WebSocket subscribers."""
     try:
         battle = db.read("battles", battle_id)
@@ -243,6 +243,7 @@ async def process_battle(battle_id: str):
                 battle["error"] = "Failed to reset green agent"
                 db.update("battles", battle_id, battle)
                 add_system_log(battle_id, "Green agent reset failed")
+                update_agent_error_stats(battle)
                 unlock_and_unready_agents(battle)
                 # LIVE_WS_CHANGE: Real-time broadcast after finish/error
                 broadcast_battle_update(battle)
@@ -270,6 +271,7 @@ async def process_battle(battle_id: str):
                         "opponent_id": op_id,
                         "opponent_name": battle["opponents"][idx].get("name")
                     })
+                    update_agent_error_stats(battle)
                     unlock_and_unready_agents(battle)
                     # LIVE_WS_CHANGE: Real-time broadcast after finish/error
                     broadcast_battle_update(battle)
@@ -292,6 +294,7 @@ async def process_battle(battle_id: str):
                 battle["error"] = f"Not all agents ready after {ready_timeout} seconds"
                 db.update("battles", battle_id, battle)
                 add_system_log(battle_id, "Agents not ready timeout", {"ready_timeout": ready_timeout})
+                update_agent_error_stats(battle)
                 unlock_and_unready_agents(battle)
                 # LIVE_WS_CHANGE: Real-time broadcast after finish/error
                 broadcast_battle_update(battle)
@@ -307,6 +310,7 @@ async def process_battle(battle_id: str):
                 battle["error"] = "Green agent url not found"
                 db.update("battles", battle_id, battle)
                 add_system_log(battle_id, "Green agent url not found")
+                update_agent_error_stats(battle)
                 unlock_and_unready_agents(battle)
                 # LIVE_WS_CHANGE: Real-time broadcast after finish/error
                 broadcast_battle_update(battle)
@@ -314,7 +318,7 @@ async def process_battle(battle_id: str):
 
         
         
-        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle").get("default_battle_timeout"))
+        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle", {}).get("default_battle_timeout", 300))
         timeout_thread = threading.Thread(
             target=check_battle_timeout,
             args=(battle_id, battle_timeout),
@@ -338,6 +342,7 @@ async def process_battle(battle_id: str):
                 add_system_log(battle_id, "Failed to notify green agent", {
                     "green_agent_url": green_agent_url
                 })
+                update_agent_error_stats(battle)
                 unlock_and_unready_agents(battle)
                 # LIVE_WS_CHANGE: Real-time broadcast after finish/error
                 broadcast_battle_update(battle)
@@ -351,6 +356,7 @@ async def process_battle(battle_id: str):
             battle["state"] = "error"
             battle["error"] = str(e)
             db.update("battles", battle_id, battle)
+            update_agent_error_stats(battle)
             unlock_and_unready_agents(battle)
             # LIVE_WS_CHANGE: Real-time broadcast after finish/error
             broadcast_battle_update(battle)
@@ -383,12 +389,78 @@ def check_battle_timeout(battle_id: str, timeout: int):
             # LIVE_WS_CHANGE: Real-time broadcast after finish
             broadcast_battle_update(battle)
 
+def update_agent_error_stats(battle: Dict[str, Any]):
+    """
+    Update error statistics for all agents in a battle that ended in error.
+    Increments the error count for all participating agents.
+    """
+    try:
+        agent_ids = [battle["green_agent_id"]] + [op["agent_id"] for op in battle["opponents"]]
+        for agent_id in agent_ids:
+            agent = db.read("agents", agent_id)
+            if not agent:
+                continue
+            
+            # Initialize ELO structure if not present
+            if "elo" not in agent:
+                agent["elo"] = {
+                    "rating": None if agent.get("register_info", {}).get("is_green", False) else 1000,
+                    "battle_history": [],
+                    "stats": {
+                        "wins": 0,
+                        "losses": 0,
+                        "draws": 0,
+                        "errors": 0,
+                        "total_battles": 0,
+                        "win_rate": 0.0,
+                        "loss_rate": 0.0,
+                        "draw_rate": 0.0,
+                        "error_rate": 0.0
+                    }
+                }
+            
+            # Initialize stats if not present (for backward compatibility)
+            if "stats" not in agent["elo"]:
+                agent["elo"]["stats"] = {
+                    "wins": 0,
+                    "losses": 0,
+                    "draws": 0,
+                    "errors": 0,
+                    "total_battles": 0,
+                    "win_rate": 0.0,
+                    "loss_rate": 0.0,
+                    "draw_rate": 0.0,
+                    "error_rate": 0.0
+                }
+            
+            # Update error stats
+            stats = agent["elo"]["stats"]
+            stats["total_battles"] += 1
+            stats["errors"] += 1
+            
+
+            
+            # Add error battle result to history
+            battle_result = {
+                "battle_id": battle["battle_id"],
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "result": "error",
+                "elo_change": 0,
+                "final_rating": agent["elo"].get("rating"),
+                "opponents": [op["agent_id"] for op in battle["opponents"]],
+                "green_agent_id": battle["green_agent_id"]
+            }
+            agent["elo"]["battle_history"].append(battle_result)
+            db.update("agents", agent_id, agent)
+    except Exception as e:
+        logging.error(f"Error updating agent error stats: {e}")
+
 def update_agent_elos(battle: Dict[str, Any], winner: str):
     """
-    Update ELO ratings for all agents in a battle.
+    Update ELO ratings and statistics for all agents in a battle.
     Winner gains 15 ELO, others lose 15 ELO.
     Winner can be an agent_id, a role, or an agent alias/name.
-    Green agents never have a rating (set to None or 'N/A'), but keep battle history.
+    Green agents never have a rating (set to None or 'N/A'), but keep battle history and stats.
     """
     try:
         # Map winner to agent_id if needed
@@ -426,8 +498,34 @@ def update_agent_elos(battle: Dict[str, Any], winner: str):
             if "elo" not in agent:
                 agent["elo"] = {
                     "rating": None if is_green else 1000,
-                    "battle_history": []
+                    "battle_history": [],
+                    "stats": {
+                        "wins": 0,
+                        "losses": 0,
+                        "draws": 0,
+                        "errors": 0,
+                        "total_battles": 0,
+                        "win_rate": 0.0,
+                        "loss_rate": 0.0,
+                        "draw_rate": 0.0,
+                        "error_rate": 0.0
+                    }
                 }
+            
+            # Initialize stats if not present (for backward compatibility)
+            if "stats" not in agent["elo"]:
+                agent["elo"]["stats"] = {
+                    "wins": 0,
+                    "losses": 0,
+                    "draws": 0,
+                    "errors": 0,
+                    "total_battles": 0,
+                    "win_rate": 0.0,
+                    "loss_rate": 0.0,
+                    "draw_rate": 0.0,
+                    "error_rate": 0.0
+                }
+            
             if winner == "draw":
                 elo_change = 0
                 result = "draw"
@@ -437,6 +535,20 @@ def update_agent_elos(battle: Dict[str, Any], winner: str):
             else:
                 elo_change = -15
                 result = "loss"
+            
+            # Update stats
+            stats = agent["elo"]["stats"]
+            stats["total_battles"] += 1
+            
+            if result == "win":
+                stats["wins"] += 1
+            elif result == "loss":
+                stats["losses"] += 1
+            elif result == "draw":
+                stats["draws"] += 1
+            
+
+            
             # Only update rating for non-green agents
             if not is_green and agent["elo"]["rating"] is not None:
                 agent["elo"]["rating"] += elo_change
