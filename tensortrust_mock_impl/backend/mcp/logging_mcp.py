@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 server = FastMCP(
     "Open MCP for AgentBeast Battle Arena",
-    host="0.0.0.0",
-    port=9001,
+    host="localhost",
+    port=9123,
 )
 
 SESSIONS: dict[str, dict[str, str]] = {}

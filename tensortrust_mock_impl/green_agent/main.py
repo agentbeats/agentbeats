@@ -32,7 +32,7 @@ from a2a.types import (
 )
 
 # agentbeats SDK
-from agentbeats_executor import AgentBeatsExecutor
+from tensortrust_mock_impl.agentbeats import AgentBeatsExecutor
 
 # user-level helper
 from testing_agent import TestingAgent

@@ -15,7 +15,7 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 
-from agentbeats_executor import AgentBeatsExecutor
+from tensortrust_mock_impl.agentbeats import AgentBeatsExecutor
 
 # ============ User TODO begin ============
 user_mcp_url_list = []
@@ -31,7 +31,7 @@ async def main() -> None:
     parser.add_argument(
         "--agent-card",
         type=str,
-        default="blue_agent/blue_agent_card.yaml",
+        default="tensortrust_mock_impl/blue_agent/blue_agent_card.yaml",
         help="Path to the agent card YAML file. (default to blue_agent_card.yaml)",
     )
     parser.add_argument(
@@ -43,7 +43,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     # read agent card from YAML file
-    with open(args.agent_card, "r") as f:
+    with open(args.agent_card, "r", encoding="utf-8") as f:
         agent_card_json = yaml.safe_load(f)
     agent_card = AgentCard(**agent_card_json)
 
