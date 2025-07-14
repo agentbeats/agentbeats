@@ -74,7 +74,18 @@ async def register_agent(agent_info: Dict[str, Any]):
             "ready": False,
             "elo": {
                 "rating": elo_rating,
-                "battle_history": []
+                "battle_history": [],
+                "stats": {
+                    "wins": 0,
+                    "losses": 0,
+                    "draws": 0,
+                    "errors": 0,
+                    "total_battles": 0,
+                    "win_rate": 0.0,
+                    "loss_rate": 0.0,
+                    "draw_rate": 0.0,
+                    "error_rate": 0.0
+                }
             }
         }
 
