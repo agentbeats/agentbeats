@@ -14,12 +14,18 @@ echo "Environment:"
 echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:-<not set>}"
 echo "  OPENAI_API_BASE: ${OPENAI_API_BASE:-<not set>}"
 echo -e "\nCreating log directory: $LOG_DIR"
-mkdir -p "$LOG_DIR"
 
 # Check for required commands
 echo "Checking for required commands..."
 command -v python3 >/dev/null 2>&1 || { echo "python3 not found!"; exit 1; }
-command -v docker-compose >/dev/null 2>&1 || { echo "docker-compose not found!"; exit 1; }
+
+# Only create log directory if it doesn't exist
+if [ ! -d "$LOG_DIR" ]; then
+  echo "Creating log directory: $LOG_DIR"
+  mkdir "$LOG_DIR"
+else
+  echo "Log directory already exists: $LOG_DIR"
+fi
 
 # Ports to kill (battle_royale: 8000, 8010/8011, 8020/8021, 8030/8031, 8040/8041; tensortrust_mock: 9010/9011, 9020/9021, 9030/9031)
 PORTS=(8000 8010 8011 8020 8021 8030 8031 8040 8041 9010 9011 9020 9021 9030 9031)
