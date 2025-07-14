@@ -82,9 +82,9 @@ nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$
 
 # Nohup blue and red agents for battle_royale
 echo "🔴 Starting battle royale red agents in background..."
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8010" > $LOG_DIR/battleroyale_red1_launcher.log 2>&1 &
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8020" > $LOG_DIR/battleroyale_red2_launcher.log 2>&1 &
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8030" > $LOG_DIR/battleroyale_red3_launcher.log 2>&1 &
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/red_agent/main.py --port 8010" > $LOG_DIR/battleroyale_red1_launcher.log 2>&1 &
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/red_agent/main.py --port 8020" > $LOG_DIR/battleroyale_red2_launcher.log 2>&1 &
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/red_agent/main.py --port 8030" > $LOG_DIR/battleroyale_red3_launcher.log 2>&1 &
 
 echo "🚀 Starting AgentBeats services with tmux..."
 
@@ -112,15 +112,14 @@ tmux new-session -d -s $SESSION "cd $PROJECT_DIR && source venv/bin/activate && 
 # # echo "📊 Starting MCP logging server..."
 # # tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/logging/testing_mcp.py"
 
-# Start green agent (TensorTrust) in tmux (Pane 2)
+# Start green agent (TensorTrust) in tmux (Pane 1)
 echo "🟢 Starting green agent (TensorTrust judge)..."
-tmux select-pane -t $SESSION:0.1
 tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
 
-# Start green agent (Battle Royale) in tmux (Pane 3)
+# Start green agent (Battle Royale) in tmux (Pane 2)
 echo "🟢 Starting green agent (Battle Royale judge)..."
-tmux select-pane -t $SESSION:0.2
-tmux split-window -v -t $SESSION:0.2 "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/green_agent/main.py --port 8040 --mcp-url http://localhost:9001/sse"
+tmux select-pane -t $SESSION:0.1
+tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/green_agent/main.py --port 8040 --mcp-url http://localhost:9001/sse"
 
 # --- Frontend SSR build and start (no tmux pane needed, runs with pm2) ---
 echo "🌐 Building and starting frontend..."
