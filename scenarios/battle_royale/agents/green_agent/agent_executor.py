@@ -380,8 +380,8 @@ class GreenAgent:
                     # Check if agent's service is running on port 80
                     try:
                         import requests
-                        # Check if port 80 is being used by this agent
-                        response = requests.get(f"http://localhost:80", timeout=5)
+                        # Check if port 8081 (mapped from container port 80) is being used by this agent
+                        response = requests.get(f"http://localhost:8081", timeout=5)
                         self.uptime_data[agent_id]["total_checks"] += 1
                         
                         if response.status_code == 200:
@@ -1135,16 +1135,16 @@ This will ensure the monitoring system can identify your service correctly."""
             return  # Battle not started yet
         
         try:
-            # Check port 80 in the Docker container to see which agent's service is running
+            # Check port 8081 in the Docker container to see which agent's service is running
             try:
                 import requests
-                # Check the Docker container's port 80 (mapped to host port 80)
-                response = requests.get("http://localhost:80", timeout=5)
+                # Check the Docker container's port 80 (mapped to host port 8081)
+                response = requests.get("http://localhost:8081", timeout=5)
                 
                 if response.status_code == 200:
                     # Service is running, check which agent it belongs to
                     service_content = response.text.strip()
-                    print(f"🔍 DEBUG: Service content on port 80: {service_content}")
+                    print(f"🔍 DEBUG: Service content on port 8081: {service_content}")
                     print(f"🔍 DEBUG: Looking for identifiers: {self.agent_identifiers}")
                     
                     active_agent = None
@@ -1199,11 +1199,11 @@ This will ensure the monitoring system can identify your service correctly."""
                                 print(f"📊 {agent_id}: {status} ({percentage:.1f}%)")
                     else:
                         # Service running but can't identify which agent
-                        self.logger.warning(f"Service running on port 80 but can't identify agent. Content: {service_content}")
+                        self.logger.warning(f"Service running on port 8081 but can't identify agent. Content: {service_content}")
                         
                 else:
                     # No service running on port 80
-                    print(f"🔍 DEBUG: No service running on port 80 (status code: {response.status_code})")
+                    print(f"🔍 DEBUG: No service running on port 8081 (status code: {response.status_code})")
                     for agent_id in self.red_agents:
                         if agent_id not in self.uptime_data:
                             self.uptime_data[agent_id] = {"total_checks": 0, "successful_checks": 0}
@@ -1217,7 +1217,7 @@ This will ensure the monitoring system can identify your service correctly."""
                         "source": "background_monitoring"
                     }
                     self.battle_log.append(check_event)
-                    print("📊 No service on port 80")
+                    print("📊 No service on port 8081")
                     
             except Exception as e:
                 # Port 80 is unreachable
@@ -1235,7 +1235,7 @@ This will ensure the monitoring system can identify your service correctly."""
                     "error": str(e)
                 }
                 self.battle_log.append(check_event)
-                self.logger.info(f"Background check: Port 80 unreachable - {str(e)}")
+                self.logger.info(f"Background check: Port 8081 unreachable - {str(e)}")
                     
         except Exception as e:
             self.logger.error(f"Error in monitoring check: {str(e)}")

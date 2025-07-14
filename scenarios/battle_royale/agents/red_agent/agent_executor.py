@@ -158,10 +158,10 @@ class RedAgent:
             Examples:
             - "ls -la" - List files in current directory
             - "ps aux | grep python" - Check running Python processes
-            - "ss -tuln | grep :80" - Check what's using port 80
+            - "ss -tuln | grep :80" - Check what's using port 80 (inside container)
             - "python3 -m http.server 80" - Start a simple web server
             - "pkill -f http.server" - Kill web server processes
-            - "curl http://localhost:80" - Test web service
+            - "curl http://localhost:80" - Test web service (inside container)
             """
             if not self.ssh_connected:
                 return "❌ Not connected to battle arena. Use connect_to_battle_arena first."
