@@ -74,9 +74,11 @@ def broadcast_battles_update():
         logger.error(f"[battles_ws] Error in broadcast_battles_update: {e}")
 
 # LIVE_WS_CHANGE: Broadcast a single battle update to /ws/battles clients
-def broadcast_battle_update(battle):
+def broadcast_battle_update(battle: Optional[Dict[str, Any]]):
     """Send a single battle update to all connected /ws/battles clients."""
     try:
+        if battle is None:
+            return
         msg = json.dumps({"type": "battle_update", "battle": battle})
         logger.info(f"[battles_ws] Broadcasting single battle update to {len(battles_ws_clients)} clients")
         for ws in list(battles_ws_clients):
@@ -106,7 +108,7 @@ def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "message": message,
         }
-        if detail:
+        if detail is not None:
             log_entry["detail"] = detail
         battle["interact_history"].append(log_entry)
         db.update("battles", battle_id, battle)
@@ -193,11 +195,12 @@ async def process_battle(battle_id: str):
         green_agent = db.read("agents", battle["green_agent_id"])
         if not green_agent:
             battle = db.read("battles", battle_id)
-            battle["state"] = "error"
-            battle["error"] = "Green agent not found"
-            db.update("battles", battle_id, battle)
-            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-            broadcast_battle_update(battle)
+            if battle:
+                battle["state"] = "error"
+                battle["error"] = "Green agent not found"
+                db.update("battles", battle_id, battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
             return
             
         # Get opponent agents
@@ -207,11 +210,12 @@ async def process_battle(battle_id: str):
             opponent = db.read("agents", opponent_id)
             if not opponent:
                 battle = db.read("battles", battle_id)
-                battle["state"] = "error"
-                battle["error"] = f"Opponent agent {opponent_id} not found"
-                db.update("battles", battle_id, battle)
-                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-                broadcast_battle_update(battle)
+                if battle:
+                    battle["state"] = "error"
+                    battle["error"] = f"Opponent agent {opponent_id} not found"
+                    db.update("battles", battle_id, battle)
+                    # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                    broadcast_battle_update(battle)
                 return
             opponent_ids.append(opponent_id)
 
@@ -232,19 +236,22 @@ async def process_battle(battle_id: str):
         )
         if not green_reset:
             battle = db.read("battles", battle_id)
-            battle["state"] = "error"
-            battle["error"] = "Failed to reset green agent"
-            db.update("battles", battle_id, battle)
-            add_system_log(battle_id, "Green agent reset failed")
-            unlock_and_unready_agents(battle)
-            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-            broadcast_battle_update(battle)
+            if battle:
+                battle["state"] = "error"
+                battle["error"] = "Failed to reset green agent"
+                db.update("battles", battle_id, battle)
+                add_system_log(battle_id, "Green agent reset failed")
+                unlock_and_unready_agents(battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
             return
 
         # Reset opponent agents and get their URLs
         opponent_info_send_to_green = [{'name': op["name"]} for op in battle["opponents"]]
         for idx, op_id in enumerate(opponent_ids):
             op = db.read("agents", op_id)
+            if not op:
+                continue
             op_launcher = op["register_info"].get("launcher_url")
             op_reset = await a2a_client.reset_agent_trigger(
                 op_launcher, 
@@ -253,22 +260,23 @@ async def process_battle(battle_id: str):
             )    
             if not op_reset:
                 battle = db.read("battles", battle_id)
-                battle["state"] = "error"
-                battle["error"] = f"Failed to reset {battle['opponents'][idx].get('name')}: {op_id}"
-                db.update("battles", battle_id, battle)
-                add_system_log(battle_id, f"{battle['opponents'][idx].get('name')} reset failed", {
-                    "opponent_id": op_id,
-                    "opponent_name": battle["opponents"][idx].get("name")
-                })
-                unlock_and_unready_agents(battle)
-                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-                broadcast_battle_update(battle)
+                if battle:
+                    battle["state"] = "error"
+                    battle["error"] = f"Failed to reset {battle['opponents'][idx].get('name')}: {op_id}"
+                    db.update("battles", battle_id, battle)
+                    add_system_log(battle_id, f"{battle['opponents'][idx].get('name')} reset failed", {
+                        "opponent_id": op_id,
+                        "opponent_name": battle["opponents"][idx].get("name")
+                    })
+                    unlock_and_unready_agents(battle)
+                    # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                    broadcast_battle_update(battle)
                 return
 
             opponent_info_send_to_green[idx]["agent_url"] = op["register_info"].get("agent_url")
             
 
-        ready_timeout = CONFIG.get("battle").get("ready_timeout")
+        ready_timeout = CONFIG.get("battle", {}).get("ready_timeout", 300)
         agent_ids = [battle["green_agent_id"]] + opponent_ids
         add_system_log(battle_id, "Waiting for agents to be ready", {
             "ready_timeout": ready_timeout
@@ -277,13 +285,14 @@ async def process_battle(battle_id: str):
         
         if not ready:
             battle = db.read("battles", battle_id)
-            battle["state"] = "error"
-            battle["error"] = f"Not all agents ready after {ready_timeout} seconds"
-            db.update("battles", battle_id, battle)
-            add_system_log(battle_id, "Agents not ready timeout", {"ready_timeout": ready_timeout})
-            unlock_and_unready_agents(battle)
-            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-            broadcast_battle_update(battle)
+            if battle:
+                battle["state"] = "error"
+                battle["error"] = f"Not all agents ready after {ready_timeout} seconds"
+                db.update("battles", battle_id, battle)
+                add_system_log(battle_id, "Agents not ready timeout", {"ready_timeout": ready_timeout})
+                unlock_and_unready_agents(battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
             return
         add_system_log(battle_id, "All agents ready", {"agent_ids": agent_ids})
                 
@@ -291,13 +300,14 @@ async def process_battle(battle_id: str):
         green_agent_url = green_agent["register_info"]["agent_url"]
         if not green_agent_url:
             battle = db.read("battles", battle_id)
-            battle["state"] = "error"
-            battle["error"] = "Green agent url not found"
-            db.update("battles", battle_id, battle)
-            add_system_log(battle_id, "Green agent url not found")
-            unlock_and_unready_agents(battle)
-            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-            broadcast_battle_update(battle)
+            if battle:
+                battle["state"] = "error"
+                battle["error"] = "Green agent url not found"
+                db.update("battles", battle_id, battle)
+                add_system_log(battle_id, "Green agent url not found")
+                unlock_and_unready_agents(battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
             return
         
         notify_success = await a2a_client.notify_green_agent(
@@ -308,20 +318,21 @@ async def process_battle(battle_id: str):
         
         if not notify_success:
             battle = db.read("battles", battle_id)
-            battle["state"] = "error"
-            battle["error"] = "Failed to notify green agent"
-            db.update("battles", battle_id, battle)
-            add_system_log(battle_id, "Failed to notify green agent", {
-                "green_agent_url": green_agent_url
-            })
-            unlock_and_unready_agents(battle)
-            # LIVE_WS_CHANGE: Real-time broadcast after finish/error
-            broadcast_battle_update(battle)
+            if battle:
+                battle["state"] = "error"
+                battle["error"] = "Failed to notify green agent"
+                db.update("battles", battle_id, battle)
+                add_system_log(battle_id, "Failed to notify green agent", {
+                    "green_agent_url": green_agent_url
+                })
+                unlock_and_unready_agents(battle)
+                # LIVE_WS_CHANGE: Real-time broadcast after finish/error
+                broadcast_battle_update(battle)
             return
 
         add_system_log(battle_id, "Green agent notified, battle commenced")
             
-        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle").get("default_battle_timeout"))
+        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle", {}).get("default_battle_timeout", 300))
         timeout_thread = threading.Thread(
             target=check_battle_timeout,
             args=(battle_id, battle_timeout),
@@ -333,7 +344,6 @@ async def process_battle(battle_id: str):
         print(f"Error processing battle {battle_id}: {str(e)}")
         battle = db.read("battles", battle_id)
         if battle:
-            battle = db.read("battles", battle_id)
             battle["state"] = "error"
             battle["error"] = str(e)
             db.update("battles", battle_id, battle)
@@ -351,19 +361,76 @@ def check_battle_timeout(battle_id: str, timeout: int):
         # Battle timed out
         add_system_log(battle_id, "Battle timed out", {"battle_timeout": timeout})
         battle = db.read("battles", battle_id)
-        battle["state"] = "finished"
-        battle["result"] = {
-            "is_result": True,
-            "winner": "draw",
-            "score": {"reason": "timeout"},
-            "detail": {"message": "Battle timed out"},
-            "reported_at": datetime.utcnow().isoformat() + "Z"
-        }
-        db.update("battles", battle_id, battle)
+        if battle:
+            battle["state"] = "finished"
+            battle["result"] = {
+                "is_result": True,
+                "winner": "draw",
+                "score": {"reason": "timeout"},
+                "detail": {"message": "Battle timed out"},
+                "reported_at": datetime.utcnow().isoformat() + "Z"
+            }
+            db.update("battles", battle_id, battle)
+            
+            # Update ELOs for timeout (draw)
+            update_agent_elos(battle, "draw")
+            
+            unlock_and_unready_agents(battle)
+            # LIVE_WS_CHANGE: Real-time broadcast after finish
+            broadcast_battle_update(battle)
+
+def update_agent_elos(battle: Dict[str, Any], winner: str):
+    """
+    Update ELO ratings for all agents in a battle.
+    Winner gains 15 ELO, others lose 15 ELO.
+    """
+    try:
+        # Get all agent IDs involved in the battle
+        agent_ids = [battle["green_agent_id"]] + [op["agent_id"] for op in battle["opponents"]]
         
-        unlock_and_unready_agents(battle)
-        # LIVE_WS_CHANGE: Real-time broadcast after finish
-        broadcast_battle_update(battle)
+        for agent_id in agent_ids:
+            agent = db.read("agents", agent_id)
+            if not agent:
+                continue
+                
+            # Initialize ELO if not present
+            if "elo" not in agent:
+                agent["elo"] = {
+                    "rating": 1000,
+                    "battle_history": []
+                }
+            
+            # Determine if this agent is the winner
+            is_winner = False
+            if winner == "draw":
+                # In case of draw, no ELO change
+                elo_change = 0
+            elif winner == agent_id:
+                is_winner = True
+                elo_change = 15
+            else:
+                elo_change = -15
+            
+            # Update ELO rating
+            agent["elo"]["rating"] += elo_change
+            
+            # Add battle result to history
+            battle_result = {
+                "battle_id": battle["battle_id"],
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "result": "win" if is_winner else "loss" if winner != "draw" else "draw",
+                "elo_change": elo_change,
+                "final_rating": agent["elo"]["rating"],
+                "opponents": [op["agent_id"] for op in battle["opponents"]],
+                "green_agent_id": battle["green_agent_id"]
+            }
+            agent["elo"]["battle_history"].append(battle_result)
+            
+            # Update agent in database
+            db.update("agents", agent_id, agent)
+            
+    except Exception as e:
+        logging.error(f"Error updating ELO ratings: {e}")
 
 @router.post("/battles", status_code=status.HTTP_201_CREATED)
 def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
@@ -515,8 +582,12 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
             # Update the battle result
             battle["interact_history"].append(event)
 
+            # Determine winner and update ELOs
+            winner = event.get("winner", "draw")
+            update_agent_elos(battle, winner)
+
             battle["result"] = {
-                "winner": event.get("winner", "draw"),
+                "winner": winner,
                 "detail": event.get("detail", {}),
                 "finish_time": event.get("timestamp", datetime.utcnow().isoformat() + "Z"),
             }
