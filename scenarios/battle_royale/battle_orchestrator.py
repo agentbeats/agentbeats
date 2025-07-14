@@ -29,11 +29,11 @@ logger = logging.getLogger(__name__)
 class BattleOrchestrator:
     def __init__(self):
         # Use the correct child port for the green agent
-        self.green_agent_url = "http://localhost:8011"
+        self.green_agent_url = "http://localhost:8041"
         self.red_agent_urls = [
-            "http://localhost:8001",
-            "http://localhost:8002", 
-            "http://localhost:8003"
+            ("http://localhost:8010", "http://localhost:8011"),
+            ("http://localhost:8020", "http://localhost:8021"),
+            ("http://localhost:8030", "http://localhost:8031")
         ]
         self.docker_arena_url = "http://localhost:9001"
         self.battle_duration = 60  # 1 minute
@@ -124,7 +124,7 @@ class BattleOrchestrator:
         """Start all red agents."""
         logger.info("Starting red agents...")
         results = []
-        for i, agent_url in enumerate(self.red_agent_urls):
+        for i, (launcher_url, agent_url) in enumerate(self.red_agent_urls):
             try:
                 # Check if agent is already running
                 if await self.check_agent_health(agent_url):

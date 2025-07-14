@@ -355,7 +355,7 @@ if __name__ == "__main__":
                 
                 # Check service manager
                 try:
-                    services_response = requests.get("http://localhost:9099/services", timeout=5)
+                    services_response = requests.get("http://localhost:8000/services", timeout=5)
                     if services_response.status_code == 200:
                         services = services_response.json()
                         status_report["registered_services"] = len(services)

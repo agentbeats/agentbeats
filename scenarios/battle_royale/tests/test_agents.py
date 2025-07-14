@@ -13,8 +13,8 @@ import json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 AGENTS_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "agents"))
 
-RED_AGENT_URL = "http://localhost:8001"
-GREEN_AGENT_URL = "http://localhost:8011"
+RED_AGENT_URL = "http://localhost:8011"
+GREEN_AGENT_URL = "http://localhost:8041"
 AGENT_CARD_PATH = "/.well-known/agent.json"
 
 

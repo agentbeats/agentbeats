@@ -12,7 +12,7 @@ from pathlib import Path
 def test_green_agent_logging():
     """Test that the green agent logs events properly"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("=== Testing Green Agent Logging ===")
     

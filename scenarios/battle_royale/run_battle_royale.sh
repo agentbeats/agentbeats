@@ -149,7 +149,7 @@ start_agents() {
     cd "$AGENTS_DIR"
     
     # Kill any existing agent processes
-    kill_port_processes 8001 8002 8003 8011
+    kill_port_processes 8001 8002 8003 8041
     
     # Start green agent in background
     print_status "Starting green agent..."
@@ -158,7 +158,7 @@ start_agents() {
     echo $GREEN_AGENT_PID > ../green_agent.pid
     
     # Wait for green agent to start
-    wait_for_service "http://localhost:8011/.well-known/agent.json" "Green Agent"
+    wait_for_service "http://localhost:8041/.well-known/agent.json" "Green Agent"
     
     # Start red agents in background with correct ports
     red_agent_ports=(8001 8002 8020)  # Match green agent expectations
@@ -224,7 +224,7 @@ show_status() {
     # Check agents
     echo
     echo "🤖 Agents:"
-    for port in 8011 8001 8002 8003; do
+    for port in 8041 8001 8002 8003; do
         if check_port $port; then
             print_success "Agent on port $port is running"
         else

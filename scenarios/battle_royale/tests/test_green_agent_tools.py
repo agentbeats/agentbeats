@@ -10,7 +10,7 @@ import time
 def test_green_agent_agent_card():
     """Test green agent agent card endpoint"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("=== Test 1: Green Agent Card ===")
     
@@ -33,7 +33,7 @@ def test_green_agent_agent_card():
 def test_green_agent_a2a_message():
     """Test green agent via A2A protocol"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("\n=== Test 2: Green Agent A2A Communication ===")
     
@@ -73,7 +73,7 @@ def test_green_agent_a2a_message():
 def test_green_agent_docker_tools():
     """Test green agent Docker monitoring tools"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("\n=== Test 3: Green Agent Docker Tools ===")
     
@@ -113,7 +113,7 @@ def test_green_agent_docker_tools():
 def test_green_agent_service_monitoring():
     """Test green agent service monitoring capabilities"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("\n=== Test 4: Green Agent Service Monitoring ===")
     
@@ -153,7 +153,7 @@ def test_green_agent_service_monitoring():
 def test_green_agent_communication():
     """Test green agent communication with red agents"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("\n=== Test 5: Green Agent Communication ===")
     
@@ -166,7 +166,7 @@ def test_green_agent_communication():
             "message": {
                 "messageId": "msg_communication",
                 "role": "user",
-                "parts": [{"text": "Please send a message to the red agent at http://localhost:8001 asking for their service status"}]
+                "parts": [{"text": "Please send a message to the red agent at http://localhost:8011 asking for their service status"}]
             }
         }
     }

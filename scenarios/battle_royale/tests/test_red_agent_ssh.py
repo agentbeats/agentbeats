@@ -11,7 +11,7 @@ def test_red_agent_ssh_command():
     """Test that red agent can execute SSH commands and receive results"""
     
     # Red agent endpoint
-    red_agent_url = "http://localhost:8001"
+    red_agent_url = "http://localhost:8011"
     
     # Test SSH command execution
     ssh_command = {
@@ -61,7 +61,7 @@ def test_red_agent_ssh_command():
 def test_red_agent_ssh_connection():
     """Test SSH connection status"""
     
-    red_agent_url = "http://localhost:8001"
+    red_agent_url = "http://localhost:8011"
     
     # Test SSH connection check
     ssh_check = {

@@ -10,7 +10,7 @@ import time
 def test_green_agent_new_tools():
     """Test the new green agent tools"""
     
-    green_agent_url = "http://localhost:8011"
+    green_agent_url = "http://localhost:8041"
     
     print("=== Testing New Green Agent Tools ===")
     
