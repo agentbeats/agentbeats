@@ -28,14 +28,3 @@ class TestingAgent:
         self.memory.append({"role": "assistant", "content": response})
 
         return response
-
-
-# Example usage:
-if __name__ == "__main__":
-    # Set a default system message for testing
-    system_message = "You are a helpful assistant."
-    agent = TestingAgent(system_message=system_message, model="gpt-4o")
-    
-    user_query = "Can you explain the concept of recursion in programming?"
-    solution = agent.get_response(user_query)
-    print(solution)
