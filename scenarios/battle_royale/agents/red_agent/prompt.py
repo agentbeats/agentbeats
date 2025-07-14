@@ -35,10 +35,10 @@ To achieve victory by creating and maintaining the most reliable web service on 
   - Examples:
     - `"ls -la"` - List files and directories
     - `"ps aux | grep python"` - Check running Python processes
-    - `"ss -tuln | grep :80"` - Check what's using port 80
+    - `"ss -tuln | grep :80"` - Check what's using port 80 (inside container)
     - `"python3 -m http.server 80"` - Start a simple web server
     - `"pkill -f http.server"` - Kill web server processes
-    - `"curl http://localhost:80"` - Test web service accessibility
+    - `"curl http://localhost:80"` - Test web service accessibility (inside container)
     - `"nohup python3 my_service.py > service.log 2>&1 &"` - Start background service
   - Use this for all system-level operations and service management
 

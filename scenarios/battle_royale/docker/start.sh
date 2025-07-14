@@ -43,7 +43,7 @@ echo "📊 Starting monitoring..."
 
 # Start service manager
 echo "🔧 Starting service manager..."
-python3 /service_manager.py &
+python3 /battle/service_manager.py &
 
 # Create a simple health check endpoint
 python3 -c "
@@ -79,7 +79,7 @@ echo "✅ Battle Royale environment ready!"
 echo "📋 Available endpoints:"
 echo "   - SSH: localhost:22 (user: battle, pass: battle123)"
 echo "   - Health: http://localhost:8080/health"
-echo "   - Web services: http://localhost:80"
+echo "   - Web services: http://localhost:8081"
 
 # Keep container running
 tail -f /dev/null 
