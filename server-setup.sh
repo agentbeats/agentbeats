@@ -121,6 +121,12 @@ echo "🟢 Starting green agent (Battle Royale judge)..."
 tmux select-pane -t $SESSION:0.1
 tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/green_agent/main.py --port 8040 --mcp-url http://localhost:9001/sse"
 
+# --- Docker startup ---
+echo "🐳 Starting Docker services..."
+cd $PROJECT_DIR/scenarios/battle_royale/docker
+sudo docker compose up -d
+cd $PROJECT_DIR
+
 # --- Frontend SSR build and start (no tmux pane needed, runs with pm2) ---
 echo "🌐 Building and starting frontend..."
 # Build the SSR frontend (safe to run even if already built)
