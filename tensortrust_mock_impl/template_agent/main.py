@@ -15,7 +15,7 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard
 
 # agentbeats SDK
-from agentbeats_executor import AgentBeatsExecutor
+from tensortrust_mock_impl.agentbeats import AgentBeatsExecutor
 
 # ============ User TODO begin ============
 user_mcp_url_list = []
