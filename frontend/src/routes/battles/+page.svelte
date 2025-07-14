@@ -4,10 +4,13 @@ import { onMount, onDestroy } from 'svelte';
 import { goto } from '$app/navigation';
 import BattleCard from '$lib/components/battle-card-ongoing.svelte';
 import BattleChip from '$lib/components/battle-card-finished.svelte';
+import { user, loading } from '$lib/stores/auth';
+import { supabase } from '$lib/auth/supabase';
 
 export let data: { battles: any[] };
 let battles = data.battles;
 let ws: WebSocket | null = null;
+let unsubscribe: (() => void) | null = null;
 
 function recalcBattles() {
 	const ongoingStatuses = ["pending", "queued", "running"];
@@ -36,36 +39,57 @@ function recalcBattles() {
 	});
 }
 
-onMount(() => {
-	recalcBattles();
-	ws = new WebSocket(
-		(window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
-		window.location.host +
-		'/ws/battles'
-	);
-	ws.onmessage = (event) => {
-		try {
-			const msg = JSON.parse(event.data);
-			if (msg && msg.type === 'battles_update' && Array.isArray(msg.battles)) {
-				battles = msg.battles;
-				recalcBattles();
-			}
-			if (msg && msg.type === 'battle_update' && msg.battle) {
-				const idx = battles.findIndex(b => b.battle_id === msg.battle.battle_id);
-				if (idx !== -1) {
-					battles[idx] = msg.battle;
-				} else {
-					battles = [msg.battle, ...battles];
-				}
-				recalcBattles();
-			}
-		} catch (e) {
-			console.error('[WS] JSON parse error', e);
-		}
-	};
+onMount(async () => {
+  // Check authentication immediately
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.log('Battles page: No session found, redirecting to login');
+    goto('/login');
+    return;
+  }
+  
+  // Subscribe to auth state changes for logout detection
+  unsubscribe = user.subscribe(($user) => {
+    if (!$user && !$loading) {
+      console.log('Battles page: User logged out, redirecting to login');
+      goto('/login');
+    }
+  });
+  
+  recalcBattles();
+  ws = new WebSocket(
+    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+    window.location.host +
+    '/ws/battles'
+  );
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg && msg.type === 'battles_update' && Array.isArray(msg.battles)) {
+        battles = msg.battles;
+        recalcBattles();
+      }
+      if (msg && msg.type === 'battle_update' && msg.battle) {
+        const idx = battles.findIndex(b => b.battle_id === msg.battle.battle_id);
+        if (idx !== -1) {
+          battles[idx] = msg.battle;
+        } else {
+          battles = [msg.battle, ...battles];
+        }
+        recalcBattles();
+      }
+    } catch (e) {
+      console.error('[WS] JSON parse error', e);
+    }
+  };
 });
 
-onDestroy(() => { if (ws) ws.close(); });
+onDestroy(() => { 
+  if (ws) ws.close(); 
+  if (unsubscribe) {
+    unsubscribe();
+  }
+});
 
 let ongoingBattles: any[] = [];
 let pastBattles: any[] = [];
