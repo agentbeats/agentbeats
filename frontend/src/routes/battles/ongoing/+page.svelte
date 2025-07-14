@@ -54,9 +54,9 @@ onMount(() => {
   <div class="w-full max-w-5xl flex flex-col items-center">
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 w-full">
       {#each ongoingBattles as battle (battle.id)}
-        <div role="button" tabindex="0" class="cursor-pointer" on:click={() => goto(`/battle/${battle.id}`)} transition:fade={{ duration: 220 }}>
+        <button type="button" class="cursor-pointer" on:click={() => goto(`/battle/${battle.id}`)} transition:fade={{ duration: 220 }}>
           <BattleCard battleId={battle.id} />
-        </div>
+        </button>
       {/each}
     </div>
     {#if ongoingBattles.length === 0}
