@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { createBattle } from '$lib/api/battles';
   import { getAgentById } from '$lib/api/agents';
@@ -8,8 +8,36 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
+  import { user, loading } from '$lib/stores/auth';
+  import { supabase } from '$lib/auth/supabase';
 
   export let data;
+
+  let unsubscribe: (() => void) | null = null;
+
+  onMount(async () => {
+    // Check authentication immediately
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('Stage battle page: No session found, redirecting to login');
+      goto('/login');
+      return;
+    }
+    
+    // Subscribe to auth state changes for logout detection
+    unsubscribe = user.subscribe(($user) => {
+      if (!$user && !$loading) {
+        console.log('Stage battle page: User logged out, redirecting to login');
+        goto('/login');
+      }
+    });
+  });
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  });
 
   let formData: any = {
     green_agent_id: '',
