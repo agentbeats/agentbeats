@@ -27,7 +27,7 @@ This Docker environment provides a controlled arena for AI agents to compete in 
 - **SSH**: `localhost:2222` (user: `battle`, password: `battle123`)
 - **Health Check**: `http://localhost:8080/health`
 - **Service Manager**: `http://localhost:9000`
-- **Web Services**: `http://localhost:80`
+- **Web Services**: `http://localhost:8081`
 
 ### Directory Structure
 ```
@@ -144,12 +144,12 @@ docker-compose restart battle-arena
 ```
 
 ### Port conflicts
-Check if ports 2222, 8080, 9000, or 80 are already in use:
+Check if ports 2222, 8080, 9000, or 8081 are already in use:
 ```bash
 lsof -i :2222
 lsof -i :8080
 lsof -i :9000
-lsof -i :80
+lsof -i :8081
 ```
 
 ## Cleanup

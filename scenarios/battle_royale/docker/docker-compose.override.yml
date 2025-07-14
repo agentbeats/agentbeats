@@ -9,7 +9,7 @@ services:
       - ./dev-shared:/battle_arena/shared
     ports:
       - "8083:8080"  # Additional debug port
-    command: ["/bin/bash", "-c", "service ssh start && python3 /battle_arena/monitor_server.py & /battle_arena/monitor.sh & tail -f /dev/null"]
+    command: ["/bin/bash", "-c", "service ssh start && python3 /battle/service_manager.py & /battle/monitor.sh & tail -f /dev/null"]
 
   # Development monitoring service
   dev-monitor:

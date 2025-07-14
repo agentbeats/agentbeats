@@ -59,12 +59,12 @@ COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Create monitoring script
-COPY monitor.sh /monitor.sh
-RUN chmod +x /monitor.sh
+COPY monitor.sh /battle/monitor.sh
+RUN chmod +x /battle/monitor.sh
 
 # Create service management script
-COPY service_manager.py /service_manager.py
-RUN chmod +x /service_manager.py
+COPY service_manager.py /battle/service_manager.py
+RUN chmod +x /battle/service_manager.py
 
 # Expose ports
 EXPOSE 22 80 8080
