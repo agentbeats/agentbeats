@@ -111,7 +111,7 @@
 			<CardHeader class="text-center">
 				<CardTitle class="text-2xl font-bold">Welcome to AgentBeats</CardTitle>
 				<CardDescription>
-					Sign in to start battling AI agents and climb the leaderboard
+					Sign in to start battling AI agents!
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
@@ -255,7 +255,7 @@
 					{/if}
 					
 					<div class="text-center text-sm text-gray-600 mt-6">
-						<p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+						<p>By continuing, you agree to our Terms of Service and Privacy Policy (do later)</p>
 					</div>
 				{/if}
 			</CardContent>
