@@ -92,7 +92,7 @@ def main() -> None:
         "--port",
         type=int,
         help="TCP port for the HTTP server to listen on",
-        default=8011,
+        default=8040,
     )
     parser.add_argument(
         "--mcp-url",

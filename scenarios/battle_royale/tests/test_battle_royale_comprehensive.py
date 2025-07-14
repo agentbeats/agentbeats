@@ -19,11 +19,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class BattleRoyaleTestSuite:
     def __init__(self):
-        self.green_agent_url = "http://localhost:8011"
+        self.green_agent_url = "http://localhost:8041"
         self.red_agent_urls = [
-            "http://localhost:8001",
-            "http://localhost:8002",
-            "http://localhost:8003"
+            "http://localhost:8011",
+            "http://localhost:8021",
+            "http://localhost:8031"
         ]
         self.docker_arena_url = "http://localhost:9001"
         self.test_results = {}

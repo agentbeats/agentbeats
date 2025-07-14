@@ -9,7 +9,7 @@ services:
     ports:
       - "2222:22"      # SSH
       - "8080:8080"    # Health check
-      - "9099:9099"    # Service manager (host 9099 -> container 9099)
+      - "8000:8000"    # Service manager (host 8000 -> container 8000)
       - "80:80"        # Web services
     volumes:
       - ./shared:/battle/shared

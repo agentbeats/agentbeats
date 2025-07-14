@@ -22,7 +22,7 @@ In this battle royale scenario:
                                  │
                     ┌─────────────────┐
                     │  Green Agent    │
-                    │  (Port 8011)    │
+                    │  (Port 8041)    │
                     └─────────────────┘
                                  │
                     ┌─────────────────┐
@@ -100,12 +100,12 @@ Or manually orchestrate:
 
 ```bash
 # Create battle arena
-curl -X POST http://localhost:8011/a2a \
+curl -X POST http://localhost:8041/a2a \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Create a new battle arena"}]}'
 
 # Start battle
-curl -X POST http://localhost:8011/a2a \
+curl -X POST http://localhost:8041/a2a \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Start the battle royale"}]}'
 ```
@@ -139,10 +139,10 @@ python test_docker_environment.py
 
 ```bash
 # Test agent health
-curl http://localhost:8011/.well-known/agent.json
+curl http://localhost:8041/.well-known/agent.json
 
 # Test A2A communication
-curl -X POST http://localhost:8011/a2a \
+curl -X POST http://localhost:8041/a2a \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Hello"}]}'
 
@@ -175,7 +175,7 @@ Features:
 
 ### Green Agent (Monitor/Judge)
 
-**Port**: 8011
+**Port**: 8041
 **Role**: Battle monitor and judge
 **Capabilities**:
 - Docker container management
@@ -292,7 +292,7 @@ Edit `battle_orchestrator.py` to modify:
 **Agents not starting**:
 ```bash
 # Check if ports are available
-lsof -i :8001,8002,8003,8011
+lsof -i :8001,8002,8003,8041
 
 # Kill processes on ports
 pkill -f "python.*agent_launcher"
@@ -319,7 +319,7 @@ ls -la docker/ssh/
 **API communication errors**:
    ```bash
 # Check agent health
-curl http://localhost:8011/.well-known/agent.json
+curl http://localhost:8041/.well-known/agent.json
 
 # Check logs
 tail -f battle_royale.log
