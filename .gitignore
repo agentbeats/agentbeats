@@ -3,3 +3,6 @@
 **/data/
 venv/
 .DS_Store
+
+agentbeats/agentbeats.egg-info/
+agentbeats/build/

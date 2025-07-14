@@ -5,13 +5,11 @@ AgentBeats SDK implementation for the AgentBeats platform.
 """
 
 import tomllib
-import asyncio
 import uvicorn
 from typing import Dict, List, Any, Optional
 
-from agents import Agent, Runner
+from agents import Agent, Runner, function_tool
 from agents.mcp import MCPServerSse
-from agents import function_tool
 
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import TaskUpdater, InMemoryTaskStore
@@ -20,6 +18,11 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.events import EventQueue
 from a2a.utils import new_task, new_agent_text_message
 from a2a.types import Part, TextPart, TaskState, AgentCard
+
+__all__ = [
+    "BeatsAgent",
+    "AgentBeatsExecutor",
+]
 
 
 class BeatsAgent:

@@ -1,0 +1,5 @@
+tomli>=2
+fastmcp
+fastapi
+uvicorn
+httpx
