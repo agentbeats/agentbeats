@@ -22,10 +22,8 @@ from a2a.types import (
     TaskStatusUpdateEvent,
 )
 
-ab_agent = ab.BeatsAgent(__name__)
 
-
-@ab_agent.tool()
+@ab.tool()
 async def talk_to_agent(query: str, target_url: str) -> str:
     """
     Forward *query* to another A2A agent at *target_url* and stream back
@@ -69,7 +67,7 @@ async def talk_to_agent(query: str, target_url: str) -> str:
 
     return "".join(chunks).strip() or "No response from agent."
 
-@ab_agent.tool()
+@ab.tool()
 def eval_prompt(blue_prompt: str, red_prompt: str) -> str:
     """
     Spin up a temporary TestingAgent with *blue_prompt* as system context,
@@ -85,8 +83,3 @@ def eval_prompt(blue_prompt: str, red_prompt: str) -> str:
     )
     return f"Result: {verdict}\n\nOriginal model output:\n{result}"
 
-
-if __name__ == "__main__":
-    ab_agent.load_agent_card("green_agent/green_agent_card.toml")
-    ab_agent.add_mcp_server("http://nuggets.puppy9.com:9001/")
-    ab_agent.run()

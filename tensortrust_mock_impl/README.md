@@ -18,10 +18,20 @@ python -m tensortrust_mock_impl.backend.run
 python -m tensortrust_mock_impl.backend.mcp.logging_mcp
 
 # setup agents
-python -m tensortrust_mock_impl.blue_agent.main
-python -m tensortrust_mock_impl.red_agent.main
-python -m tensortrust_mock_impl.green_agent.main
+cd tensortrust_mock_impl
+agentbeats run_agent agents/blue_agent/blue_agent_card.toml
+agentbeats run_agent agents/red_agent/red_agent_card.toml
+agentbeats run_agent agents/green_agent/green_agent_card.toml --mcp ['http://nuggets.puppy9.com:9001/'] --tools 'agents/green_agent/tools.py'
 
 # start game
 python tensortrust_test.py
+```
+
+Run template agent:
+```
+cd tensortrust_mock_impl
+agentbeats run_agent \
+    agents/template_agent_2_cli_only/agent_card.toml \
+    --mcp ['http://localhost:9123/sse'] \
+    --tool 'agents/template_agent_2_cli_only/tools.py'
 ```

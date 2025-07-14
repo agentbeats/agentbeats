@@ -6,7 +6,7 @@ AgentBeats SDK implementation for the AgentBeats platform.
 
 import tomllib
 import uvicorn
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Callable
 
 from agents import Agent, Runner, function_tool
 from agents.mcp import MCPServerSse
@@ -93,6 +93,12 @@ class BeatsAgent:
             
             return func
         return decorator
+
+    def register_tool(self, func: Callable, *, name: str | None = None):
+        tool_name = name or func.__name__
+        wrapped_tool = function_tool(name_override=tool_name)(func)
+        self.tool_list.append(wrapped_tool)
+        return wrapped_tool
 
 
 class AgentBeatsExecutor(AgentExecutor):

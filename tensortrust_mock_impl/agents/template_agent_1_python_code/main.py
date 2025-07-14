@@ -11,5 +11,3 @@ if __name__ == "__main__":
     ab_agent.load_agent_card("ideal_agent/agent_card.toml")
     ab_agent.add_mcp_server("http://localhost:9123/sse")
     ab_agent.run()
-
-# agentbeats run_agent blabla.toml --mcp http://localhost:9123/sse ...
