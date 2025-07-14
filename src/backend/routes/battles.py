@@ -103,8 +103,10 @@ def add_system_log(battle_id: str, message: str, detail: Dict[str, Any] = None):
             battle["interact_history"] = []
             
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "is_result": False,
             "message": message,
+            "reported_by": "system",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
         }
         if detail:
             log_entry["detail"] = detail
@@ -299,6 +301,17 @@ async def process_battle(battle_id: str):
             # LIVE_WS_CHANGE: Real-time broadcast after finish/error
             broadcast_battle_update(battle)
             return
+
+        
+        
+        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle").get("default_battle_timeout"))
+        timeout_thread = threading.Thread(
+            target=check_battle_timeout,
+            args=(battle_id, battle_timeout),
+            daemon=True
+        )
+        timeout_thread.start()
+        add_system_log(battle_id, f"Battle timeout set to {battle_timeout} seconds, starting battle.")
         
         notify_success = await a2a_client.notify_green_agent(
             green_agent_url,
@@ -318,16 +331,7 @@ async def process_battle(battle_id: str):
             # LIVE_WS_CHANGE: Real-time broadcast after finish/error
             broadcast_battle_update(battle)
             return
-
-        add_system_log(battle_id, "Green agent notified, battle commenced")
             
-        battle_timeout = green_agent['register_info'].get('battle_timeout', CONFIG.get("battle").get("default_battle_timeout"))
-        timeout_thread = threading.Thread(
-            target=check_battle_timeout,
-            args=(battle_id, battle_timeout),
-            daemon=True
-        )
-        timeout_thread.start()
         
     except Exception as e:
         print(f"Error processing battle {battle_id}: {str(e)}")

@@ -189,7 +189,10 @@ Given a JSON object representing an agent card, identify:
 
 class ParticipantRequirement(BaseModel):
     role: Literal["red_agent", "blue_agent"]
+    
     name: str
+    "Simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). Avoid descriptive suffixes."
+    
     required: bool
 
 
