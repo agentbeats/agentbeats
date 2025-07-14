@@ -93,6 +93,15 @@ onDestroy(() => {
 
 let ongoingBattles: any[] = [];
 let pastBattles: any[] = [];
+let ongoingToShow = 3;
+let pastToShow = 10;
+
+function showMoreOngoing() {
+  ongoingToShow += 3;
+}
+function showMorePast() {
+  pastToShow += 10;
+}
 </script>
 
 <div class="w-full flex flex-col items-center justify-center mt-10 mb-8">
@@ -109,11 +118,16 @@ let pastBattles: any[] = [];
 				<div class="w-full max-w-4xl flex flex-col items-center">
 					<h2 class="text-2xl font-bold text-center mb-10 mt-10">Ongoing Battles</h2>
 					<div class="flex flex-col gap-4 w-full">
-						{#each ongoingBattles as battle (battle.battle_id)}
+						{#each ongoingBattles.slice(0, ongoingToShow) as battle (battle.battle_id)}
 							<button type="button" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
 								<BattleCard battleId={battle.battle_id} />
 							</button>
 						{/each}
+						{#if ongoingBattles.length > ongoingToShow}
+							<button type="button" class="mt-2 px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium" onclick={showMoreOngoing}>
+								View More
+							</button>
+						{/if}
 					</div>
 				</div>
 			{/if}
@@ -121,11 +135,16 @@ let pastBattles: any[] = [];
 				<div class="w-full max-w-4xl flex flex-col items-center">
 					<h2 class="text-2xl font-bold text-center mb-8 mt-8">Past Battles</h2>
 					<div class="flex flex-col gap-4 w-full">
-						{#each pastBattles as battle (battle.battle_id)}
+						{#each pastBattles.slice(0, pastToShow) as battle (battle.battle_id)}
 							<button type="button" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
 								<BattleChip battleId={battle.battle_id} />
 							</button>
 						{/each}
+						{#if pastBattles.length > pastToShow}
+							<button type="button" class="mt-2 px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium" onclick={showMorePast}>
+								View More
+							</button>
+						{/if}
 					</div>
 				</div>
 			{/if}
