@@ -1,25 +1,34 @@
 #!/bin/bash
 
-# AgentBeats Server Setup Script (Background Infrastructure Only)
-# Starts all background services/agents for AgentBeats (no frontend/backend/green agents)
+# AgentBeats Server Setup Script
+# This script starts backend, MCP, and both green agents (TensorTrust and Battle Royale) in a tmux session.
+# Blue and red agent panes are commented out; background agents are not started here.
+# Supports both OpenAI and OpenRouter APIs.
+# Kills any process using ports 9010, 9011, 9020, 9021, 9030, 9031, 8000-8041.
 
-set -e
+for x in 0 1 2 3; do
+  for port in 90${x}0 90${x}1; do
+    pid=$(lsof -ti tcp:$port)
+    if [ -n "$pid" ]; then
+      echo "Killing process on port $port (PID $pid)"
+      kill -9 $pid
+    fi
+  done
+done
 
+# Also kill 8000/8001, 8010/8011, 8020/8021, 8030/8031, 8040/8041
+for x in 0 1 2 3 4; do
+  for port in 80${x}0 80${x}1; do
+    pid=$(lsof -ti tcp:$port)
+    if [ -n "$pid" ]; then
+      echo "Killing process on port $port (PID $pid)"
+      kill -9 $pid
+    fi
+  done
+done
+
+# Manage logs directory
 LOG_DIR="logs"
-echo -e "\n========== AgentBeats Server Setup =========="
-echo "Working directory: $(pwd)"
-echo "User: $(whoami)"
-echo "Date: $(date)"
-echo "Environment:"
-echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:-<not set>}"
-echo "  OPENAI_API_BASE: ${OPENAI_API_BASE:-<not set>}"
-echo -e "\nCreating log directory: $LOG_DIR"
-
-# Check for required commands
-echo "Checking for required commands..."
-command -v python3 >/dev/null 2>&1 || { echo "python3 not found!"; exit 1; }
-
-# Only create log directory if it doesn't exist
 if [ ! -d "$LOG_DIR" ]; then
   echo "Creating log directory: $LOG_DIR"
   mkdir "$LOG_DIR"
@@ -27,82 +36,110 @@ else
   echo "Log directory already exists: $LOG_DIR"
 fi
 
-# Ports to kill (battle_royale: 8000, 8010/8011, 8020/8021, 8030/8031, 8040/8041; tensortrust_mock: 9010/9011, 9020/9021, 9030/9031)
-PORTS=(8000 8010 8011 8020 8021 8030 8031 8040 8041 9010 9011 9020 9021 9030 9031)
-echo -e "\nKilling any processes on relevant ports..."
-for port in "${PORTS[@]}"; do
-  pids=$(lsof -ti tcp:$port)
-  if [ -n "$pids" ]; then
-    echo "Killing process(es) on port $port (PID(s) $pids)"
-    for pid in $pids; do
-      kill -9 $pid 2>/dev/null || true
-    done
-  fi
-done
-echo "Port cleanup complete. Proceeding to Docker and agent startup..."
+# Nohup blue and red agents for tensortrust_mock
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010" > $LOG_DIR/tensortrust_blue_launcher.log 2>&1 &
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020" > $LOG_DIR/tensortrust_red_launcher.log 2>&1 &
 
-# Start Docker service manager (battle_royale)
-echo -e "\n[1/3] Starting Docker service manager (battle_royale)..."
-echo "Using 'docker compose' (plugin)..."
-(cd scenarios/battle_royale/docker && sudo docker compose up -d)
-echo "Docker service manager step complete."
+# Nohup blue and red agents for battle_royale
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8010" > $LOG_DIR/battleroyale_red1_launcher.log 2>&1 &
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8020" > $LOG_DIR/battleroyale_red2_launcher.log 2>&1 &
+nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8030" > $LOG_DIR/battleroyale_red3_launcher.log 2>&1 &
 
-# Start red agents for battle_royale (3 agents: 8010/8011, 8020/8021, 8030/8031)
-echo -e "\n[2/3] Starting battle_royale red agents in background..."
-nohup python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8010 > $LOG_DIR/battleroyale_red1_launcher.log 2>&1 &
-echo "  Red agent 1 (8010/8011) started."
-nohup python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8020 > $LOG_DIR/battleroyale_red2_launcher.log 2>&1 &
-echo "  Red agent 2 (8020/8021) started."
-nohup python3 scenarios/battle_royale/agents/agent_launcher.py red_agent --port 8030 > $LOG_DIR/battleroyale_red3_launcher.log 2>&1 &
-echo "  Red agent 3 (8030/8031) started."
-echo "Battle_royale red agents launched."
-
-# Start tensortrust_mock blue and red agents (leave green for manual/tmux)
-echo -e "\n[3/3] Starting tensortrust_mock blue and red agents in background..."
-nohup python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010 > $LOG_DIR/tensortrust_blue_launcher.log 2>&1 &
-echo "  Blue agent (9010/9011) started."
-nohup python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020 > $LOG_DIR/tensortrust_red_launcher.log 2>&1 &
-echo "  Red agent (9020/9021) started."
-echo "Tensortrust_mock blue and red agents launched."
-
-echo -e "\n========== Starting tmux session for manual services (first) =========="
 SESSION="agentbeats"
-tmux new-session -d -s $SESSION
+PROJECT_DIR="$HOME/agentbeats"
 
-# Pane 0: Backend
-tmux send-keys -t $SESSION:0 "cd $PWD && source venv/bin/activate && python -m src.backend.run" C-m
+# Check if required environment variables are set
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo "❌ ERROR: OPENAI_API_KEY environment variable is not set!"
+    echo "   Set it with: export OPENAI_API_KEY='your-api-key-here'"
+    echo "   For OpenRouter: export OPENAI_API_BASE='https://openrouter.ai/api/v1'"
+    exit 1
+fi
 
-# Pane 1: Frontend
-tmux split-window -h -t $SESSION
- tmux send-keys -t $SESSION:0.1 "cd $PWD/frontend && npm run dev" C-m
+# Set default API base if not provided
+if [ -z "$OPENAI_API_BASE" ]; then
+    export OPENAI_API_BASE="https://api.openai.com/v1"
+    echo "ℹ️  Using default OpenAI API base: $OPENAI_API_BASE"
+else
+    echo "ℹ️  Using custom API base: $OPENAI_API_BASE"
+fi
 
-# Pane 2: Green Agent (Battle Royale)
-tmux split-window -v -t $SESSION:0.0
-tmux send-keys -t $SESSION:0.2 "cd $PWD && source venv/bin/activate && python3 scenarios/battle_royale/agents/agent_launcher.py green_agent --port 8040" C-m
+# Check if virtual environment exists
+if [ ! -d "$PROJECT_DIR/venv" ]; then
+    echo "❌ ERROR: Virtual environment not found at $PROJECT_DIR/venv"
+    echo "   Please create it first:"
+    echo "   cd $PROJECT_DIR"
+    echo "   python -m venv venv"
+    echo "   source venv/bin/activate"
+    echo "   pip install -r requirements.txt"
+    exit 1
+fi
 
-# Pane 3: Green Agent (TensorTrust)
-tmux split-window -v -t $SESSION:0.1
-tmux send-keys -t $SESSION:0.3 "cd $PWD && source venv/bin/activate && python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030" C-m
+echo "🚀 Starting AgentBeats services with tmux..."
 
+# Kill any existing session
+if tmux has-session -t $SESSION 2>/dev/null; then
+    echo "🛑 Stopping existing session..."
+    tmux kill-session -t $SESSION
+fi
+
+# Start new session and run backend (Pane 0)
+echo "📡 Starting backend server..."
+tmux new-session -d -s $SESSION "cd $PROJECT_DIR && source venv/bin/activate && python -m src.backend.run"
+
+# Split horizontally for mcp_server (Pane 1)
+echo "📊 Starting MCP logging server..."
+tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/logging/testing_mcp.py"
+
+# The following tmux pane commands for blue and red agents are commented out:
+# # echo "🔵 Starting blue agent (defender)..."
+# # tmux select-pane -t $SESSION:0.0
+# # tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && ..."
+# # echo "🔴 Starting red agent (attacker)..."
+# # tmux select-pane -t $SESSION:0.1
+# # tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && ..."
+
+# Start green agent (TensorTrust) in tmux (Pane 3)
+echo "🟢 Starting green agent (TensorTrust judge)..."
+tmux select-pane -t $SESSION:0.2
+tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
+
+# Start green agent (Battle Royale) in tmux (Pane 4)
+echo "🟢 Starting green agent (Battle Royale judge)..."
+tmux select-pane -t $SESSION:0.3
+tmux split-window -v -t $SESSION:0.3 "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python3 scenarios/battle_royale/agents/agent_launcher.py green_agent --port 8040"
+
+# --- Frontend SSR build and start (no tmux pane needed, runs with pm2) ---
+echo "🌐 Building and starting frontend..."
+# Build the SSR frontend (safe to run even if already built)
+cd $PROJECT_DIR/frontend && npm run build
+# Start or restart the SSR server with pm2
+cd $PROJECT_DIR/frontend && pm2 start build/index.js --name agentbeats-ssr || pm2 restart agentbeats-ssr
+# --- End frontend SSR ---
+
+# Reload nginx to ensure latest config/certs are active
+echo "🔄 Reloading nginx..."
+sudo nginx -t && sudo systemctl reload nginx
+
+# Arrange panes in tiled layout
 tmux select-layout -t $SESSION tiled
-echo "Tmux session for manual services started. Attach with: tmux attach -t $SESSION"
 
-echo -e "\n========== Starting background services (docker, agents) =========="
-echo -e "\n========== SUMMARY =========="
-echo "- Tmux/manual services started first:"
-echo "    • Backend (FastAPI)"
-echo "    • Frontend (Svelte)"
-echo "    • Green Agent (Battle Royale): Controller 8040, Agent 8041"
-echo "    • Green Agent (TensorTrust): Controller 9030, Agent 9031"
-echo "- Background services:"
-echo "    • Docker service manager (battle_royale): scenarios/battle_royale/docker (sudo docker compose)"
-echo "    • Battle Royale Red Agents:"
-echo "        - Red 1: Controller 8010, Agent 8011 (logs/battleroyale_red1_launcher.log)"
-echo "        - Red 2: Controller 8020, Agent 8021 (logs/battleroyale_red2_launcher.log)"
-echo "        - Red 3: Controller 8030, Agent 8031 (logs/battleroyale_red3_launcher.log)"
-echo "    • TensorTrust Mock Agents:"
-echo "        - Blue: Controller 9010, Agent 9011 (logs/tensortrust_blue_launcher.log)"
-echo "        - Red: Controller 9020, Agent 9021 (logs/tensortrust_red_launcher.log)"
-echo -e "\nLogs are in the $LOG_DIR directory."
-echo "Use 'lsof -i :PORT' to check running processes."
-echo -e "\n========== SETUP COMPLETE ==========" 
+echo "✅ All services started successfully!"
+echo "📋 Service Summary:"
+echo "   • Backend API: http://localhost:9000"
+echo "   • MCP Server: http://localhost:9001"
+echo "   • Blue Agent Controller: http://localhost:9010"
+echo "   • Blue Agent: http://localhost:9011"
+echo "   • Red Agent Controller: http://localhost:9020"
+echo "   • Red Agent: http://localhost:9021"
+echo "   • Green Agent Controller: http://localhost:9030"
+echo "   • Green Agent: http://localhost:9031"
+echo "   • Frontend: http://localhost:5173"
+echo ""
+echo "💡 Tips:"
+echo "   • Use 'tmux attach -t agentbeats' to reattach to the session"
+echo "   • Use 'tmux kill-session -t agentbeats' to stop all services"
+echo "   • Press Ctrl+B then D to detach from tmux session"
+
+# Attach to the session
+tmux attach -t $SESSION 
