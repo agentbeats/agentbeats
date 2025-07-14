@@ -102,3 +102,6 @@ scenarios/battle_royale/monitor-html/
 
 # .env files
 .env
+
+# logs folder
+logs/
