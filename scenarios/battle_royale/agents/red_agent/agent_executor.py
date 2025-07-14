@@ -414,6 +414,29 @@ if __name__ == "__main__":
 
     async def invoke(self, context) -> str:
         print(context.get_user_input(), "=========================================RED INPUT")
+        # Parse incoming message for identifier and set it if present
+        user_input = context.get_user_input()
+        try:
+            import json
+            # Try to parse as JSON first
+            data = json.loads(user_input)
+            if isinstance(data, dict) and "identifier" in data:
+                identifier = data["identifier"]
+                self.set_agent_identifier(identifier)
+            elif isinstance(data, str) and "identifier" in data:
+                # If it's a string containing identifier
+                import re
+                match = re.search(r"identifier[:=]\s*([A-Z0-9]{8})", data, re.IGNORECASE)
+                if match:
+                    identifier = match.group(1)
+                    self.set_agent_identifier(identifier)
+        except Exception:
+            # If not JSON, try to extract identifier from plain text
+            import re
+            match = re.search(r"identifier[:=]\s*([A-Z0-9]{8})", user_input, re.IGNORECASE)
+            if match:
+                identifier = match.group(1)
+                self.set_agent_identifier(identifier)
         await self.ensure_mcp_connected()
         query_ctx = self.chat_history + [{
             "content": context.get_user_input(),
