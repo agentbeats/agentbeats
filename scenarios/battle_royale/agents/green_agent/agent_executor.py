@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import threading
 import queue
+import requests
 
 from prompt import GREEN_AGENT_PROMPT
 
@@ -107,10 +108,12 @@ class GreenAgent:
         # Background monitoring
         self.monitoring_thread = None
         self.monitoring_active = False
+        self.battle_commenced = False
 
         # Initialize chat history and tools
         self.chat_history: List[Dict[str, str]] = []
-        self.tool_list = [
+        from typing import Sequence
+        self.tool_list: Sequence = [
             self._create_start_battle_tool(),
             self._create_retrieve_final_result_tool(),
             self._create_test_message_tool(),
@@ -152,7 +155,7 @@ class GreenAgent:
                 name="Green Agent", 
                 instructions=GREEN_AGENT_PROMPT, 
                 model="o4-mini", 
-                tools=self.tool_list,
+                tools=list(self.tool_list),
                 mcp_servers=self.mcp_servers, 
             )
 
@@ -163,7 +166,7 @@ class GreenAgent:
                 name="Green Agent", 
                 instructions=GREEN_AGENT_PROMPT, 
                 model="o4-mini", 
-                tools=self.tool_list,
+                tools=list(self.tool_list),
             )
 
     async def _make_client(self, base_url: str) -> A2AClient:
@@ -800,6 +803,8 @@ This will ensure the monitoring system can identify your service correctly."""
                 })
                 self._send_log_to_backend(f"Battle started! Duration: {battle_duration_minutes} minutes")
                 
+                # Mark battle as commenced
+                self.battle_commenced = True
                 # Start background monitoring
                 print(f"🔍 DEBUG: Starting background monitoring")
                 self._start_background_monitoring()
@@ -883,14 +888,10 @@ This will ensure the monitoring system can identify your service correctly."""
             
             def run_async_in_thread():
                 try:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    result = loop.run_until_complete(self._send_message_async(agent_url, message))
+                    result = asyncio.run(self._send_message_async(agent_url, message))
                     result_queue.put(result)
                 except Exception as e:
                     result_queue.put(f"Error: {e}")
-                finally:
-                    loop.close()
             
             # Start the thread
             thread = threading.Thread(target=run_async_in_thread)
@@ -931,6 +932,9 @@ This will ensure the monitoring system can identify your service correctly."""
             
             # Create A2A client using the existing method
             print(f"🔍 DEBUG: Creating A2A client for {agent_url}")
+            if agent_url is None:
+                print(f"❌ DEBUG: agent_url is None, cannot create A2A client.")
+                return None
             try:
                 a2a_client = await self._make_client(agent_url)
                 print(f"🔍 DEBUG: A2A client created successfully")
@@ -1029,6 +1033,9 @@ This will ensure the monitoring system can identify your service correctly."""
                             agent_url = "http://localhost:8031"
                         else:
                             continue
+                        if agent_url is None:
+                            messages_sent.append(f"❌ {agent_id}: agent_url is None, cannot send SSH credentials.")
+                            continue
                         
                         # Send via A2A client
                         import asyncio
@@ -1067,13 +1074,11 @@ This will ensure the monitoring system can identify your service correctly."""
                                 return f"❌ {agent_id}: Failed to send SSH credentials - {str(e)}"
                         
                         # Run the async function
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
                         try:
-                            result = loop.run_until_complete(send_ssh_credentials())
+                            result = asyncio.run(send_ssh_credentials())
                             messages_sent.append(result)
-                        finally:
-                            loop.close()
+                        except Exception as e:
+                            messages_sent.append(f"❌ {agent_id}: Error sending SSH credentials - {str(e)}")
                             
                     except Exception as e:
                         messages_sent.append(f"❌ {agent_id}: Error sending SSH credentials - {str(e)}")
@@ -1091,7 +1096,10 @@ This will ensure the monitoring system can identify your service correctly."""
         """Start background monitoring thread that runs every 15 seconds."""
         if self.monitoring_thread and self.monitoring_thread.is_alive():
             return  # Already running
-        
+        # Only start monitoring if battle has commenced
+        if not getattr(self, 'battle_commenced', False):
+            self.logger.info("Background monitoring not started: battle not commenced yet.")
+            return
         self.monitoring_active = True
         self.monitoring_thread = threading.Thread(target=self._background_monitoring_loop, daemon=True)
         self.monitoring_thread.start()
@@ -1536,7 +1544,10 @@ This will ensure the monitoring system can identify your service correctly."""
             pass
         
         await self.ensure_mcp_connected()
-        query_ctx = self.chat_history + [{
+        # Ensure chat_history is a list of TResponseInputItem or use empty list
+        from typing import Sequence
+        query_ctx: Sequence = list(self.chat_history) if isinstance(self.chat_history, list) else []
+        query_ctx = query_ctx + [{
             "content": context.get_user_input(),
             "role": "user"
         }]
@@ -1546,14 +1557,14 @@ This will ensure the monitoring system can identify your service correctly."""
             max_turns=100,
             run_config=RunConfig(model_provider=CUSTOM_MODEL_PROVIDER)
         )  # type: ignore
-        self.chat_history = result.to_input_list()  # type: ignore
+        self.chat_history = list(result.to_input_list())  # type: ignore
         print(result.final_output, "=========================================GREEN OUTPUT")
         return result.final_output
 
 class GreenAgentExecutor(AgentExecutor):
     def __init__(self, mcp_url: str = None) -> None:
         """Initialize the Green Agent Executor."""
-        self.green_agent = GreenAgent(mcp_url=mcp_url)
+        self.green_agent = GreenAgent(mcp_url=mcp_url or "")
 
     async def execute(
         self,
@@ -1562,16 +1573,16 @@ class GreenAgentExecutor(AgentExecutor):
     ) -> None:
         task = context.current_task
         if task is None: # first chat
-            task = new_task(context.message)
+            task = new_task(context.message or None)
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         await updater.update_status(
             TaskState.working,
-            new_agent_text_message("working...", task.contextId, task.id),
+            new_agent_text_message("working...", task.contextId or "", task.id or ""),
         )
         reply_text = await self.green_agent.invoke(context)
         await updater.add_artifact(
-            [Part(root=TextPart(text=reply_text))],
+            [Part(root=TextPart(text=reply_text or ""))],
             name="response",
         )
         await updater.complete()
@@ -1582,4 +1593,4 @@ class GreenAgentExecutor(AgentExecutor):
         raise NotImplementedError("cancel not supported")
 
     async def _reply(self, event_queue: EventQueue, text: str) -> None:
-        await event_queue.enqueue_event(new_agent_text_message(text)) 
+        await event_queue.enqueue_event(new_agent_text_message(text or "")) 
