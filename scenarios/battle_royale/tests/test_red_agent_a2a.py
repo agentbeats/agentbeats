@@ -10,7 +10,7 @@ import time
 def test_red_agent_a2a():
     """Test red agent via A2A protocol"""
     
-    red_agent_url = "http://localhost:8001"
+    red_agent_url = "http://localhost:8011"
     
     # Test 1: Ask agent to connect to battle arena
     print("=== Test 1: SSH Connection ===")

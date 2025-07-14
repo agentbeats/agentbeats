@@ -56,32 +56,32 @@ onMount(async () => {
     }
   });
   
-  recalcBattles();
-  ws = new WebSocket(
-    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
-    window.location.host +
-    '/ws/battles'
-  );
-  ws.onmessage = (event) => {
-    try {
-      const msg = JSON.parse(event.data);
-      if (msg && msg.type === 'battles_update' && Array.isArray(msg.battles)) {
-        battles = msg.battles;
-        recalcBattles();
-      }
-      if (msg && msg.type === 'battle_update' && msg.battle) {
-        const idx = battles.findIndex(b => b.battle_id === msg.battle.battle_id);
-        if (idx !== -1) {
-          battles[idx] = msg.battle;
-        } else {
-          battles = [msg.battle, ...battles];
-        }
-        recalcBattles();
-      }
-    } catch (e) {
-      console.error('[WS] JSON parse error', e);
-    }
-  };
+	recalcBattles();
+	ws = new WebSocket(
+		(window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+		window.location.host +
+		'/ws/battles'
+	);
+	ws.onmessage = (event) => {
+		try {
+			const msg = JSON.parse(event.data);
+			if (msg && msg.type === 'battles_update' && Array.isArray(msg.battles)) {
+				battles = msg.battles;
+				recalcBattles();
+			}
+			if (msg && msg.type === 'battle_update' && msg.battle) {
+				const idx = battles.findIndex(b => b.battle_id === msg.battle.battle_id);
+				if (idx !== -1) {
+					battles[idx] = msg.battle;
+				} else {
+					battles = [msg.battle, ...battles];
+				}
+				recalcBattles();
+			}
+		} catch (e) {
+			console.error('[WS] JSON parse error', e);
+		}
+	};
 });
 
 onDestroy(() => { 
