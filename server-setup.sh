@@ -34,7 +34,7 @@ echo "Port cleanup complete."
 
 # Start Docker service manager (battle_royale)
 echo -e "\n[1/3] Starting Docker service manager (battle_royale)..."
-if command -v docker compose >/dev/null 2>&1; then
+if docker compose version >/dev/null 2>&1; then
   echo "Using 'docker compose' (plugin)..."
   (cd scenarios/battle_royale/docker && docker compose up -d)
 elif command -v docker-compose >/dev/null 2>&1; then
