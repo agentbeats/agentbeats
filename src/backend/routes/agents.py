@@ -21,9 +21,10 @@ async def register_agent(agent_info: Dict[str, Any]):
             or "agent_url" not in agent_info
             or "launcher_url" not in agent_info
             or "is_green" not in agent_info
+            or "roles" not in agent_info
         ):
             raise HTTPException(
-                status_code=400, detail="Missing required fields: alias, agent_url, launcher_url, is_green"
+                status_code=400, detail="Missing required fields: alias, agent_url, launcher_url, is_green, roles"
             )
 
         if not isinstance(agent_info.get("is_green"), bool):
@@ -31,6 +32,13 @@ async def register_agent(agent_info: Dict[str, Any]):
                 status_code=400, detail="is_green must be a boolean value"
             )
 
+        # Validate roles field
+        if not isinstance(agent_info["roles"], dict):
+            raise HTTPException(
+                status_code=400, detail="roles must be a dictionary mapping agent IDs to role info"
+            )
+
+        # Green agent must provide participant_requirements
         if agent_info["is_green"] and "participant_requirements" not in agent_info:
             raise HTTPException(
                 status_code=400,
@@ -63,6 +71,10 @@ async def register_agent(agent_info: Dict[str, Any]):
             "agent_card": agent_card,
             "status": "unlocked",
             "ready": False,
+            "elo": {
+                "rating": 1000,
+                "battle_history": []
+            }
         }
 
         # Save to database
