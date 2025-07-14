@@ -47,26 +47,31 @@
     }
   });
 
-  let formData: any = $state({
+  let formData: any = {
     alias: "",
     agent_url: "",
     launcher_url: "",
     is_green: false,
     participant_requirements: [],
     battle_timeout: 300,
-  });
+    roles: {}, // Add roles as required field
+  };
 
-  let isSubmitting = $state(false);
-  let error: string | null = $state(null);
-  let success = $state(false);
+  let isSubmitting = false;
+  let error: string | null = null;
+  let success = false;
 
-  let isLoadingAgentCard = $state(false);
-  let agentCardError: string | null = $state(null);
-  let agentCard: any = $state(null);
-  let canRegister = $state(true);
+  let isLoadingAgentCard = false;
+  let agentCardError: string | null = null;
+  let agentCard: any = null;
+  let canRegister = true;
 
-  let isAnalyzing = $state(false);
-  let analysisError: string | null = $state(null);
+  let isAnalyzing = false;
+  let analysisError: string | null = null;
+
+  let rolesJsonInput = "";
+  let rolesJsonError: string | null = null;
+  let rolesPlaceholder = '{"green_agent_id": {"role": "green", "info": {}}}';
 
   function addParticipantRequirement() {
     formData.participant_requirements = [
@@ -140,11 +145,36 @@
     loadAgentCard();
   }
 
+  function handleRolesJsonInput() {
+    rolesJsonError = null;
+    if (!rolesJsonInput.trim()) {
+      formData.roles = {};
+      return;
+    }
+    try {
+      const parsed = JSON.parse(rolesJsonInput);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        formData.roles = parsed;
+      } else {
+        rolesJsonError = 'Roles must be a valid JSON object';
+      }
+    } catch (error) {
+      rolesJsonError = 'Invalid JSON syntax';
+    }
+  }
+
   async function handleSubmit() {
     try {
       isSubmitting = true;
       error = null;
       success = false;
+
+      // Validate roles
+      if (!formData.roles || typeof formData.roles !== 'object' || Array.isArray(formData.roles) || Object.keys(formData.roles).length === 0) {
+        error = 'Roles is required and must be a valid JSON object with at least one entry.';
+        isSubmitting = false;
+        return;
+      }
 
       // Use agent card name if no alias is provided
       const submitData = {
@@ -348,13 +378,29 @@
                 "Not loaded yet"}
             </div>
           </div>
+          <div class="space-y-2">
+            <Label for="roles">Roles (JSON object, required)</Label>
+            <textarea
+              id="roles"
+              class="w-full border rounded p-2 font-mono text-sm"
+              rows="4"
+              bind:value={rolesJsonInput}
+              oninput={handleRolesJsonInput}
+              placeholder={rolesPlaceholder}
+              required
+            ></textarea>
+            {#if rolesJsonError}
+              <div class="text-destructive text-xs">{rolesJsonError}</div>
+            {/if}
+            <div class="text-xs text-muted-foreground">
+              Enter a JSON object mapping agent IDs to role info. Example: {rolesPlaceholder}
+            </div>
+          </div>
           <div class="flex gap-2 pt-4">
-            <Button type="submit" disabled={isSubmitting || !canRegister}>
+            <Button type="submit" disabled={isSubmitting || !canRegister || !!rolesJsonError}>
               {isSubmitting ? "Registering..." : "Register Agent"}
             </Button>
-            <Button variant="outline" onclick={() => goto("/agents")}
-              >Cancel</Button
-            >
+            <Button variant="outline" type="button" onclick={() => goto("/agents")}>Cancel</Button>
           </div>
         </form>
       </CardContent>

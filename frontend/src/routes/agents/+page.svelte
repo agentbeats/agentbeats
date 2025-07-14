@@ -269,7 +269,11 @@ const table = createSvelteTable({
                 <Table.Row>
                   {#each row.getVisibleCells() as cell (cell.id)}
                     <Table.Cell class="px-4 py-2 align-middle {cell.column.id === 'description' ? 'max-w-xs break-words' : ''}">
-                      {#if cell.column.id === 'description'}
+                      {#if cell.column.id === 'name'}
+                        <a href={`/agents/${row.original.agent_id || row.original.id}`} class="text-blue-600 hover:text-blue-800 underline">
+                          {cell.getValue() || 'Unknown Agent'}
+                        </a>
+                      {:else if cell.column.id === 'description'}
                         <div class="break-words whitespace-normal">
                           <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
                         </div>
