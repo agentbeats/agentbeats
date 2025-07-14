@@ -11,7 +11,8 @@ echo "Working directory: $(pwd)"
 echo "User: $(whoami)"
 echo "Date: $(date)"
 echo "Environment:"
-env | grep -E 'OPENAI|PYTHON|VIRTUAL|DOCKER' || true
+echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:-<not set>}"
+echo "  OPENAI_API_BASE: ${OPENAI_API_BASE:-<not set>}"
 echo -e "\nCreating log directory: $LOG_DIR"
 mkdir -p "$LOG_DIR"
 
@@ -34,15 +35,8 @@ echo "Port cleanup complete."
 
 # Start Docker service manager (battle_royale)
 echo -e "\n[1/3] Starting Docker service manager (battle_royale)..."
-if docker compose version >/dev/null 2>&1; then
-  echo "Using 'docker compose' (plugin)..."
-  (cd scenarios/battle_royale/docker && docker compose up -d)
-elif command -v docker-compose >/dev/null 2>&1; then
-  echo "Using 'docker-compose' (standalone)..."
-  (cd scenarios/battle_royale/docker && docker-compose up -d)
-else
-  echo "Docker Compose not found! Skipping Docker service manager startup."
-fi
+echo "Using 'docker compose' (plugin)..."
+(cd scenarios/battle_royale/docker && docker compose up -d)
 echo "Docker service manager step complete."
 
 # Start red agents for battle_royale (3 agents: 8010/8011, 8020/8021, 8030/8031)
