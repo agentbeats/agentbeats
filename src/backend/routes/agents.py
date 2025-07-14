@@ -66,13 +66,14 @@ async def register_agent(agent_info: Dict[str, Any]):
             )
 
         # Create agent record
+        elo_rating = None if agent_info.get("is_green") else 1000
         agent_record = {
             "register_info": agent_info,
             "agent_card": agent_card,
             "status": "unlocked",
             "ready": False,
             "elo": {
-                "rating": 1000,
+                "rating": elo_rating,
                 "battle_history": []
             }
         }

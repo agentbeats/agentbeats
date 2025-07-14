@@ -383,52 +383,73 @@ def update_agent_elos(battle: Dict[str, Any], winner: str):
     """
     Update ELO ratings for all agents in a battle.
     Winner gains 15 ELO, others lose 15 ELO.
+    Winner can be an agent_id, a role, or an agent alias/name.
+    Green agents never have a rating (set to None or 'N/A'), but keep battle history.
     """
     try:
-        # Get all agent IDs involved in the battle
+        # Map winner to agent_id if needed
+        winner_agent_id = None
+        if winner == "draw":
+            winner_agent_id = None
+        elif winner == "green_agent":
+            winner_agent_id = battle.get("green_agent_id")
+        else:
+            for op in battle.get("opponents", []):
+                if op.get("name") == winner or op.get("role") == winner:
+                    winner_agent_id = op.get("agent_id")
+                    break
+            if not winner_agent_id:
+                all_ids = [battle.get("green_agent_id")] + [op.get("agent_id") for op in battle.get("opponents", [])]
+                if winner in all_ids:
+                    winner_agent_id = winner
+        if not winner_agent_id:
+            agent_ids = [battle["green_agent_id"]] + [op["agent_id"] for op in battle["opponents"]]
+            for agent_id in agent_ids:
+                agent = db.read("agents", agent_id)
+                if not agent:
+                    continue
+                alias = agent.get("register_info", {}).get("alias")
+                card_name = agent.get("agent_card", {}).get("name")
+                if winner == alias or winner == card_name:
+                    winner_agent_id = agent_id
+                    break
         agent_ids = [battle["green_agent_id"]] + [op["agent_id"] for op in battle["opponents"]]
-        
         for agent_id in agent_ids:
             agent = db.read("agents", agent_id)
             if not agent:
                 continue
-                
-            # Initialize ELO if not present
+            is_green = agent.get("register_info", {}).get("is_green", False)
             if "elo" not in agent:
                 agent["elo"] = {
-                    "rating": 1000,
+                    "rating": None if is_green else 1000,
                     "battle_history": []
                 }
-            
-            # Determine if this agent is the winner
-            is_winner = False
             if winner == "draw":
-                # In case of draw, no ELO change
                 elo_change = 0
-            elif winner == agent_id:
-                is_winner = True
+                result = "draw"
+            elif agent_id == winner_agent_id:
                 elo_change = 15
+                result = "win"
             else:
                 elo_change = -15
-            
-            # Update ELO rating
-            agent["elo"]["rating"] += elo_change
-            
-            # Add battle result to history
+                result = "loss"
+            # Only update rating for non-green agents
+            if not is_green and agent["elo"]["rating"] is not None:
+                agent["elo"]["rating"] += elo_change
+                final_rating = agent["elo"]["rating"]
+            else:
+                final_rating = None
             battle_result = {
                 "battle_id": battle["battle_id"],
                 "timestamp": datetime.utcnow().isoformat() + "Z",
-                "result": "win" if is_winner else "loss" if winner != "draw" else "draw",
+                "result": result,
                 "elo_change": elo_change,
-                "final_rating": agent["elo"]["rating"],
+                "final_rating": final_rating,
                 "opponents": [op["agent_id"] for op in battle["opponents"]],
                 "green_agent_id": battle["green_agent_id"]
             }
             agent["elo"]["battle_history"].append(battle_result)
-            
-            # Update agent in database
             db.update("agents", agent_id, agent)
-            
     except Exception as e:
         logging.error(f"Error updating ELO ratings: {e}")
 
