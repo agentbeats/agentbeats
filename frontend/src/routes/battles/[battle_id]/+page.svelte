@@ -8,6 +8,8 @@ let error = '';
 let greenAgentName = '';
 let opponentNames: string[] = [];
 let ws: WebSocket | null = null;
+let greenAgentInfo: any = null;
+let opponentRoleMap = new Map<string, string>(); // name -> role mapping
 
 $: battleId = $page.params.battle_id;
 
@@ -20,6 +22,63 @@ async function fetchAgentName(agentId: string): Promise<string> {
   } catch {
     return agentId;
   }
+}
+
+async function fetchGreenAgentInfo(agentId: string): Promise<any> {
+  try {
+    const res = await fetch(`/api/agents/${agentId}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function buildOpponentRoleMap(greenAgentInfo: any, battleOpponents: any[]): Map<string, string> {
+  const roleMap = new Map<string, string>();
+  
+  if (!greenAgentInfo.register_info?.participant_requirements || !Array.isArray(battleOpponents)) {
+    return roleMap;
+  }
+  
+  const participantReqs = greenAgentInfo.register_info.participant_requirements;
+  
+  for (const opponent of battleOpponents) {
+    const matchedReq = participantReqs.find((req: any) => req.name === opponent.name);
+    if (matchedReq && matchedReq.role) {
+      roleMap.set(opponent.name, matchedReq.role);
+    }
+  }
+  
+  // in case reported_by is simplified
+  for (const req of participantReqs) {
+    if (req.name && req.role) {
+      roleMap.set(req.name, req.role);
+      const simpleName = req.name.split(' (')[0].trim();
+      if (simpleName !== req.name) {
+        roleMap.set(simpleName, req.role);
+      }
+    }
+  }
+  
+  return roleMap;
+}
+
+function getEntryBackgroundClass(reportedBy: string): string {
+  if (reportedBy === 'system') {
+    return 'bg-gray-50 border-gray-200';
+  } else if (reportedBy === 'green_agent') {
+    return 'bg-green-50 border-green-200';
+  } else if (opponentRoleMap.has(reportedBy)) {
+    const role = opponentRoleMap.get(reportedBy);
+    if (role === 'blue_agent') {
+      return 'bg-blue-50 border-blue-200';
+    } else if (role === 'red_agent') {
+      return 'bg-red-50 border-red-200';
+    }
+  }
+  // Default background for unknown reported_by
+  return 'bg-yellow-50 border-yellow-200';
 }
 
 onMount(async () => {
@@ -36,6 +95,7 @@ onMount(async () => {
     // Fetch agent names
     if (battle.green_agent_id) {
       greenAgentName = await fetchAgentName(battle.green_agent_id);
+      greenAgentInfo = await fetchGreenAgentInfo(battle.green_agent_id);
     }
     if (battle.opponents && Array.isArray(battle.opponents)) {
       opponentNames = await Promise.all(
@@ -44,6 +104,10 @@ onMount(async () => {
           return `${agentName} (${opponent.name})`;
         })
       );
+      
+      if (greenAgentInfo) {
+        opponentRoleMap = buildOpponentRoleMap(greenAgentInfo, battle.opponents);
+      }
     }
     
     // Connect to WebSocket for real-time updates
@@ -115,13 +179,52 @@ onDestroy(() => {
       {#if battle.error && battle.state === 'error'}
         <div class="text-red-700">Error: <span class="font-mono">{battle.error}</span></div>
       {/if}
+      
+      <!-- Debug -->
+      {#if opponentRoleMap.size > 0}
+        <div class="text-xs text-gray-600 mt-2">
+          <strong>Debug - Opponent Role Map:</strong>
+          {#each Array.from(opponentRoleMap.entries()) as [name, role]}
+            <span class="inline-block bg-gray-100 px-2 py-1 rounded mr-2 mb-1">
+              {name} → {role}
+            </span>
+          {/each}
+        </div>
+      {:else}
+        <div class="text-xs text-red-600 mt-2">
+          <strong>Debug:</strong> No opponent role mapping found
+        </div>
+      {/if}
+      {#if greenAgentInfo}
+        <div class="text-xs text-gray-600 mt-2">
+          <strong>Debug - Green Agent Info:</strong>
+          <details class="mt-1">
+            <summary class="cursor-pointer">Show participant_requirements</summary>
+            <pre class="text-xs bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
+              {JSON.stringify(greenAgentInfo.register_info.participant_requirements, null, 2)}
+            </pre>
+          </details>
+        </div>
+      {:else}
+        <div class="text-xs text-red-600 mt-2">
+          <strong>Debug:</strong> No green agent info found
+        </div>
+      {/if}
+      {#if battle.opponents}
+        <div class="text-xs text-gray-600 mt-2">
+          <strong>Debug - Battle Opponents:</strong>
+          <pre class="text-xs bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
+            {JSON.stringify(battle.opponents, null, 2)}
+          </pre>
+        </div>
+      {/if}
     </div>
     <!-- Interact History -->
     {#if battle.interact_history && battle.interact_history.length > 0}
       <div class="flex flex-col gap-3 mt-6">
         <h2 class="text-lg font-semibold mb-2">Interact History</h2>
         {#each battle.interact_history as entry, i (entry.timestamp + entry.message + i)}
-          <div class="border rounded-lg p-3 bg-background/80">
+          <div class="border rounded-lg p-3 {getEntryBackgroundClass(entry.reported_by)}">
             <div class="flex flex-row justify-between items-center mb-1">
               <span class="font-mono text-xs text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</span>
               <span class="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">{entry.reported_by}</span>
