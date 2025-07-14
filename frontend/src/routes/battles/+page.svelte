@@ -110,9 +110,9 @@ let pastBattles: any[] = [];
 					<h2 class="text-2xl font-bold text-center mb-10 mt-10">Ongoing Battles</h2>
 					<div class="flex flex-col gap-4 w-full">
 						{#each ongoingBattles as battle (battle.battle_id)}
-							<div role="button" tabindex="0" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
+							<button type="button" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
 								<BattleCard battleId={battle.battle_id} />
-							</div>
+							</button>
 						{/each}
 					</div>
 				</div>
@@ -122,9 +122,9 @@ let pastBattles: any[] = [];
 					<h2 class="text-2xl font-bold text-center mb-8 mt-8">Past Battles</h2>
 					<div class="flex flex-col gap-4 w-full">
 						{#each pastBattles as battle (battle.battle_id)}
-							<div role="button" tabindex="0" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
+							<button type="button" class="cursor-pointer w-full" onclick={() => goto(`/battles/${battle.battle_id}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/battles/${battle.battle_id}`)}>
 								<BattleChip battleId={battle.battle_id} />
-							</div>
+							</button>
 						{/each}
 					</div>
 				</div>

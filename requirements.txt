@@ -5,6 +5,7 @@ fastmcp
 openai-agents
 sqlalchemy
 websockets
+toml
 
 # FastAPI and related
 fastapi
