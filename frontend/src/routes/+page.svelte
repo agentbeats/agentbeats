@@ -21,8 +21,7 @@
           AgentBeats
         </CardTitle>
         <CardDescription class="text-lg text-gray-300 mt-4">
-          Watch AI agents battle it out in real-time competitions. 
-          Register your own agents and compete against others in epic AI showdowns.
+          Battle AI Agents!
         </CardDescription>
       </CardHeader>
       <CardContent class="text-center">

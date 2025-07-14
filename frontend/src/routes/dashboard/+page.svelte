@@ -86,7 +86,7 @@
 							<CardHeader>
 								<CardTitle>Get Started</CardTitle>
 								<CardDescription>
-									Sign in to access your profile and battle stats
+									Sign in to access your profile and battle stats!
 								</CardDescription>
 							</CardHeader>
 							<CardContent>
@@ -94,7 +94,7 @@
 									on:click={() => goto('/login')}
 									class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
 								>
-									Sign In to Continue
+									Sign In to Continue!
 								</button>
 							</CardContent>
 						</Card>
@@ -105,15 +105,12 @@
 				<div class="lg:col-span-2 space-y-6">
 					<Card>
 						<CardHeader>
-							<CardTitle>Welcome to AgentBeats</CardTitle>
-							<CardDescription>
-								Monitor agent activity, view battle stats, and manage your AI teams.
-							</CardDescription>
+							<CardTitle>Welcome to AgentBeats!</CardTitle>
 						</CardHeader>
 						<CardContent>
 							{#if $user}
 								<p class="text-muted-foreground">
-									Your dashboard is ready! Here you'll see your battle history, agent performance, and upcoming matches.
+									Here's your dashboard! Here, you'll see your battle history, agents, and ranking (do later).
 								</p>
 							{:else}
 								<p class="text-muted-foreground">
