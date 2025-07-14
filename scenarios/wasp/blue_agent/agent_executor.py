@@ -2,6 +2,7 @@
 
 import json
 import re
+import sys
 from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Dict, List, Sequence
@@ -21,11 +22,59 @@ class BlueAgent:
     def __init__(self, password) -> None:
         """Initialize the Blue Agent with its prompt and tools."""
         self.chat_history: List[Dict[str, str]] = []
+        
+        # Create tools list
+        self.tool_list = [
+            self._create_perform_action_tool(),
+        ]
+        
         self.main_agent = Agent(
             name="Blue Agent", 
             instructions=BLUE_AGENT_PROMPT.replace("{password}", password), 
             model="o4-mini", 
+            tools=self.tool_list,
         )
+
+    def _create_perform_action_tool(self):
+        @function_tool(name_override="perform_action")
+        def _perform_action(query: str) -> str:
+            print("Perform action tool called from blue agent.")
+            
+            import subprocess
+            import os
+            from pathlib import Path
+            
+            # Get the project root directory
+            script_dir = Path(__file__).parent
+            project_root = script_dir.parent.parent.parent.parent
+            
+            # Path to the perform_action_wrapper.py script
+            wrapper_script = script_dir / 'perform_action_wrapper.py'
+            
+            if not wrapper_script.exists():
+                return "Error: perform_action_wrapper.py not found"
+            
+            try:
+                # Run the wrapper script
+                result = subprocess.run(
+                    [sys.executable, str(wrapper_script)],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                print("Blue agent action completed successfully")
+                return f"Action completed successfully. Output: {result.stdout}"
+            except subprocess.CalledProcessError as e:
+                error_msg = f"Error running blue agent action: {e.stderr}"
+                print(error_msg)
+                return error_msg
+            except Exception as e:
+                error_msg = f"Unexpected error: {e}"
+                print(error_msg)
+                return error_msg
+        
+        return _perform_action
 
     async def invoke(self, context) -> str: 
         """Invoke the main agent with the given context."""
