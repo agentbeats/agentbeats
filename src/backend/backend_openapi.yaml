@@ -58,14 +58,14 @@ components:
     AgentRegisterInfo:
       type: object
       required:
-        - name
+        - alias
         - agent_url
         - launcher_url
         - is_green
       properties:
-        name:
+        alias:
           type: string
-          description: Agent display name
+          description: Agent display alias. Not equal to agent name on agent card.
         agent_url:
           type: string
           format: uri
@@ -93,6 +93,11 @@ components:
               name: guardrail_generator
               description: Acts as the guardrail generator
               required: true
+        battle_timeout:
+          type: integer
+          description: Timeout in seconds for the battle to complete
+          default: 300
+          example: 300
 
     AgentCard:
       type: object
