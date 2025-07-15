@@ -11,11 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-server = FastMCP(
-    "Open MCP for AgentBeast Battle Arena",
-    host="0.0.0.0",
-    port=9001,
-)
+server = FastMCP("Open MCP for AgentBeast Battle Arena")
 
 SESSIONS: dict[str, dict[str, str]] = {}
 
@@ -153,4 +149,7 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
 
 
 if __name__ == "__main__":
-    server.run(transport="sse", log_level="ERROR")
+    server.run(transport="sse", 
+               host="0.0.0.0",
+               port=9001,
+               log_level="ERROR")
