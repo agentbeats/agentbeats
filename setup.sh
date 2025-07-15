@@ -1,163 +1,274 @@
 #!/bin/bash
 
-# AgentBeats Server Setup Script
-# This script starts backend and both green agents (TensorTrust and Battle Royale) in a tmux session.
-# MCP server runs with nohup in background. Blue and red agent panes are commented out.
-# Supports both OpenAI and OpenRouter APIs.
-# Kills any process using ports 9010, 9011, 9020, 9021, 9030, 9031, 8000-8041.
+"""NOTE: this file was automatically generated using the help of AI, and as thus may contain one or more errors."""
 
-for x in 0 1 2 3; do
-  for port in 90${x}0 90${x}1; do
-    pid=$(lsof -ti tcp:$port)
-    if [ -n "$pid" ]; then
-      echo "Killing process on port $port (PID $pid)"
-      kill -9 $pid
+# AgentBeats Setup Script
+# This script automatically sets up the AgentBeats environment including:
+# - Prerequisites checking
+# - Environment variable setup
+# - Virtual environment creation
+# - Dependency installation
+# - Optional service startup
+
+set -e  # Exit on any error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to check Python version
+check_python_version() {
+    if command_exists python3; then
+        python_version=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+        required_version="3.8"
+        if [ "$(printf '%s\n' "$required_version" "$python_version" | sort -V | head -n1)" = "$required_version" ]; then
+            print_success "Python $python_version found"
+            return 0
+        else
+            print_error "Python $python_version found, but Python 3.8+ is required"
+            return 1
+        fi
+    else
+        print_error "Python 3 not found"
+        return 1
     fi
-  done
+}
+
+# Function to check Node.js version
+check_node_version() {
+    if command_exists node; then
+        node_version=$(node --version | cut -d'v' -f2 | cut -d. -f1,2)
+        required_version="18.0"
+        if [ "$(printf '%s\n' "$required_version" "$node_version" | sort -V | head -n1)" = "$required_version" ]; then
+            print_success "Node.js $node_version found"
+            return 0
+        else
+            print_error "Node.js $node_version found, but Node.js 18+ is required"
+            return 1
+        fi
+    else
+        print_error "Node.js not found"
+        return 1
+    fi
+}
+
+# Parse command line arguments
+API_KEY=""
+API_BASE="https://openrouter.ai/api/v1"
+START_SERVICES=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --api-key)
+            API_KEY="$2"
+            shift 2
+            ;;
+        --api-base)
+            API_BASE="$2"
+            shift 2
+            ;;
+        --start-services)
+            START_SERVICES=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --api-key KEY       Set your OpenRouter API key"
+            echo "  --api-base URL      Set API base URL (default: https://openrouter.ai/api/v1)"
+            echo "  --start-services    Start all services after setup"
+            echo "  -h, --help          Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  $0 --api-key your-key-here"
+            echo "  $0 --api-key your-key-here --start-services"
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
 done
 
-# Also kill 8000/8001, 8010/8011, 8020/8021, 8030/8031, 8040/8041
-for x in 0 1 2 3 4; do
-  for port in 80${x}0 80${x}1; do
-    pid=$(lsof -ti tcp:$port)
-    if [ -n "$pid" ]; then
-      echo "Killing process on port $port (PID $pid)"
-      kill -9 $pid
-    fi
-  done
-done
+print_status "Starting AgentBeats setup..."
 
-SESSION="agentbeats"
-PROJECT_DIR="$HOME/agentbeats"
+# Check prerequisites
+print_status "Checking prerequisites..."
 
-# Manage logs directory
-LOG_DIR="logs"
-if [ ! -d "$LOG_DIR" ]; then
-  echo "Creating log directory: $LOG_DIR"
-  mkdir "$LOG_DIR"
-else
-  echo "Log directory already exists: $LOG_DIR"
-fi
-
-# Check if required environment variables are set
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo "❌ ERROR: OPENAI_API_KEY environment variable is not set!"
-    echo "   Set it with: export OPENAI_API_KEY='your-api-key-here'"
-    echo "   For OpenRouter: export OPENAI_API_BASE='https://openrouter.ai/api/v1'"
+# Check Python
+if ! check_python_version; then
+    print_error "Please install Python 3.8+ and try again"
     exit 1
 fi
 
-# Set default API base if not provided
-if [ -z "$OPENAI_API_BASE" ]; then
-    export OPENAI_API_BASE="https://api.openai.com/v1"
-    echo "ℹ️  Using default OpenAI API base: $OPENAI_API_BASE"
-else
-    echo "ℹ️  Using custom API base: $OPENAI_API_BASE"
-fi
-
-# Check if virtual environment exists
-if [ ! -d "$PROJECT_DIR/venv" ]; then
-    echo "❌ ERROR: Virtual environment not found at $PROJECT_DIR/venv"
-    echo "   Please create it first:"
-    echo "   cd $PROJECT_DIR"
-    echo "   python -m venv venv"
-    echo "   source venv/bin/activate"
-    echo "   pip install -r requirements.txt"
+# Check Node.js
+if ! check_node_version; then
+    print_error "Please install Node.js 18+ and try again"
     exit 1
 fi
 
-# Start background services with nohup
-echo "🚀 Starting background services..."
-
-# Nohup MCP server
-echo "📊 Starting MCP server in background..."
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/logging/testing_mcp.py" > $LOG_DIR/mcp_server.log 2>&1 &
-
-# Nohup blue and red agents for tensortrust_mock
-echo "🔵 Starting tensortrust blue agent in background..."
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/blue_agent/main.py --port 9010" > $LOG_DIR/tensortrust_blue_launcher.log 2>&1 &
-
-echo "🔴 Starting tensortrust red agent in background..."
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/red_agent/main.py --port 9020" > $LOG_DIR/tensortrust_red_launcher.log 2>&1 &
-
-# Nohup blue and red agents for battle_royale
-echo "🔴 Starting battle royale red agents in background..."
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/red_agent/main.py --port 8010" > $LOG_DIR/battleroyale_red1_launcher.log 2>&1 &
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/red_agent/main.py --port 8020" > $LOG_DIR/battleroyale_red2_launcher.log 2>&1 &
-nohup bash -c "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" && python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/red_agent/main.py --port 8030" > $LOG_DIR/battleroyale_red3_launcher.log 2>&1 &
-
-echo "🚀 Starting AgentBeats services with tmux..."
-
-# Kill any existing session
-if tmux has-session -t $SESSION 2>/dev/null; then
-    echo "🛑 Stopping existing session..."
-    tmux kill-session -t $SESSION
+# Check npm
+if ! command_exists npm; then
+    print_error "npm not found. Please install Node.js with npm and try again"
+    exit 1
 fi
 
-# Start new session and run backend (Pane 0)
-echo "📡 Starting backend server..."
-tmux new-session -d -s $SESSION "cd $PROJECT_DIR && source venv/bin/activate && python -m src.backend.run"
+# Check Docker
+if ! command_exists docker; then
+    print_warning "Docker not found. Some features may not work properly"
+else
+    print_success "Docker found"
+fi
 
-# Split horizontally for mcp_server (Pane 1) - COMMENTED OUT, now runs with nohup
-# echo "📊 Starting MCP logging server..."
-# tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/logging/testing_mcp.py"
+# Check Docker Compose
+if ! command_exists docker-compose && ! docker compose version >/dev/null 2>&1; then
+    print_warning "Docker Compose not found. Some features may not work properly"
+else
+    print_success "Docker Compose found"
+fi
 
-# The following tmux pane commands for blue and red agents are commented out:
-# # echo "🔵 Starting blue agent (defender)..."
-# # tmux select-pane -t $SESSION:0.0
-# # tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && ..."
-# # echo "🔴 Starting red agent (attacker)..."
-# # tmux select-pane -t $SESSION:0.1
-# # tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && ..."
-# # echo "📊 Starting MCP logging server..."
-# # tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/logging/testing_mcp.py"
+# Check tmux
+if ! command_exists tmux; then
+    print_warning "tmux not found. Please install tmux for better service management"
+else
+    print_success "tmux found"
+fi
 
-# Start green agent (TensorTrust) in tmux (Pane 1)
-echo "🟢 Starting green agent (TensorTrust judge)..."
-tmux split-window -v -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python scenarios/tensortrust_mock/agent_launcher.py --file scenarios/tensortrust_mock/green_agent/main.py --port 9030 --mcp-url http://localhost:9001/sse"
+# Check pm2
+if ! command_exists pm2; then
+    print_warning "pm2 not found. Please install pm2 for process management: npm install -g pm2"
+else
+    print_success "pm2 found"
+fi
 
-# Start green agent (Battle Royale) in tmux (Pane 2)
-echo "🟢 Starting green agent (Battle Royale judge)..."
-tmux select-pane -t $SESSION:0.1
-tmux split-window -h -t $SESSION "cd $PROJECT_DIR && source venv/bin/activate && OPENAI_API_KEY=\"$OPENAI_API_KEY\" OPENAI_API_BASE=\"$OPENAI_API_BASE\" python3 scenarios/battle_royale/agents/agent_launcher.py --file scenarios/battle_royale/agents/green_agent/main.py --port 8040 --mcp-url http://localhost:9001/sse"
+# Check nginx
+if ! command_exists nginx; then
+    print_warning "nginx not found. Please install nginx for web server functionality"
+else
+    print_success "nginx found"
+fi
 
-# --- Docker startup ---
-echo "🐳 Starting Docker services..."
-cd $PROJECT_DIR/scenarios/battle_royale/docker
-sudo docker compose up -d
-cd $PROJECT_DIR
+# Get API key if not provided
+if [ -z "$API_KEY" ]; then
+    echo ""
+    print_status "Please enter your OpenRouter API key:"
+    read -s API_KEY
+    echo ""
+    
+    if [ -z "$API_KEY" ]; then
+        print_error "API key is required"
+        exit 1
+    fi
+fi
 
-# --- Frontend SSR build and start (no tmux pane needed, runs with pm2) ---
-echo "🌐 Building and starting frontend..."
-# Build the SSR frontend (safe to run even if already built)
-cd $PROJECT_DIR/frontend && npm run build
-# Start or restart the SSR server with pm2
-cd $PROJECT_DIR/frontend && pm2 start build/index.js --name agentbeats-ssr || pm2 restart agentbeats-ssr
-# --- End frontend SSR ---
+# Set environment variables
+print_status "Setting up environment variables..."
+export OPENAI_API_KEY="$API_KEY"
+export OPENAI_API_BASE="$API_BASE"
 
-# Reload nginx to ensure latest config/certs are active
-echo "🔄 Reloading nginx..."
-sudo nginx -t && sudo systemctl reload nginx
+# Add to shell profile for persistence
+SHELL_PROFILE=""
+if [ -f "$HOME/.bashrc" ]; then
+    SHELL_PROFILE="$HOME/.bashrc"
+elif [ -f "$HOME/.zshrc" ]; then
+    SHELL_PROFILE="$HOME/.zshrc"
+elif [ -f "$HOME/.profile" ]; then
+    SHELL_PROFILE="$HOME/.profile"
+fi
 
-# Arrange panes in tiled layout
-tmux select-layout -t $SESSION tiled
+if [ -n "$SHELL_PROFILE" ]; then
+    # Check if variables are already set
+    if ! grep -q "OPENAI_API_KEY" "$SHELL_PROFILE"; then
+        echo "" >> "$SHELL_PROFILE"
+        echo "# AgentBeats environment variables" >> "$SHELL_PROFILE"
+        echo "export OPENAI_API_KEY=\"$API_KEY\"" >> "$SHELL_PROFILE"
+        echo "export OPENAI_API_BASE=\"$API_BASE\"" >> "$SHELL_PROFILE"
+        print_success "Environment variables added to $SHELL_PROFILE"
+    else
+        print_warning "Environment variables already exist in $SHELL_PROFILE"
+    fi
+fi
 
-echo "✅ All services started successfully!"
-echo "📋 Service Summary:"
-echo "   • Backend API: http://localhost:9000"
-echo "   • MCP Server: http://localhost:9001"
-echo "   • Blue Agent Controller: http://localhost:9010"
-echo "   • Blue Agent: http://localhost:9011"
-echo "   • Red Agent Controller: http://localhost:9020"
-echo "   • Red Agent: http://localhost:9021"
-echo "   • Green Agent Controller: http://localhost:9030"
-echo "   • Green Agent: http://localhost:9031"
-echo "   • Frontend: http://localhost:5173"
+# Create virtual environment
+print_status "Setting up Python virtual environment..."
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
+    print_success "Virtual environment created"
+else
+    print_warning "Virtual environment already exists"
+fi
+
+# Activate virtual environment and install dependencies
+print_status "Installing Python dependencies..."
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+print_success "Python dependencies installed"
+
+# Install frontend dependencies
+print_status "Installing frontend dependencies..."
+cd frontend
+npm install
+cd ..
+print_success "Frontend dependencies installed"
+
+# Create logs directory
+print_status "Creating logs directory..."
+mkdir -p logs
+print_success "Logs directory created"
+
+print_success "Setup completed successfully!"
+
+# Show next steps
 echo ""
-echo "💡 Tips:"
-echo "   • Use 'tmux attach -t agentbeats' to reattach to the session"
-echo "   • Use 'tmux kill-session -t agentbeats' to stop all services"
-echo "   • Press Ctrl+B then D to detach from tmux session"
+print_status "Next steps:"
+echo "  • Your API key and base URL have been set"
+echo "  • Virtual environment is ready at: ./venv"
+echo "  • Python dependencies are installed"
+echo "  • Frontend dependencies are installed"
+echo ""
+echo "To start all services, run:"
+echo "  ./start-server.sh"
+echo ""
+echo "Or to start services now, run this script with --start-services flag"
 
-# Attach to the session
-tmux attach -t $SESSION 
+# Start services if requested
+if [ "$START_SERVICES" = true ]; then
+    echo ""
+    print_status "Starting services..."
+    if [ -f "start-server.sh" ]; then
+        chmod +x start-server.sh
+        ./start-server.sh
+    else
+        print_error "start-server.sh not found"
+        exit 1
+    fi
+fi 
