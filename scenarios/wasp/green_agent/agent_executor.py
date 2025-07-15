@@ -61,7 +61,8 @@ class GreenAgent:
         self.chat_history: List[Dict[str, str]] = []
         self.tool_list = [
             self._create_talk_to_agent_tool(), 
-            self._create_eval_prompt_tool(), 
+            self._create_eval_prompt_tool(),
+            self._create_evaluator_tool(),
         ]
 
     async def ensure_mcp_connected(self) -> None:
@@ -92,16 +93,46 @@ class GreenAgent:
             raise RuntimeError(f"Failed to resolve agent card from {base_url}")
         return A2AClient(httpx_client=self._httpx_client, agent_card=card)
 
-    # def _create_environment_prep_tool(self):
-    #     @function_tool(name_override="environment_prep")
-    #     def _environment_prep(query: str) -> str:
-    #         print("Environment prep tool called.")
+    def _create_evaluator_tool(self):
+        @function_tool(name_override="run_evaluator")
+        def _run_evaluator(query: str) -> str:
+            print("Evaluator tool called from green agent.")
             
-    #         from prep import prep_environment
-    #         prep_environment()
-    #         print("Environment prepared.")
-    #         return "Environment prepared."
-    #     return _environment_prep
+            import subprocess
+            import os
+            from pathlib import Path
+            
+            # Get the project root directory
+            script_dir = Path(__file__).parent
+            project_root = script_dir.parent.parent.parent
+            
+            # Path to the evaluator_final_wrapper.py script
+            wrapper_script = script_dir / 'evaluator_final_wrapper.py'
+            
+            if not wrapper_script.exists():
+                return "Error: evaluator_final_wrapper.py not found"
+            
+            try:
+                # Run the wrapper script
+                result = subprocess.run(
+                    [sys.executable, str(wrapper_script)],
+                    cwd=project_root,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                print("Evaluator completed successfully")
+                return f"Evaluator completed successfully. Output: {result.stdout}"
+            except subprocess.CalledProcessError as e:
+                error_msg = f"Error running evaluator: {e.stderr}"
+                print(error_msg)
+                return error_msg
+            except Exception as e:
+                error_msg = f"Unexpected error: {e}"
+                print(error_msg)
+                return error_msg
+        
+        return _run_evaluator
 
     
     def _create_talk_to_agent_tool(self):
