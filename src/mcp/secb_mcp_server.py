@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 import json
+from datasets import load_dataset
 
 # Docker connection settings
 DOCKER_SOCKET_PATHS = [
@@ -191,6 +192,11 @@ def run_terminal_command_in_docker(
         return error_msg
 
 
+########################################################
+# Battle progress tracking
+########################################################
+
+
 @server.tool()
 def update_battle_process(
     battle_id: str,
@@ -300,6 +306,83 @@ def report_on_battle_end(
         return f"Battle end recorded. Winner: {winner}"
     except Exception as e:
         error_msg = f"Error reporting battle end: {e}"
+        logger.error(error_msg)
+        return error_msg
+
+
+########################################################
+# Sec-Bench Huggingface Dataset tools
+########################################################
+
+
+@server.tool()
+def get_workspace_dir_name(instance_id: str) -> str:
+    """
+    Get the workspace directory name for a given instance ID from the SEC-bench dataset.
+
+    Parameters:
+    - instance_id: The unique identifier for the instance in the dataset
+    """
+    try:
+        # Load the SEC-bench dataset
+        dataset = load_dataset("hwiwonlee/secb", split="test")
+
+        # Find the instance with matching ID
+        for instance in dataset:
+            if instance["id"] == instance_id:
+                return instance["workspace_dir_name"]
+
+        return f"Error: No instance found with ID {instance_id}"
+    except Exception as e:
+        error_msg = f"Error getting workspace directory name: {e}"
+        logger.error(error_msg)
+        return error_msg
+
+
+@server.tool()
+def get_sanitizer_report(instance_id: str) -> str:
+    """
+    Get the sanitizer report for a given instance ID from the SEC-bench dataset.
+
+    Parameters:
+    - instance_id: The unique identifier for the instance in the dataset
+    """
+    try:
+        # Load the SEC-bench dataset
+        dataset = load_dataset("hwiwonlee/secb", split="test")
+
+        # Find the instance with matching ID
+        for instance in dataset:
+            if instance["id"] == instance_id:
+                return instance["sanitizer_report"]
+
+        return f"Error: No instance found with ID {instance_id}"
+    except Exception as e:
+        error_msg = f"Error getting sanitizer report: {e}"
+        logger.error(error_msg)
+        return error_msg
+
+
+@server.tool()
+def get_bug_report(instance_id: str) -> str:
+    """
+    Get the bug report for a given instance ID from the SEC-bench dataset.
+
+    Parameters:
+    - instance_id: The unique identifier for the instance in the dataset
+    """
+    try:
+        # Load the SEC-bench dataset
+        dataset = load_dataset("hwiwonlee/secb", split="test")
+
+        # Find the instance with matching ID
+        for instance in dataset:
+            if instance["id"] == instance_id:
+                return instance["bug_report"]
+
+        return f"Error: No instance found with ID {instance_id}"
+    except Exception as e:
+        error_msg = f"Error getting bug report: {e}"
         logger.error(error_msg)
         return error_msg
 
