@@ -1,0 +1,10 @@
+import type { BaseNode } from "../node.js";
+import type { BaseRoot } from "../roots/root.js";
+import type { BaseScope } from "../scope.js";
+import { Disjoint } from "./disjoint.js";
+import { type IntersectionContext, type RootKind } from "./implement.js";
+type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(l: l, r: r, ctx: ctx) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint : BaseNode | Disjoint | null;
+export declare const intersectNodesRoot: InternalNodeIntersection<BaseScope>;
+export declare const pipeNodesRoot: InternalNodeIntersection<BaseScope>;
+export declare const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>;
+export {};

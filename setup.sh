@@ -235,7 +235,7 @@ print_success "Python dependencies installed"
 
 # Install frontend dependencies
 print_status "Installing frontend dependencies..."
-cd frontend
+cd webapp
 npm install
 cd ..
 print_success "Frontend dependencies installed"
