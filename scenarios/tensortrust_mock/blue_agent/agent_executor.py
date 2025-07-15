@@ -5,7 +5,8 @@ import re
 from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Dict, List, Sequence
-from agents import Agent, Runner, function_tool, RunContextWrapper
+from agents import Agent, Runner, function_tool, RunContextWrapper, ModelProvider, OpenAIChatCompletionsModel, RunConfig
+from agents import Model
 
 from prompt import BLUE_AGENT_PROMPT
 
@@ -15,6 +16,23 @@ from a2a.utils import new_agent_text_message
 from a2a.server.tasks import TaskUpdater
 from a2a.types import TaskState, Part, TextPart
 from a2a.utils import new_task, new_agent_text_message
+import os
+from openai import AsyncOpenAI
+from agents import ModelProvider, OpenAIChatCompletionsModel, RunConfig
+from agents import set_tracing_disabled
+set_tracing_disabled(disabled=True)
+
+OPENROUTER_BASE_URL = os.getenv("OPENAI_API_BASE", "https://openrouter.ai/api/v1")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+MODEL_NAME = "o4-mini"
+
+custom_client = AsyncOpenAI(base_url=OPENROUTER_BASE_URL, api_key=OPENROUTER_API_KEY)
+
+class CustomModelProvider(ModelProvider):
+    def get_model(self, model_name: str | None) -> Model:
+        return OpenAIChatCompletionsModel(model=model_name or MODEL_NAME, openai_client=custom_client)
+
+CUSTOM_MODEL_PROVIDER = CustomModelProvider()
 
 
 class BlueAgent:
@@ -34,7 +52,11 @@ class BlueAgent:
             "role": "user"
         }]
 
-        result = await Runner.run(self.main_agent, query_ctx)  # type: ignore
+        result = await Runner.run(
+            self.main_agent,
+            query_ctx,
+            run_config=RunConfig(model_provider=CUSTOM_MODEL_PROVIDER)
+        )  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore
 
         print(result.final_output)

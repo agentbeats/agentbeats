@@ -8,7 +8,14 @@ class TestingAgent:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
-        self.client = OpenAI(api_key=api_key)
+        
+        # Get the base URL from environment variable, default to OpenAI
+        base_url = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
+        
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url=base_url
+        )
         self.model = model
         self.memory = [
             {"role": "system", "content": system_message}
