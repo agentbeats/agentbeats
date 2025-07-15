@@ -179,45 +179,6 @@ onDestroy(() => {
       {#if battle.error && battle.state === 'error'}
         <div class="text-red-700">Error: <span class="font-mono">{battle.error}</span></div>
       {/if}
-      
-      <!-- Debug -->
-      {#if opponentRoleMap.size > 0}
-        <div class="text-xs text-gray-600 mt-2">
-          <strong>Debug - Opponent Role Map:</strong>
-          {#each Array.from(opponentRoleMap.entries()) as [name, role]}
-            <span class="inline-block bg-gray-100 px-2 py-1 rounded mr-2 mb-1">
-              {name} → {role}
-            </span>
-          {/each}
-        </div>
-      {:else}
-        <div class="text-xs text-red-600 mt-2">
-          <strong>Debug:</strong> No opponent role mapping found
-        </div>
-      {/if}
-      {#if greenAgentInfo}
-        <div class="text-xs text-gray-600 mt-2">
-          <strong>Debug - Green Agent Info:</strong>
-          <details class="mt-1">
-            <summary class="cursor-pointer">Show participant_requirements</summary>
-            <pre class="text-xs bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
-              {JSON.stringify(greenAgentInfo.register_info.participant_requirements, null, 2)}
-            </pre>
-          </details>
-        </div>
-      {:else}
-        <div class="text-xs text-red-600 mt-2">
-          <strong>Debug:</strong> No green agent info found
-        </div>
-      {/if}
-      {#if battle.opponents}
-        <div class="text-xs text-gray-600 mt-2">
-          <strong>Debug - Battle Opponents:</strong>
-          <pre class="text-xs bg-gray-100 p-2 rounded mt-1 overflow-x-auto">
-            {JSON.stringify(battle.opponents, null, 2)}
-          </pre>
-        </div>
-      {/if}
     </div>
     <!-- Interact History -->
     {#if battle.interact_history && battle.interact_history.length > 0}

@@ -333,7 +333,7 @@
         <CardDescription>Agent's role assignments</CardDescription>
       </CardHeader>
       <CardContent>
-        {#if agent?.register_info?.roles && Object.keys(agent.register_info.roles).length > 0}
+        {#if false && agent?.register_info?.roles && Object.keys(agent.register_info.roles).length > 0}
           <div class="space-y-3">
             {#each Object.entries(agent.register_info.roles) as [agentId, roleInfo]}
               <div class="border rounded p-3">
