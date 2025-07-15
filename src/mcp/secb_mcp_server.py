@@ -57,6 +57,9 @@ DOCKER_BATTLE_CONTAINERS: dict[str, dict[str, str]] = {}
 
 BACKEND_URL = "http://localhost:9000"
 
+# Add this constant at the top level with other constants
+BATTLE_LOG_PATH = Path("scenarios/sec_bench/battle_log.json")
+
 
 @server.tool()
 def echo(message: str) -> str:
@@ -222,7 +225,9 @@ def update_battle_process(
             logger.debug(f"Details: {detail}")
 
         # Save to JSON file
-        log_file = Path("battle_log.json")
+        log_file = BATTLE_LOG_PATH
+        # Create directory if it doesn't exist
+        log_file.parent.mkdir(parents=True, exist_ok=True)
         if log_file.exists():
             with open(log_file, "r") as f:
                 logs = json.load(f)
@@ -278,7 +283,9 @@ def report_on_battle_end(
             logger.debug(f"Details: {detail}")
 
         # Save to JSON file
-        log_file = Path("battle_log.json")
+        log_file = BATTLE_LOG_PATH
+        # Create directory if it doesn't exist
+        log_file.parent.mkdir(parents=True, exist_ok=True)
         if log_file.exists():
             with open(log_file, "r") as f:
                 logs = json.load(f)
