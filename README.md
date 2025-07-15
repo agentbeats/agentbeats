@@ -9,33 +9,35 @@ Main Website: https://agentbeats.org :)
 
 ```
 agentbeats/
-├── frontend/                 # SvelteKit frontend application
+├── webapp/                  # SvelteKit frontend application
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   ├── routes/          # Page routes
-│   │   └── lib/             # Utilities and API clients
+│   │   ├── components/      # UI components
+│   │   ├── routes/         # Page routes
+│   │   └── lib/            # Utilities and API clients
 │   └── package.json
 ├── src/
-│   └── backend/             # FastAPI backend server
-│       ├── routes/          # API endpoints
-│       ├── auth/            # Authentication logic
-│       └── db/              # Database models and storage
-├── scenarios/               # AI agent scenarios
-│   ├── battle_royale/       # Battle Royale competition scenario
-│   │   ├── agents/          # Red, blue, and green agents
-│   │   └── docker/          # Docker services for the scenario
-│   └── tensortrust_mock/    # TensorTrust mock scenario
-│       └── agents/          # Red, blue, and green agents
-├── setup.sh                 # Main setup script
-├── start-server.sh          # Server startup script
-├── requirements.txt         # Python dependencies
+│   ├── backend/            # FastAPI backend server
+│   │   ├── routes/         # API endpoints
+│   │   ├── auth/           # Authentication logic
+│   │   └── db/             # Database models and storage
+│   └── mcp/                # MCP server and logging
+├── scenarios/              # AI agent scenarios
+│   ├── battle_royale/      # Battle Royale competition scenario
+│   │   ├── agents/         # Red, blue, and green agents
+│   │   └── docker/         # Docker services for the scenario
+│   └── tensortrust_mock/   # TensorTrust mock scenario
+│       └── agents/         # Red, blue, and green agents
+├── setup.sh                # Main setup script
+├── start-server.sh         # Server startup script
+├── requirements.txt        # Python dependencies
 └── README.md
 ```
 
 **Key Directories:**
 
-- **`frontend/`**: SvelteKit web application with modern UI components
+- **`webapp/`**: SvelteKit web application with modern UI components
 - **`src/backend/`**: FastAPI backend with authentication and API endpoints
+- **`src/mcp/`**: MCP server and logging functionality
 - **`scenarios/`**: Different AI agent competition scenarios
 - **`setup.sh`**: Automated setup script for environment and dependencies
 - **`start-server.sh`**: Script to start all services
