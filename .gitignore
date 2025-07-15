@@ -21,6 +21,14 @@ frontend/build/
 frontend/dist/
 frontend/.svelte-kit/
 
+# Frontend specific ignores
+frontend/.output
+frontend/.vercel
+frontend/.netlify
+frontend/.wrangler
+frontend/vite.config.js.timestamp-*
+frontend/vite.config.ts.timestamp-*
+
 # ccache
 ccache/
 *.ccache
