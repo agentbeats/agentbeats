@@ -169,12 +169,12 @@
       error = null;
       success = false;
 
-      // Validate roles
-      if (!formData.roles || typeof formData.roles !== 'object' || Array.isArray(formData.roles) || Object.keys(formData.roles).length === 0) {
-        error = 'Roles is required and must be a valid JSON object with at least one entry.';
-        isSubmitting = false;
-        return;
-      }
+      // // Validate roles
+      // if (!formData.roles || typeof formData.roles !== 'object' || Array.isArray(formData.roles) || Object.keys(formData.roles).length === 0) {
+      //   error = 'Roles is required and must be a valid JSON object with at least one entry.';
+      //   isSubmitting = false;
+      //   return;
+      // }
 
       // Use agent card name if no alias is provided
       const submitData = {
@@ -378,7 +378,7 @@
                 "Not loaded yet"}
             </div>
           </div>
-          <div class="space-y-2">
+          <!-- <div class="space-y-2">
             <Label for="roles">Roles (JSON object, required)</Label>
             <textarea
               id="roles"
@@ -395,7 +395,7 @@
             <div class="text-xs text-muted-foreground">
               Enter a JSON object mapping agent IDs to role info. Example: {rolesPlaceholder}
             </div>
-          </div>
+          </div> -->
           <div class="flex gap-2 pt-4">
             <Button type="submit" disabled={isSubmitting || !canRegister || !!rolesJsonError}>
               {isSubmitting ? "Registering..." : "Register Agent"}
