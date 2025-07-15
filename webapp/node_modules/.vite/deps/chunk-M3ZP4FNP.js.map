@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../@supabase/node-fetch/browser.js"],
-  "sourcesContent": ["\"use strict\";\n\n// ref: https://github.com/tc39/proposal-global\nvar getGlobal = function() {\n    // the only reliable means to get the global object is\n    // `Function('return this')()`\n    // However, this causes CSP violations in Chrome apps.\n    if (typeof self !== 'undefined') { return self; }\n    if (typeof window !== 'undefined') { return window; }\n    if (typeof global !== 'undefined') { return global; }\n    throw new Error('unable to locate global object');\n}\n\nvar globalObject = getGlobal();\n\nexport const fetch = globalObject.fetch;\n\nexport default globalObject.fetch.bind(globalObject);\n\nexport const Headers = globalObject.Headers;\nexport const Request = globalObject.Request;\nexport const Response = globalObject.Response;\n"],
-  "mappings": ";;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA,IAGI,WAUA,cAES,OAEN,iBAEM,SACA,SACA;AArBb;AAAA;AAGA,IAAI,YAAY,WAAW;AAIvB,UAAI,OAAO,SAAS,aAAa;AAAE,eAAO;AAAA,MAAM;AAChD,UAAI,OAAO,WAAW,aAAa;AAAE,eAAO;AAAA,MAAQ;AACpD,UAAI,OAAO,WAAW,aAAa;AAAE,eAAO;AAAA,MAAQ;AACpD,YAAM,IAAI,MAAM,gCAAgC;AAAA,IACpD;AAEA,IAAI,eAAe,UAAU;AAEtB,IAAM,QAAQ,aAAa;AAElC,IAAO,kBAAQ,aAAa,MAAM,KAAK,YAAY;AAE5C,IAAM,UAAU,aAAa;AAC7B,IAAM,UAAU,aAAa;AAC7B,IAAM,WAAW,aAAa;AAAA;AAAA;",
-  "names": []
-}
