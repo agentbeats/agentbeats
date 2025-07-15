@@ -30,5 +30,8 @@ python tensortrust_test.py
 Run template agent:
 ```
 cd tensortrust_mock_impl/agents/template_agent_2_cli_only
+# Run full launcher + agent
+agentbeats run agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9010 --backend http://nuggets.puppy9.com:9000 --mcp http://localhost:9123/sse --tool tools.py
+# If you prefer run agent only
 agentbeats run_agent agent_card.toml --mcp ['http://localhost:9123/sse'] --tool 'tools.py'
 ```
