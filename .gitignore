@@ -9,17 +9,25 @@ venv/
 *.log
 
 # Node.js dependencies
-frontend/node_modules/
+webapp/node_modules/
 
 # npm/yarn/pnpm lock files
-frontend/package-lock.json
-frontend/yarn.lock
-frontend/pnpm-lock.yaml
+webapp/package-lock.json
+webapp/yarn.lock
+webapp/pnpm-lock.yaml
 
 # Build output
-frontend/build/
-frontend/dist/
-frontend/.svelte-kit/
+webapp/build/
+webapp/dist/
+webapp/.svelte-kit/
+
+# Frontend specific ignores
+webapp/.output
+webapp/.vercel
+webapp/.netlify
+webapp/.wrangler
+webapp/vite.config.js.timestamp-*
+webapp/vite.config.ts.timestamp-*
 
 # ccache
 ccache/
@@ -41,10 +49,10 @@ Thumbs.db
 
 # --- Additional ignores for SvelteKit, Vite, Node, Python, pm2, and SSL ---
 # SvelteKit output (if not already ignored)
-frontend/.svelte-kit-output/
-frontend/.vite/
-frontend/.vite-temp/
-frontend/.output/
+webapp/.svelte-kit-output/
+webapp/.vite/
+webapp/.vite-temp/
+webapp/.output/
 
 # pm2 logs and dump
 ~/.pm2/
@@ -62,7 +70,7 @@ dump.pm2.json
 *.pyd
 
 # SvelteKit preview output (if using adapters that output .output/)
-frontend/.output/
+webapp/.output/
 
 # SSL keys/certs (never commit these!)
 *.pem
@@ -73,4 +81,35 @@ frontend/.output/
 etc/letsencrypt/
 
 # Local Vite config (dev proxy)
-frontend/vite.config.ts
+webapp/vite.config.ts
+
+# --- Docker and Battle Royale specific ignores ---
+# Docker volumes and data
+scenarios/battle_royale/docker/shared/
+scenarios/battle_royale/docker/logs/
+scenarios/battle_royale/docker/dev-logs/
+scenarios/battle_royale/docker/dev-shared/
+scenarios/battle_royale/docker/dev-monitor-html/
+
+# Docker build artifacts
+scenarios/battle_royale/docker/.dockerignore.bak
+scenarios/battle_royale/docker/docker-compose.override.yml.bak
+
+# Battle Royale test artifacts
+scenarios/battle_royale/test_*.log
+scenarios/battle_royale/*_service.log
+scenarios/battle_royale/*_service.py
+
+# SSH keys and credentials (if any are generated)
+scenarios/battle_royale/ssh_keys/
+scenarios/battle_royale/credentials/
+
+# Container-specific files
+scenarios/battle_royale/container_data/
+scenarios/battle_royale/monitor-html/
+
+# .env files
+.env
+
+# logs folder
+logs/
