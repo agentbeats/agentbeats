@@ -128,9 +128,9 @@ tmux select-layout -t $SESSION tiled
 print_success "All services started successfully!"
 
 print_status "Tips:"
-echo "   • Use 'tmux attach -t agentbeats' to reattach to the session"
-echo "   • Use 'tmux kill-session -t agentbeats' to stop all services"
-echo "   • Press Ctrl+B then D to detach from tmux session"
+echo "   - Use 'tmux attach -t agentbeats' to reattach to the session"
+echo "   - Use 'tmux kill-session -t agentbeats' to stop all services"
+echo "   - Press Ctrl+B then D to detach from tmux session"
 
 # attach to the tmux session
 tmux attach -t $SESSION 
