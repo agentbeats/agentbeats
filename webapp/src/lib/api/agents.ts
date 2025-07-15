@@ -32,14 +32,35 @@ export async function fetchAgentCard(agentUrl: string) {
     });
 
     if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.detail || `Failed to fetch agent card: ${res.status} ${res.statusText}`);
+      let errorMessage = `Failed to fetch agent card: ${res.status} ${res.statusText}`;
+      
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.detail || errorMessage;
+      } catch (parseError) {
+        try {
+          const errorText = await res.text();
+          if (errorText.includes('<!doctype') || errorText.includes('<html')) {
+            errorMessage = 'Server returned HTML instead of JSON. The agent URL may be incorrect or the agent service is not running properly.';
+          } else {
+            errorMessage = `Server error: ${errorText.substring(0, 200)}`;
+          }
+        } catch {
+        }
+      }
+      throw new Error(errorMessage); 
     }
-
     const agentCard = await res.json();
     return agentCard;
   } catch (error) {
     console.error('Failed to fetch agent card:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('not valid JSON') || error.message.includes('<!doctype')) {
+        throw new Error('The agent URL returned HTML instead of a valid agent card. Please check:\n1. Agent service is running\n2. URL points to correct agent card endpoint\n3. Agent service returns JSON format');
+      }
+    }
+    
     throw error;
   }
 }
