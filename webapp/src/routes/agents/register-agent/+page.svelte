@@ -47,7 +47,7 @@
     }
   });
 
-  let formData: any = {
+  let formData: any = $state({
     alias: "",
     agent_url: "",
     launcher_url: "",
@@ -55,23 +55,23 @@
     participant_requirements: [],
     battle_timeout: 300,
     roles: {}, // Add roles as required field
-  };
+  });
 
-  let isSubmitting = false;
-  let error: string | null = null;
-  let success = false;
+  let isSubmitting: boolean = $state(false);
+  let error: string | null = $state(null);
+  let success: boolean = $state(false);
 
-  let isLoadingAgentCard = false;
-  let agentCardError: string | null = null;
-  let agentCard: any = null;
-  let canRegister = true;
+  let isLoadingAgentCard: boolean = $state(false);
+  let agentCardError: string | null = $state(null);
+  let agentCard: any = $state(null);
+  let canRegister: boolean = $state(true);
 
-  let isAnalyzing = false;
-  let analysisError: string | null = null;
+  let isAnalyzing: boolean = $state(false);
+  let analysisError: string | null = $state(null);
 
-  let rolesJsonInput = "";
-  let rolesJsonError: string | null = null;
-  let rolesPlaceholder = '{"green_agent_id": {"role": "green", "info": {}}}';
+  let rolesJsonInput: string = $state("");
+  let rolesJsonError: string | null = $state(null);
+  let rolesPlaceholder: string = '{"green_agent_id": {"role": "green", "info": {}}}';
 
   function addParticipantRequirement() {
     formData.participant_requirements = [
@@ -200,8 +200,8 @@
   }
 
   // Debug: post raw formData
-  let debugError: string | null = null;
-  let debugSuccess: boolean = false;
+  let debugError: string | null = $state(null);
+  let debugSuccess: boolean = $state(false);
   async function handleDebugPost() {
     try {
       debugError = null;
