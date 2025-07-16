@@ -24,7 +24,7 @@ class RedAgent:
         
         # Create tools list
         self.tool_list = [
-            self._create_environment_prep_tool(),
+            self._create_prepare_prompt_environment_tool(),
         ]
         
         self.main_agent = Agent(
@@ -34,16 +34,16 @@ class RedAgent:
             tools=self.tool_list,
         )
 
-    def _create_environment_prep_tool(self):
-        @function_tool(name_override="environment_prep")
-        def _environment_prep(query: str) -> str:
-            print("Environment prep tool called from red agent.")
+    def _create_prepare_prompt_environment_tool(self):
+        @function_tool(name_override="prepare_prompt_environment")
+        def _prepare_prompt_environment(query: str) -> str:
+            print("Prepare prompt environment tool called from red agent.")
             
-            from prep import prep_environment
-            prep_environment()
-            print("Environment prepared by red agent.")
-            return "Environment prepared by red agent."
-        return _environment_prep
+            from prep import inject_prompt
+            result = inject_prompt()
+            print("Prompt injected by red agent.")
+            return result
+        return _prepare_prompt_environment
 
     async def invoke(self, context) -> str: 
         """Invoke the main agent with the given context."""
@@ -57,6 +57,7 @@ class RedAgent:
         self.chat_history = result.to_input_list()  # type: ignore
 
         print(result.final_output)
+        print("Chat history: ", self.chat_history)
 
         return result.final_output
 

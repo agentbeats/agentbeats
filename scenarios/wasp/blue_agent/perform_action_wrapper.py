@@ -64,7 +64,7 @@ def main():
             check=True
         )
         print("Blue agent completed successfully")
-        return result.returncode
+        return str({"stdout": result.stdout, "stderr": result.stderr})
     except subprocess.CalledProcessError as e:
         print(f"Error running blue agent: {e}")
         return e.returncode

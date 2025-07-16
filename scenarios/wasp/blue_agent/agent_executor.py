@@ -64,7 +64,7 @@ class BlueAgent:
                     check=True
                 )
                 print("Blue agent action completed successfully")
-                return f"Action completed successfully. Output: {result.stdout}"
+                return str({"stdout": result.stdout, "stderr": result.stderr})
             except subprocess.CalledProcessError as e:
                 error_msg = f"Error running blue agent action: {e.stderr}"
                 print(error_msg)

@@ -55,13 +55,13 @@ def main():
             [str(python_executable), str(evaluator_script)],
             env=env,
             cwd=project_root,
-            check=True
+            check=False
         )
         print("Evaluator completed successfully")
-        return result.returncode
+        return str({"stdout": result.stdout, "stderr": result.stderr, "returncode": result.returncode})
     except subprocess.CalledProcessError as e:
         print(f"Error running evaluator: {e}")
-        return e.returncode
+        return 1
     except KeyboardInterrupt:
         print("\nEvaluator interrupted by user")
         return 1

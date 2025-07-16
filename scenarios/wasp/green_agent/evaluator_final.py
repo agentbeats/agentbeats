@@ -37,7 +37,10 @@ step_by_step_command = [
     'webarena'  # output format
 ]
 
-subprocess.run(step_by_step_command)
+result = subprocess.run(step_by_step_command, capture_output=True, text=True)
+
+print("stdout", result.stdout)
+print("stderr", result.stderr)
 
 # Change back to project root after execution
 os.chdir(project_root)

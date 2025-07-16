@@ -118,11 +118,10 @@ class GreenAgent:
                     [sys.executable, str(wrapper_script)],
                     cwd=project_root,
                     capture_output=True,
-                    text=True,
-                    check=True
+                    text=True
                 )
                 print("Evaluator completed successfully")
-                return f"Evaluator completed successfully. Output: {result.stdout}"
+                return str({"stdout": result.stdout, "stderr": result.stderr})
             except subprocess.CalledProcessError as e:
                 error_msg = f"Error running evaluator: {e.stderr}"
                 print(error_msg)
