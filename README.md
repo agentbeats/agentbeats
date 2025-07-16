@@ -160,6 +160,10 @@ The web interface will be available at `http://localhost:5173`
 
 Use the AgentBeats SDK to launch agents for testing scenarios. Here's an example using the TensorTrust battle scenario:
 
+```bash
+cd scenarios/tensortrust
+```
+
 **Launch Blue Agent (Defender):**
 ```bash
 agentbeats run blue_agent/blue_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9010 --backend http://localhost:9000

@@ -10,8 +10,11 @@ let opponentNames: string[] = [];
 let ws: WebSocket | null = null;
 let greenAgentInfo: any = null;
 let opponentRoleMap = new Map<string, string>(); // name -> role mapping
+let interactHistoryContainer: HTMLDivElement | null = null;
 
 $: battleId = $page.params.battle_id;
+
+$: battleInProgress = battle ? isBattleInProgress() : false;
 
 async function fetchAgentName(agentId: string): Promise<string> {
   try {
@@ -81,6 +84,31 @@ function getEntryBackgroundClass(reportedBy: string): string {
   return 'bg-yellow-50 border-yellow-200';
 }
 
+function scrollToBottom() {
+  if (interactHistoryContainer) {
+    setTimeout(() => {
+      interactHistoryContainer?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'end' 
+      });
+    }, 100);
+  }
+}
+
+function isBattleInProgress(): boolean {
+  if (!battle) return false;
+  
+  if (battle.state === 'finished' || battle.state === 'error') {
+    return false;
+  }
+  
+  if (battle.interact_history && Array.isArray(battle.interact_history)) {
+    return !battle.interact_history.some((entry: any) => entry.is_result);
+  }
+  
+  return true;
+}
+
 onMount(async () => {
   loading = true;
   error = '';
@@ -122,7 +150,11 @@ onMount(async () => {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'battle_update' && data.battle.battle_id === battleId) {
-        battle = data.battle;
+        const previousHistoryLength = battle?.interact_history?.length || 0;
+        
+        // create a new battle object to trigger Svelte's reactivity
+        battle = { ...data.battle };
+        
         // Update agent names if needed
         if (battle.green_agent_id && !greenAgentName) {
           fetchAgentName(battle.green_agent_id).then(name => greenAgentName = name);
@@ -132,6 +164,18 @@ onMount(async () => {
             const agentName = await fetchAgentName(opponent.agent_id);
             return `${agentName} (${opponent.name})`;
           })).then(names => opponentNames = names);
+        }
+        
+        // Auto-scroll if new interact history entries were added
+        const currentHistoryLength = battle?.interact_history?.length || 0;
+        if (currentHistoryLength > previousHistoryLength) {
+          scrollToBottom();
+        }
+        
+        // Also scroll when battle state changes (for loading indicator updates)
+        if (battle.state === 'finished' || battle.state === 'error') {
+          console.log('Battle finished, triggering scroll');
+          scrollToBottom();
         }
       }
     };
@@ -182,7 +226,7 @@ onDestroy(() => {
     </div>
     <!-- Interact History -->
     {#if battle.interact_history && battle.interact_history.length > 0}
-      <div class="flex flex-col gap-3 mt-6">
+      <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
         <h2 class="text-lg font-semibold mb-2">Interact History</h2>
         {#each battle.interact_history as entry, i (entry.timestamp + entry.message + i)}
           <div class="border rounded-lg p-3 {getEntryBackgroundClass(entry.reported_by)}">
@@ -202,6 +246,23 @@ onDestroy(() => {
             {/if}
           </div>
         {/each}
+        
+        <!-- Loading indicator for battles in progress -->
+        {#if battleInProgress}
+          <div class="border rounded-lg p-4 bg-purple-50 border-purple-200 flex items-center justify-center space-x-3">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+            <span class="text-sm text-purple-700 font-medium">Battle in progress...</span>
+          </div>
+        {/if}
+      </div>
+    {:else if battle && battleInProgress}
+      <!-- Show loading if no history yet but battle is starting -->
+      <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
+        <h2 class="text-lg font-semibold mb-2">Interact History</h2>
+        <div class="border rounded-lg p-4 bg-purple-50 border-purple-200 flex items-center justify-center space-x-3">
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+          <span class="text-sm text-purple-700 font-medium">Waiting for battle to start...</span>
+        </div>
       </div>
     {/if}
   {/if}
