@@ -22,6 +22,28 @@
   let isLoading = false;
   let error: string | null = null;
 
+  let isDescriptionExpanded: boolean = false;
+  const DESCRIPTION_PREVIEW_LENGTH = 400;
+
+  function getDescriptionPreview(description: string): { preview: string; needsExpansion: boolean } {
+    if (!description || description.length <= DESCRIPTION_PREVIEW_LENGTH) {
+      return { preview: description, needsExpansion: false };
+    }
+    
+    const preview = description.substring(0, DESCRIPTION_PREVIEW_LENGTH).trim();
+    const lastSpaceIndex = preview.lastIndexOf(' ');
+    const truncatedPreview = lastSpaceIndex > 0 ? preview.substring(0, lastSpaceIndex) : preview;
+    
+    return { 
+      preview: truncatedPreview + '...', 
+      needsExpansion: true 
+    };
+  }
+
+  function toggleDescriptionExpansion() {
+    isDescriptionExpanded = !isDescriptionExpanded;
+  }
+
   onMount(async () => {
     // Check authentication immediately
     const { data: { session } } = await supabase.auth.getSession();
@@ -181,10 +203,24 @@
       <CardContent class="space-y-4">
         <div class="flex items-center space-x-3">
           <div class="text-4xl">🤖</div>
-          <div>
+          <div class="flex-1">
             <h3 class="font-semibold text-lg">{agent?.agent_card?.name || 'Unnamed Agent'}</h3>
             {#if agent?.agent_card?.description}
-              <p class="text-muted-foreground text-sm">{agent.agent_card.description}</p>
+              {@const { preview, needsExpansion } = getDescriptionPreview(agent.agent_card.description)}
+              <div class="text-muted-foreground text-sm">
+                <p class="mb-1">
+                  {isDescriptionExpanded ? agent.agent_card.description : preview}
+                </p>
+                {#if needsExpansion}
+                  <button 
+                    class="text-primary hover:text-primary/80 text-xs font-medium underline focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
+                    onclick={toggleDescriptionExpansion}
+                    type="button"
+                  >
+                    {isDescriptionExpanded ? 'Close' : 'Expand to Read More'}
+                  </button>
+                {/if}
+              </div>
             {/if}
           </div>
         </div>
