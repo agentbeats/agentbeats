@@ -1,3 +1,6 @@
+[submodule "external/agentbeats_sdk"]
+	path = external/agentbeats_sdk
+	url = https://github.com/agentbeats/agentbeats_sdk.git
 [submodule "wasp"]
 	shallow = true
 	path = wasp
