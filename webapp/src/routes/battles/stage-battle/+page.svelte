@@ -16,12 +16,22 @@
   let unsubscribe: (() => void) | null = null;
 
   onMount(async () => {
-    // Check authentication immediately
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('Stage battle page: No session found, redirecting to login');
-      goto('/login');
-      return;
+    // Check authentication using user store (works with dev login)
+    const unsubscribeUser = user.subscribe(($user) => {
+      if (!$user && !$loading) {
+        console.log('Stage battle page: No user found, redirecting to login');
+        goto('/login');
+      }
+    });
+    
+    // If no user in store, check Supabase session as fallback
+    if (!$user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('Stage battle page: No session found, redirecting to login');
+        goto('/login');
+        return;
+      }
     }
     
     // Subscribe to auth state changes for logout detection

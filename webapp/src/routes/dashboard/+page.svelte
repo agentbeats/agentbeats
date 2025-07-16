@@ -8,15 +8,34 @@
 
 	export const title = 'Dashboard';
 
+	// Development bypass flag
+	const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === 'true';
+
 	let unsubscribe: (() => void) | null = null;
 
 	onMount(async () => {
-		// Check authentication immediately
-		const { data: { session } } = await supabase.auth.getSession();
-		if (!session) {
-			console.log('Dashboard page: No session found, redirecting to login');
-			goto('/login');
+		// Skip authentication check if VITE_SKIP_AUTH is set to 'true'
+		if (SKIP_AUTH) {
+			console.log('Dashboard page: Skipping authentication (VITE_SKIP_AUTH=true)');
 			return;
+		}
+
+		// Check authentication using user store (works with dev login)
+		const unsubscribeUser = user.subscribe(($user) => {
+			if (!$user && !$loading) {
+				console.log('Dashboard page: No user found, redirecting to login');
+				goto('/login');
+			}
+		});
+		
+		// If no user in store, check Supabase session as fallback
+		if (!$user) {
+			const { data: { session } } = await supabase.auth.getSession();
+			if (!session) {
+				console.log('Dashboard page: No session found, redirecting to login');
+				goto('/login');
+				return;
+			}
 		}
 		
 		// Subscribe to auth state changes for logout detection
@@ -35,6 +54,12 @@
 	});
 
 	async function handleLogout() {
+		// Skip logout if VITE_SKIP_AUTH is set to 'true'
+		if (SKIP_AUTH) {
+			console.log('Dashboard page: Skipping logout (VITE_SKIP_AUTH=true)');
+			return;
+		}
+
 		try {
 			await signOut();
 			// Don't redirect, just let the page update
@@ -45,7 +70,7 @@
 </script>
 
 <main class="flex-1 p-6 flex flex-col items-center justify-start">
-	{#if $loading}
+	{#if $loading && !SKIP_AUTH}
 		<div class="flex items-center justify-center h-64">
 			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
 			<span class="ml-2">Loading...</span>
@@ -55,15 +80,23 @@
 			<div class="flex justify-between items-center mb-6">
 				<h2 class="text-2xl font-bold">Dashboard</h2>
 				<div class="flex items-center gap-4">
-					{#if $user}
+					{#if $user || SKIP_AUTH}
 						<span class="text-sm text-gray-600">
-							Welcome, {$user.user_metadata?.name || $user.email}
+							{#if SKIP_AUTH}
+								Welcome, Test User (Development Mode)
+							{:else}
+								Welcome, {$user?.user_metadata?.name || $user?.email || 'User'}
+							{/if}
 						</span>
 						<button 
 							on:click={handleLogout}
 							class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
 						>
-							Logout
+							{#if SKIP_AUTH}
+								Development Mode
+							{:else}
+								Logout
+							{/if}
 						</button>
 					{:else}
 						<button 
