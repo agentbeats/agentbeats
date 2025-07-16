@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 import { page } from '$app/stores';
+import { marked } from 'marked';
 
 let battle: any = null;
 let loading = true;
@@ -82,6 +83,19 @@ function getEntryBackgroundClass(reportedBy: string): string {
   }
   // Default background for unknown reported_by
   return 'bg-yellow-50 border-yellow-200';
+}
+
+function renderMarkdown(content: string): string {
+  if (!content) return '';
+  
+  // Configure marked to allow images and other features
+  marked.setOptions({
+    breaks: true,
+    gfm: true
+  });
+  
+  const result = marked(content);
+  return typeof result === 'string' ? result : '';
 }
 
 function scrollToBottom() {
@@ -238,6 +252,11 @@ onDestroy(() => {
               {/if}
             </div>
             <div class="text-sm font-medium mb-1">{entry.message}</div>
+            {#if entry.markdown_content}
+              <div class="markdown-content mt-2 bg-white p-3 rounded border text-sm">
+                {@html renderMarkdown(entry.markdown_content)}
+              </div>
+            {/if}
             {#if entry.detail}
               <pre class="text-xs bg-muted p-2 rounded overflow-x-auto mt-1">{JSON.stringify(entry.detail, null, 2)}</pre>
             {/if}
@@ -266,4 +285,104 @@ onDestroy(() => {
       </div>
     {/if}
   {/if}
-</main> 
+</main>
+
+<style>
+  :global(.markdown-content h1) {
+    font-size: 1.125rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  :global(.markdown-content h2) {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  
+  :global(.markdown-content h3) {
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  
+  :global(.markdown-content p) {
+    margin-bottom: 0.5rem;
+    line-height: 1.625;
+  }
+  
+  :global(.markdown-content ul, .markdown-content ol) {
+    margin-left: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content li) {
+    margin-bottom: 0.25rem;
+  }
+  
+  :global(.markdown-content code) {
+    background-color: #f3f4f6;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  
+  :global(.markdown-content pre) {
+    background-color: #f3f4f6;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content pre code) {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  :global(.markdown-content blockquote) {
+    border-left: 4px solid #d1d5db;
+    padding-left: 1rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content a) {
+    color: #2563eb;
+    text-decoration: none;
+  }
+  
+  :global(.markdown-content a:hover) {
+    text-decoration: underline;
+  }
+  
+  :global(.markdown-content table) {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #d1d5db;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content th, .markdown-content td) {
+    border: 1px solid #d1d5db;
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+  }
+  
+  :global(.markdown-content th) {
+    background-color: #f3f4f6;
+    font-weight: bold;
+  }
+</style> 
