@@ -19,7 +19,7 @@ SERVER_BASE_URL = "http://localhost"
 
 
 def build_app(
-    listen_port: int, mcp_url: str = None
+    listen_port: int, mcp_url: str = None, docker_mcp_url: str = None
 ) -> A2AStarletteApplication:
     reset_skill = AgentSkill(
         id="red_reset",
@@ -54,7 +54,9 @@ def build_app(
     app = A2AStarletteApplication(
         agent_card=agent_card,
         http_handler=DefaultRequestHandler(
-            agent_executor=RedAgentExecutor(mcp_url=mcp_url),
+            agent_executor=RedAgentExecutor(
+                mcp_url=mcp_url, docker_mcp_url=docker_mcp_url
+            ),
             task_store=InMemoryTaskStore(),
         ),
     )
@@ -77,10 +79,14 @@ def main() -> None:
         type=str,
         help="URL for the MCP server",
     )
-
+    parser.add_argument(
+        "--docker-mcp-url",
+        type=str,
+        help="URL for the Docker MCP server",
+    )
     args = parser.parse_args()
 
-    application = build_app(args.port, args.mcp_url)
+    application = build_app(args.port, args.mcp_url, args.docker_mcp_url)
 
     uvicorn.run(application.build(), host="0.0.0.0", port=args.port)
 

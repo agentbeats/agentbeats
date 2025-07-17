@@ -61,15 +61,6 @@ DOCKER_BATTLE_CONTAINERS: dict[str, dict[str, str]] = {}
 BACKEND_URL = "http://localhost:9000"
 
 
-@server.tool()
-def echo(message: str) -> str:
-    """
-    Echo the input message.
-    """
-    logger.info("Echoing message: %s", message)
-    return f"Echo: {message}"
-
-
 ########################################################
 # Docker tools
 ########################################################
@@ -241,99 +232,99 @@ def run_terminal_command_in_docker(
 ########################################################
 
 
-@server.tool()
-def update_battle_process(
-    battle_id: str,
-    message: str,
-    reported_by: str,
-    detail: dict = None,
-) -> str:
-    """
-    Log intermediate steps and information during the battle.
+# @server.tool()
+# def update_battle_process(
+#     battle_id: str,
+#     message: str,
+#     reported_by: str,
+#     detail: dict = None,
+# ) -> str:
+#     """
+#     Log intermediate steps and information during the battle.
 
-    Parameters:
-    - battle_id: The unique battle session identifier
-    - message: Simple, human-readable description of what happened
-    - reported_by: The agent/role reporting this information ("green_agent", "red_agent", or "blue_agent")
-    - detail: Optional structured data with specific event details
-    """
-    try:
-        timestamp = datetime.now().isoformat()
-        log_entry = {
-            "timestamp": timestamp,
-            "battle_id": battle_id,
-            "message": message,
-            "reported_by": reported_by,
-            "detail": detail or {},
-        }
+#     Parameters:
+#     - battle_id: The unique battle session identifier
+#     - message: Simple, human-readable description of what happened
+#     - reported_by: The agent/role reporting this information ("green_agent", "red_agent", or "blue_agent")
+#     - detail: Optional structured data with specific event details
+#     """
+#     try:
+#         timestamp = datetime.now().isoformat()
+#         log_entry = {
+#             "timestamp": timestamp,
+#             "battle_id": battle_id,
+#             "message": message,
+#             "reported_by": reported_by,
+#             "detail": detail or {},
+#         }
 
-        # Log to console
-        logger.info(
-            f"Battle progress update for {battle_id}: {message} (by {reported_by})"
-        )
-        if detail:
-            logger.debug(f"Details: {detail}")
+#         # Log to console
+#         logger.info(
+#             f"Battle progress update for {battle_id}: {message} (by {reported_by})"
+#         )
+#         if detail:
+#             logger.debug(f"Details: {detail}")
 
-        # Save to JSON file with per-battle naming
-        log_file = (
-            Path("scenarios/sec_bench/logs") / f"battle_log_{battle_id}.json"
-        )
-        append_json_log(log_file, "battle_logs", log_entry)
+#         # Save to JSON file with per-battle naming
+#         log_file = (
+#             Path("scenarios/sec_bench/logs") / f"battle_log_{battle_id}.json"
+#         )
+#         append_json_log(log_file, "battle_logs", log_entry)
 
-        # log where it was saved to
-        logger.info(f"Battle progress recorded to {log_file}")
+#         # log where it was saved to
+#         logger.info(f"Battle progress recorded to {log_file}")
 
-        return f"Battle progress recorded: {message}"
-    except Exception as e:
-        error_msg = f"Error updating battle progress: {e}"
-        logger.error(error_msg)
-        return error_msg
+#         return f"Battle progress recorded: {message}"
+#     except Exception as e:
+#         error_msg = f"Error updating battle progress: {e}"
+#         logger.error(error_msg)
+#         return error_msg
 
 
-@server.tool()
-def report_on_battle_end(
-    battle_id: str,
-    winner: str,
-    score: dict,
-    detail: dict = None,
-) -> str:
-    """
-    Report the final battle result.
+# @server.tool()
+# def report_on_battle_end(
+#     battle_id: str,
+#     winner: str,
+#     score: dict,
+#     detail: dict = None,
+# ) -> str:
+#     """
+#     Report the final battle result.
 
-    Parameters:
-    - battle_id: The unique battle session identifier
-    - winner: Either "red_agent" or "blue_agent"
-    - score: Dictionary containing scoring details
-    - detail: Optional additional information about the battle outcome
-    """
-    try:
-        timestamp = datetime.now().isoformat()
-        log_entry = {
-            "timestamp": timestamp,
-            "battle_id": battle_id,
-            "type": "battle_end",
-            "winner": winner,
-            "score": score,
-            "detail": detail or {},
-        }
+#     Parameters:
+#     - battle_id: The unique battle session identifier
+#     - winner: Either "red_agent" or "blue_agent"
+#     - score: Dictionary containing scoring details
+#     - detail: Optional additional information about the battle outcome
+#     """
+#     try:
+#         timestamp = datetime.now().isoformat()
+#         log_entry = {
+#             "timestamp": timestamp,
+#             "battle_id": battle_id,
+#             "type": "battle_end",
+#             "winner": winner,
+#             "score": score,
+#             "detail": detail or {},
+#         }
 
-        # Log to console
-        logger.info(f"Battle {battle_id} ended. Winner: {winner}")
-        logger.info(f"Score: {score}")
-        if detail:
-            logger.debug(f"Details: {detail}")
+#         # Log to console
+#         logger.info(f"Battle {battle_id} ended. Winner: {winner}")
+#         logger.info(f"Score: {score}")
+#         if detail:
+#             logger.debug(f"Details: {detail}")
 
-        # Save to JSON file with per-battle naming
-        log_file = (
-            Path("scenarios/sec_bench/logs") / f"battle_log_{battle_id}.json"
-        )
-        append_json_log(log_file, "battle_logs", log_entry)
+#         # Save to JSON file with per-battle naming
+#         log_file = (
+#             Path("scenarios/sec_bench/logs") / f"battle_log_{battle_id}.json"
+#         )
+#         append_json_log(log_file, "battle_logs", log_entry)
 
-        return f"Battle end recorded. Winner: {winner}"
-    except Exception as e:
-        error_msg = f"Error reporting battle end: {e}"
-        logger.error(error_msg)
-        return error_msg
+#         return f"Battle end recorded. Winner: {winner}"
+#     except Exception as e:
+#         error_msg = f"Error reporting battle end: {e}"
+#         logger.error(error_msg)
+#         return error_msg
 
 
 ########################################################
@@ -383,7 +374,23 @@ def get_instance_details(instance_id: str) -> dict:
 
 
 if __name__ == "__main__":
+    import argparse
+
+    # parse args
+    parser = argparse.ArgumentParser(
+        description="Run the Sec-Bench MCP server with a configurable port.",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=9002,
+        help="TCP port for the HTTP server to listen on (default: 9002)",
+    )
+    args = parser.parse_args()
+
     server.run(
         transport="sse",
+        host="0.0.0.0",
+        port=args.port,
         log_level="ERROR",
     )
