@@ -3,13 +3,14 @@
 # Configuration
 PROJECT_DIR=$HOME/agentbeats
 SETUP_COMMAND="cd $PROJECT_DIR && source venv/bin/activate"
-MCP_URL="http://localhost:9001/sse"
+MAIN_MCP_URL="http://localhost:9001/sse"
+DOCKER_MCP_URL="http://localhost:9002/sse"
 SESSION_NAME="secbench"
 
 # Agent ports
-GREEN_PORT="8040"
-RED_PORT="9090"
-BLUE_PORT="8090"
+GREEN_PORT="8050"
+RED_PORT="8060"
+BLUE_PORT="8070"
 
 # Function to create a fancy banner
 create_banner() {
@@ -35,35 +36,35 @@ tmux kill-session -t $SESSION_NAME 2>/dev/null
 tmux new-session -d -s $SESSION_NAME
 
 # Start MCP server in the first pane
-tmux send-keys -t $SESSION_NAME "$(create_banner 'MCP SERVER')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python src/mcp/secb_mcp_server.py" C-m
+# tmux send-keys -t $SESSION_NAME "$(create_banner 'MCP SERVER')" C-m
+# tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python src/mcp/secb_mcp_server.py" C-m
 
 # Wait for MCP server to start
-echo "Waiting for MCP server to start..."
-sleep 5
+# echo "Waiting for MCP server to start..."
+# sleep 5
 
 # Setup green agent
 tmux split-window -v -t $SESSION_NAME
 tmux send-keys -t $SESSION_NAME "$(create_banner 'GREEN AGENT')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/sec_bench/agent_launcher.py --file scenarios/sec_bench/green_agent/main.py --port $GREEN_PORT --mcp-url $MCP_URL" C-m
+tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/sec_bench/agent_launcher.py --file scenarios/sec_bench/green_agent/main.py --port $GREEN_PORT --mcp-url $MAIN_MCP_URL --docker-mcp-url $DOCKER_MCP_URL" C-m
 tmux select-layout -t $SESSION_NAME even-vertical
 
 # Setup red agent
 tmux split-window -v -t $SESSION_NAME
 tmux send-keys -t $SESSION_NAME "$(create_banner 'RED AGENT')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/sec_bench/agent_launcher.py --file scenarios/sec_bench/red_agent/main.py --port $RED_PORT --mcp-url $MCP_URL" C-m
+tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/sec_bench/agent_launcher.py --file scenarios/sec_bench/red_agent/main.py --port $RED_PORT --mcp-url $MAIN_MCP_URL --docker-mcp-url $DOCKER_MCP_URL" C-m
 tmux select-layout -t $SESSION_NAME even-vertical
 
 # Setup blue agent
 tmux split-window -v -t $SESSION_NAME
 tmux send-keys -t $SESSION_NAME "$(create_banner 'BLUE AGENT')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/sec_bench/agent_launcher.py --file scenarios/sec_bench/blue_agent/main.py --port $BLUE_PORT --mcp-url $MCP_URL" C-m
+tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/sec_bench/agent_launcher.py --file scenarios/sec_bench/blue_agent/main.py --port $BLUE_PORT --mcp-url $MAIN_MCP_URL --docker-mcp-url $DOCKER_MCP_URL" C-m
 tmux select-layout -t $SESSION_NAME even-vertical
 
-# Create a horizontal pane for the test script
-tmux split-window -h -t $SESSION_NAME
-tmux send-keys -t $SESSION_NAME "$(create_banner 'SEC BENCH TEST')" C-m
-tmux send-keys -t $SESSION_NAME "echo 'Waiting for all agents to initialize...' && sleep 5 && $SETUP_COMMAND && python testing_scripts/sec_bench_test.py" C-m
+# # Create a horizontal pane for the test script
+# tmux split-window -h -t $SESSION_NAME
+# tmux send-keys -t $SESSION_NAME "$(create_banner 'SEC BENCH TEST')" C-m
+# tmux send-keys -t $SESSION_NAME "echo 'Waiting for all agents to initialize...' && sleep 5 && $SETUP_COMMAND && python testing_scripts/sec_bench_test.py" C-m
 
 # Select the first pane
 tmux select-pane -t 0

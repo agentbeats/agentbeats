@@ -35,6 +35,7 @@ AGENT_KILL_TIMEOUT = 5
 
 BACKEND_URL = "http://localhost:9000"
 
+
 class SignalPayload(BaseModel):
     signal: str
     agent_id: str
@@ -54,8 +55,8 @@ def _agent_cmd(extra_args) -> list[str]:
             cmd.append(f"--{name}")
         else:
             cmd.append(f"--{name}={val}")
-    
-    print(cmd)
+
+    print("[_agent_cmd] cmd:", cmd)
 
     return cmd
 
@@ -86,27 +87,27 @@ async def reset(payload: SignalPayload):
         payload.extra_args = payload.extra_args or {}
         if "port" not in payload.extra_args:
             payload.extra_args["port"] = CHILD_PORT
-            
+
         agent_proc = _start_agent(extra_args=payload.extra_args)
         agent_id = payload.agent_id
-        
+
         # try:
         #     with open(f"{agent_id}.txt", "w") as f:
         #         f.write(f"Agent ID: {agent_id}\n")
         #     print(f"Created/verified folder: {agent_id}")
         # except Exception as e:
         #     print(f"Warning: Failed to create folder {agent_id}: {e}")
-        
+
         try:
             response = requests.put(
                 f"{BACKEND_URL}/agents/{agent_id}",
                 json={"ready": True},
-                timeout=5
+                timeout=5,
             )
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-                print(f"Warning: Failed to notify backend about agent reset: {e}")
-        
+            print(f"Warning: Failed to notify backend about agent reset: {e}")
+
         return {
             "status": "restarted",
             "pid": agent_proc.pid,
@@ -115,14 +116,23 @@ async def reset(payload: SignalPayload):
 
 def _parse_cli() -> argparse.Namespace:
     p = argparse.ArgumentParser("Agent Controller")
-    p.add_argument("--file", required=True, help="Path to the agent Python file to run")
-    p.add_argument("--host", default="0.0.0.0", help="Bind address for controller")
+    p.add_argument(
+        "--file", required=True, help="Path to the agent Python file to run"
+    )
+    p.add_argument(
+        "--host", default="0.0.0.0", help="Bind address for controller"
+    )
     p.add_argument("--port", type=int, default=8000, help="Controller port")
     p.add_argument("--reload", action="store_true", help="Uvicorn autoreload")
     p.add_argument(
         "--mcp-url",
-        type=str, 
+        type=str,
         help="URL for the MCP server (example: http://localhost:9001/sse)",
+    )
+    p.add_argument(
+        "--docker-mcp-url",
+        type=str,
+        help="URL for the Docker MCP server (example: http://localhost:9002/sse)",
     )
     return p.parse_args()
 
@@ -135,15 +145,24 @@ def main() -> None:
     BASE_PORT = args.port
     CHILD_PORT = BASE_PORT + 1
 
-    print(AGENT_FILE, BASE_PORT, CHILD_PORT, args.mcp_url)
+    print(AGENT_FILE, BASE_PORT, CHILD_PORT, args.mcp_url, args.docker_mcp_url)
 
     extra_args = {"port": CHILD_PORT}
-    
+
     if args.mcp_url:
         extra_args["mcp-url"] = args.mcp_url
 
+    if args.docker_mcp_url:
+        extra_args["docker-mcp-url"] = args.docker_mcp_url
+
     agent_proc = _start_agent(extra_args=extra_args)
-    uvicorn.run(app, host=args.host, port=BASE_PORT, reload=False, log_level="debug" if args.reload else "info")
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=BASE_PORT,
+        reload=False,
+        log_level="debug" if args.reload else "info",
+    )
 
 
 if __name__ == "__main__":

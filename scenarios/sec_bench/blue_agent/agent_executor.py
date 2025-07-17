@@ -54,8 +54,12 @@ CUSTOM_MODEL_PROVIDER = CustomModelProvider()
 
 
 class BlueAgent:
-    def __init__(self, mcp_url: str) -> None:
-        """Initialize the Blue Agent with its prompt and tools."""
+    def __init__(self, mcp_url: str, docker_mcp_url: str = None) -> None:
+        """Initialize the Blue Agent with its prompt and tools.
+        Args:
+            mcp_url: URL for the MCP server
+            docker_mcp_url: URL for the Docker MCP server (optional)
+        """
         self.chat_history: List[Dict[str, str]] = []
 
         # Initialize MCP connection
@@ -63,12 +67,21 @@ class BlueAgent:
         self.mcp_servers = []
         self.mcp_servers.append(
             MCPServerSse(
-                name="Open MCP for AgentBeast Battle Arena",
+                name="Open MCP for AgentBeats Battle Arena",
                 params={"url": self.mcp_url, "timeout": 600},
                 client_session_timeout_seconds=600,
                 cache_tools_list=True,
             )
         )
+        if docker_mcp_url:
+            self.mcp_servers.append(
+                MCPServerSse(
+                    name="Docker Handler MCP for Sec-Bench Battle Arena (Docker + Sec-Bench CVE Instance Handler)",
+                    params={"url": docker_mcp_url, "timeout": 600},
+                    client_session_timeout_seconds=600,
+                    cache_tools_list=True,
+                )
+            )
         self.mcp_servers_connected = False
 
     async def ensure_mcp_connected(self) -> None:
@@ -107,9 +120,11 @@ class BlueAgent:
 
 
 class BlueAgentExecutor(AgentExecutor):
-    def __init__(self, mcp_url: str) -> None:
+    def __init__(self, mcp_url: str, docker_mcp_url: str = None) -> None:
         """Initialize the Blue Agent Executor."""
-        self.blue_agent = BlueAgent(mcp_url=mcp_url)
+        self.blue_agent = BlueAgent(
+            mcp_url=mcp_url, docker_mcp_url=docker_mcp_url
+        )
 
     async def execute(
         self,

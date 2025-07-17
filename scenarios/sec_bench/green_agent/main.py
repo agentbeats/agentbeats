@@ -23,8 +23,9 @@ from agent_executor import GreenAgentExecutor
 SERVER_BASE_URL = "http://localhost"
 
 
-def build_app(listen_port: int, 
-              mcp_url: str) -> A2AStarletteApplication:
+def build_app(
+    listen_port: int, mcp_url: str, docker_mcp_url: str = None
+) -> A2AStarletteApplication:
 
     reset_skill = AgentSkill(
         id="green_reset",
@@ -65,7 +66,9 @@ def build_app(listen_port: int,
     app = A2AStarletteApplication(
         agent_card=agent_card,
         http_handler=DefaultRequestHandler(
-            agent_executor=GreenAgentExecutor(mcp_url=mcp_url),
+            agent_executor=GreenAgentExecutor(
+                mcp_url=mcp_url, docker_mcp_url=docker_mcp_url
+            ),
             task_store=InMemoryTaskStore(),
         ),
     )
@@ -86,16 +89,22 @@ def main() -> None:
     parser.add_argument(
         "--mcp-url",
         type=str,
-        required=True, 
+        required=True,
         default="http://localhost:9001/sse",
         help="URL for the MCP server (example: http://localhost:9001/sse)",
     )
-
+    parser.add_argument(
+        "--docker-mcp-url",
+        type=str,
+        help="URL for the Docker MCP server",
+    )
     args = parser.parse_args()
 
-    application = build_app(args.port, args.mcp_url)
+    application = build_app(args.port, args.mcp_url, args.docker_mcp_url)
 
-    uvicorn.run(application.build(), host="0.0.0.0", port=args.port, log_level="debug")
+    uvicorn.run(
+        application.build(), host="0.0.0.0", port=args.port, log_level="debug"
+    )
 
 
 if __name__ == "__main__":
