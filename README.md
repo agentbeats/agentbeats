@@ -230,7 +230,7 @@ testing_scripts/
 
 ### Running the Demo
 
-To run a simple demo of the SEC-BENCH scenario (work in progress):
+To run a simple demo of the SEC-BENCH scenario:
 
 ```bash
 bash testing_scripts/run_sec_bench_test.sh
