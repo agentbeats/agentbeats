@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-A test client for the red agent that follows the specification in TensorTrust (https://arxiv.org/abs/2311.01011).
-This client is designed to interact with the red agent, testing its ability to generate prompts that attacks blue's defend prompt.
+A test client for the blue agent that follows the specification in TensorTrust (https://arxiv.org/abs/2311.01011).
+This client is designed to interact with the blue agent, testing its ability to generate prompts that defend against prompt injection attacks and reset its state when needed.
 """
 
 import asyncio
@@ -24,7 +24,7 @@ from a2a.types import (
     AgentCard,
 )
 
-BLUE_BASE_URL = "http://localhost:9001"
+AGENT_URL = "http://localhost:8000"
 PUBLIC_CARD_PATH = "/.well-known/agent.json"
 
 
@@ -66,28 +66,23 @@ async def stream_agent_response(
 async def test_plain_message() -> None:
     async with httpx.AsyncClient() as httpx_client:
         # Resolve agent card
-        resolver = A2ACardResolver(httpx_client=httpx_client, base_url=BLUE_BASE_URL)
-        card: AgentCard | None = await resolver.get_agent_card(relative_card_path=PUBLIC_CARD_PATH)
+        resolver = A2ACardResolver(httpx_client=httpx_client, 
+                                   base_url=AGENT_URL)
+        card = await resolver.get_agent_card()
         if card is None:
             raise RuntimeError("Failed to resolve agent card.")
 
         client = A2AClient(httpx_client=httpx_client, agent_card=card)
 
-        # -------- Initial Reset --------
-        print("\n=== Initial Reset ===")
-        async for text in stream_agent_response(client, "reset"):
+        # -------- Tooluse test --------
+        async for text in stream_agent_response(client, 
+            "please use helloworld_tool give me the greeting message string"):
             print(text, end="", flush=True)
 
-        # -------- Generate Defense Prompt --------
-        print("\n\n=== Generate Defense Prompt ===")
-        async for text in stream_agent_response(client, "generate a defense prompt"):
+        # -------- MCP Server --------
+        async for text in stream_agent_response(client, 
+            "please use your mcp server to echo this test message: 'Hello world, beasts!'"):
             print(text, end="", flush=True)
-
-        # -------- Reset Again --------
-        print("\n\n=== Reset Again ===")
-        async for text in stream_agent_response(client, "reset"):
-            print(text, end="", flush=True)
-
 
 if __name__ == "__main__":
     asyncio.run(test_plain_message())
