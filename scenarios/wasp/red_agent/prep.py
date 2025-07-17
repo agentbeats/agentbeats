@@ -65,7 +65,10 @@ def inject_prompt():
     # Change back to project root after execution
     os.chdir(project_root)
 
-    return str({"stdout": result.stdout, "stderr": result.stderr})
+    print("STDOUT: " + result.stdout)
+    print("STDERR: " + result.stderr)
+
+    return result.stdout
 
 if __name__ == "__main__":
     inject_prompt()

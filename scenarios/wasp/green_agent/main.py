@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-An implementation of a green agent that acts as the judge of the blue & red agents
-follows the specification in TensorTrust (https://arxiv.org/abs/2311.01011).
-
-This agent hosts the game between the blue and red agents and decides the winner
-based on the game rules. It also provides a reset skill that can reset its own
-state and the states of the blue and red agents when needed.
+Battle Royale Green Agent
+This agent monitors the battle royale and determines the winner
+by checking web services every second for 60 seconds.
 """
 
 import argparse
 import uvicorn
 
-from uuid import uuid4
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -19,13 +15,9 @@ from a2a.types import AgentCard, AgentCapabilities, AgentSkill
 
 from agent_executor import GreenAgentExecutor
 
-
 SERVER_BASE_URL = "http://localhost"
 
-
-def build_app(listen_port: int, 
-              mcp_url: str) -> A2AStarletteApplication:
-
+def build_app(listen_port: int, mcp_url: str) -> A2AStarletteApplication:
     reset_skill = AgentSkill(
         id="green_reset",
         name="Green Resetter",
@@ -34,29 +26,48 @@ def build_app(listen_port: int,
         examples=["reset", "reset your server", "reset the agent"],
     )
 
-    host_battle_skill = AgentSkill(
-        id="green_host_battle",
-        name="Green Host Battle",
-        description=(
-            "Host a battle between the blue and red agents, where the blue agent is the defender and the red agent is the attacker. The green agent will judge the battle and decide the winner based on the game rules."
-        ),
-        tags=["host", "battle", "a2a"],
+    monitor_services_skill = AgentSkill(
+        id="green_monitor_services",
+        name="Monitor Web Services",
+        description="Monitor all agents' web services for 60 seconds.",
+        tags=["monitor", "services", "battle"],
         examples=[
-            "Host a battle between the blue and red agents.",
+            "Monitor all web services",
+            "Start monitoring the battle",
+        ],
+    )
+
+    calculate_scores_skill = AgentSkill(
+        id="green_calculate_scores",
+        name="Calculate Scores",
+        description="Calculate uptime percentages for all agents.",
+        tags=["calculate", "scores", "judge"],
+        examples=[
+            "Calculate agent scores",
+            "Determine uptime percentages",
+        ],
+    )
+
+    determine_winner_skill = AgentSkill(
+        id="green_determine_winner",
+        name="Determine Winner",
+        description="Determine the winner based on uptime percentages.",
+        tags=["winner", "judge", "battle"],
+        examples=[
+            "Determine the winner",
+            "Announce the battle results",
         ],
     )
 
     agent_card = AgentCard(
-        name="Green Agent (Judge)",
-        description=(
-            "A2A judge that hosts the battle between the blue and red agents, also  decides the winner of the battle based on the game rules."
-        ),
+        name="Battle Royale Green Agent",
+        description="A2A green agent that monitors and judges the battle royale competition.",
         url=f"{SERVER_BASE_URL}:{listen_port}/",
         version="1.0.0",
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
         capabilities=AgentCapabilities(streaming=True),
-        skills=[reset_skill, host_battle_skill],
+        skills=[reset_skill, monitor_services_skill, calculate_scores_skill, determine_winner_skill],
         supportsAuthenticatedExtendedCard=False,
     )
 
@@ -68,18 +79,20 @@ def build_app(listen_port: int,
         ),
     )
 
-    return app
+    # No manual patching for /.well-known/agent.json needed.
+    # A2AStarletteApplication will expose the agent card automatically if compatible.
 
+    return app
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run the Green Agent (Judge) server with a configurable port.",
+        description="Run the Battle Royale Green Agent server with a configurable port.",
     )
     parser.add_argument(
         "--port",
         type=int,
         help="TCP port for the HTTP server to listen on",
-        default=9031,
+        default=8040,
     )
     parser.add_argument(
         "--mcp-url",
@@ -95,6 +108,5 @@ def main() -> None:
 
     uvicorn.run(application.build(), host="0.0.0.0", port=args.port, log_level="debug")
 
-
 if __name__ == "__main__":
-    main()
+    main() 
