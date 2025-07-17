@@ -5,6 +5,7 @@ Tests the green agent's orchestration of the security vulnerability testing game
 """
 import asyncio
 import json
+import time
 from uuid import uuid4
 import httpx
 from a2a.client import A2AClient
@@ -12,17 +13,18 @@ from a2a.types import SendStreamingMessageRequest, MessageSendParams
 
 # Configuration
 GREEN_AGENT_URL = "http://localhost:8041"
-BATTLE_ID = "test_battle_1"
-DOCKER_IMAGE = "hwiwonlee/secb.eval.x86_64.gpac.cve-2023-5586:poc"
+BATTLE_ID = "test_battle_" + time.strftime("%Y%m%d_%H%M%S")
+DOCKER_IMAGE = "hwiwonlee/secb.eval.x86_64.gpac.cve-2023-5586"
+INSTANCE_ID = "gpac.cve-2023-5586"
 
 
 async def test_green_agent():
     """Test the green agent's game orchestration."""
     print("\n=== Starting Sec-Bench Game Test ===")
 
-    message = f"Start a new Sec-Bench game with battle ID: {BATTLE_ID} and docker image: {DOCKER_IMAGE}"
+    message = f"Start a new Sec-Bench game with battle ID: {BATTLE_ID} and docker image: {DOCKER_IMAGE} and instance ID: {INSTANCE_ID}"
 
-    async with httpx.AsyncClient(timeout=30.0) as httpx_client:
+    async with httpx.AsyncClient(timeout=30000.0) as httpx_client:
         # Get green agent client
         client = await A2AClient.get_client_from_agent_card_url(
             httpx_client, GREEN_AGENT_URL

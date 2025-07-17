@@ -64,7 +64,8 @@ class BlueAgent:
         self.mcp_servers.append(
             MCPServerSse(
                 name="Open MCP for AgentBeast Battle Arena",
-                params={"url": self.mcp_url},
+                params={"url": self.mcp_url, "timeout": 600},
+                client_session_timeout_seconds=600,
                 cache_tools_list=True,
             )
         )
