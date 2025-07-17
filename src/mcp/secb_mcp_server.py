@@ -30,6 +30,8 @@ DOCKER_SOCKET_PATHS = [
 ]
 
 
+HUGGINGFACE_DATASET_NAME = "SEC-bench/SEC-bench"
+
 # Configure logging once
 logging.basicConfig(
     level=logging.INFO,
@@ -57,9 +59,6 @@ server = FastMCP(
 DOCKER_BATTLE_CONTAINERS: dict[str, dict[str, str]] = {}
 
 BACKEND_URL = "http://localhost:9000"
-
-# Add this constant at the top level with other constants
-BATTLE_LOG_PATH = Path("scenarios/sec_bench/battle_log.json")
 
 
 @server.tool()
@@ -164,14 +163,33 @@ def destroy_docker_env(
         return error_msg
 
 
+# --- Logging Helpers ---
+def append_json_log(log_file: Path, key: str, entry: dict):
+    """Append an entry to a JSON log file under the given key."""
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    if log_file.exists():
+        with open(log_file, "r") as f:
+            try:
+                logs = json.load(f)
+            except Exception:
+                logs = {key: []}
+    else:
+        logs = {key: []}
+    logs.setdefault(key, []).append(entry)
+    with open(log_file, "w") as f:
+        json.dump(logs, f, indent=2)
+
+
 @server.tool()
 def run_terminal_command_in_docker(
     battle_id: str,
     command: str,
+    agent_name: str,
 ) -> str:
     """
     Run a terminal command in the specified docker container for the given battle_id.
     This is for any Red, Blue, or Green agent.
+    Logs the command input and output to battle_cmd_history_{battle_id}.json.
     """
     try:
         client = get_docker_client()
@@ -180,7 +198,33 @@ def run_terminal_command_in_docker(
             container = client.containers.get(container_name)
             exec_log = container.exec_run(command)
             message = exec_log.output.decode()
-            logger.info(f"Command output for {container_name}: {message}")
+            logger.info("\033[32m" + f"Input Command: {command}" + "\033[0m")
+            if len(message) > 200:
+                logger.info(
+                    "\033[32m"
+                    + f"Command output: \n\n {message[:100] + '...' + message[-100:]}"
+                    + "\033[0m"
+                )
+            else:
+                logger.info(
+                    "\033[32m" + f"Command output: \n\n {message}" + "\033[0m"
+                )
+
+            # Log command history
+            cmd_log_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "battle_id": battle_id,
+                "agent_name": agent_name,
+                "command": command,
+                "output": message,
+            }
+            cmd_log_file = (
+                Path("scenarios/sec_bench/logs")
+                / f"battle_cmd_history_{battle_id}.json"
+            )
+            append_json_log(cmd_log_file, "cmd_logs", cmd_log_entry)
+            logger.info(f"Command history recorded to {cmd_log_file}")
+
             return message
         except docker.errors.NotFound:
             message = f"No container found for battle_id {battle_id}."
@@ -230,20 +274,11 @@ def update_battle_process(
         if detail:
             logger.debug(f"Details: {detail}")
 
-        # Save to JSON file
-        log_file = BATTLE_LOG_PATH
-        # Create directory if it doesn't exist
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        if log_file.exists():
-            with open(log_file, "r") as f:
-                logs = json.load(f)
-        else:
-            logs = {"battle_logs": []}
-
-        logs["battle_logs"].append(log_entry)
-
-        with open(log_file, "w") as f:
-            json.dump(logs, f, indent=2)
+        # Save to JSON file with per-battle naming
+        log_file = (
+            Path("scenarios/sec_bench/logs") / f"battle_log_{battle_id}.json"
+        )
+        append_json_log(log_file, "battle_logs", log_entry)
 
         # log where it was saved to
         logger.info(f"Battle progress recorded to {log_file}")
@@ -288,20 +323,11 @@ def report_on_battle_end(
         if detail:
             logger.debug(f"Details: {detail}")
 
-        # Save to JSON file
-        log_file = BATTLE_LOG_PATH
-        # Create directory if it doesn't exist
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        if log_file.exists():
-            with open(log_file, "r") as f:
-                logs = json.load(f)
-        else:
-            logs = {"battle_logs": []}
-
-        logs["battle_logs"].append(log_entry)
-
-        with open(log_file, "w") as f:
-            json.dump(logs, f, indent=2)
+        # Save to JSON file with per-battle naming
+        log_file = (
+            Path("scenarios/sec_bench/logs") / f"battle_log_{battle_id}.json"
+        )
+        append_json_log(log_file, "battle_logs", log_entry)
 
         return f"Battle end recorded. Winner: {winner}"
     except Exception as e:
@@ -316,75 +342,44 @@ def report_on_battle_end(
 
 
 @server.tool()
-def get_workspace_dir_name(instance_id: str) -> str:
+def get_instance_details(instance_id: str) -> dict:
     """
-    Get the workspace directory name for a given instance ID from the SEC-bench dataset.
+    Get details for a given instance ID from the SEC-bench dataset, including:
+    - workspace directory name
+    - sanitizer report
+    - bug report
 
     Parameters:
     - instance_id: The unique identifier for the instance in the dataset
+
+    Returns:
+    - dict with keys: 'work_dir', 'sanitizer_report', 'bug_report', or an error message if not found.
     """
     try:
         # Load the SEC-bench dataset
-        dataset = load_dataset("hwiwonlee/secb", split="test")
+        dataset = load_dataset(HUGGINGFACE_DATASET_NAME, split="eval")
+
+        logger.info(
+            f"[get_instance_details] Loaded dataset for instance ID: {instance_id}"
+        )
 
         # Find the instance with matching ID
         for instance in dataset:
-            if instance["id"] == instance_id:
-                return instance["workspace_dir_name"]
+            if instance["instance_id"] == instance_id:
+                logger.info(
+                    f"[get_instance_details] Found details for instance: {instance_id}"
+                )
+                return {
+                    "work_dir": instance.get("work_dir", None),
+                    "sanitizer_report": instance.get("sanitizer_report", None),
+                    "bug_report": instance.get("bug_report", None),
+                }
 
-        return f"Error: No instance found with ID {instance_id}"
+        return {"error": f"No instance found with ID {instance_id}"}
     except Exception as e:
-        error_msg = f"Error getting workspace directory name: {e}"
+        error_msg = f"Error getting instance details: {e}"
         logger.error(error_msg)
-        return error_msg
-
-
-@server.tool()
-def get_sanitizer_report(instance_id: str) -> str:
-    """
-    Get the sanitizer report for a given instance ID from the SEC-bench dataset.
-
-    Parameters:
-    - instance_id: The unique identifier for the instance in the dataset
-    """
-    try:
-        # Load the SEC-bench dataset
-        dataset = load_dataset("hwiwonlee/secb", split="test")
-
-        # Find the instance with matching ID
-        for instance in dataset:
-            if instance["id"] == instance_id:
-                return instance["sanitizer_report"]
-
-        return f"Error: No instance found with ID {instance_id}"
-    except Exception as e:
-        error_msg = f"Error getting sanitizer report: {e}"
-        logger.error(error_msg)
-        return error_msg
-
-
-@server.tool()
-def get_bug_report(instance_id: str) -> str:
-    """
-    Get the bug report for a given instance ID from the SEC-bench dataset.
-
-    Parameters:
-    - instance_id: The unique identifier for the instance in the dataset
-    """
-    try:
-        # Load the SEC-bench dataset
-        dataset = load_dataset("hwiwonlee/secb", split="test")
-
-        # Find the instance with matching ID
-        for instance in dataset:
-            if instance["id"] == instance_id:
-                return instance["bug_report"]
-
-        return f"Error: No instance found with ID {instance_id}"
-    except Exception as e:
-        error_msg = f"Error getting bug report: {e}"
-        logger.error(error_msg)
-        return error_msg
+        return {"error": error_msg}
 
 
 if __name__ == "__main__":

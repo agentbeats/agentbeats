@@ -65,7 +65,8 @@ class RedAgent:
         self.mcp_servers.append(
             MCPServerSse(
                 name="Open MCP for AgentBeast Battle Arena",
-                params={"url": self.mcp_url},
+                params={"url": self.mcp_url, "timeout": 600},
+                client_session_timeout_seconds=600,
                 cache_tools_list=True,
             )
         )
@@ -90,6 +91,12 @@ class RedAgent:
         """Invoke the main agent with the given context."""
         await self.ensure_mcp_connected()
 
+        print(
+            "================RED AGENT INPUT=================",
+            context.get_user_input(),
+            "================RED AGENT INPUT END=================",
+        )
+
         query_ctx = self.chat_history + [
             {"content": context.get_user_input(), "role": "user"}
         ]
@@ -97,6 +104,7 @@ class RedAgent:
         result = await Runner.run(
             self.main_agent,
             query_ctx,
+            max_turns=50,
             run_config=RunConfig(model_provider=CUSTOM_MODEL_PROVIDER),
         )  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore

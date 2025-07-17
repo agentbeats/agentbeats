@@ -88,9 +88,10 @@ class GreenAgent:
         self.mcp_servers.append(
             MCPServerSse(
                 name="Open MCP for AgentBeast Battle Arena",
+                client_session_timeout_seconds=600,
                 params={
                     "url": self.mcp_url,
-                    "timeout": 120,
+                    "timeout": 600,
                     # "headers": {
                     #     "battle-id": battle_id,
                     # } # TODO: will formally support this later, won't need agent to pass it manually.
@@ -198,7 +199,7 @@ class GreenAgent:
         result = await Runner.run(
             self.main_agent,
             query_ctx,
-            max_turns=30,
+            max_turns=50,
             run_config=RunConfig(model_provider=CUSTOM_MODEL_PROVIDER),
         )  # type: ignore
         self.chat_history = result.to_input_list()  # type: ignore
