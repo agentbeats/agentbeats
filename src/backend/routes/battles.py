@@ -267,7 +267,12 @@ async def reset_opponents_and_collect_info(battle, opponent_ids):
             continue
         op_launcher = op["register_info"].get("launcher_url")
         op_reset = await a2a_client.reset_agent_trigger(
-            op_launcher, agent_id=op_id, extra_args={}
+            op_launcher,
+            agent_id=op_id,
+            extra_args={
+                "mcp-url": "http://localhost:9001/sse/",  # TODO: make this configurable
+                "docker-mcp-url": "http://localhost:9002/sse/",  # TODO: make this configurable
+            },
         )
         if not op_reset:
             return idx, op_id, op
@@ -324,7 +329,7 @@ async def process_battle(battle_id: str):
             agent_id=battle["green_agent_id"],
             extra_args={
                 "mcp-url": "http://localhost:9001/sse/",
-                "docker-mcp-url": "http://localhost:9002/sse/",
+                "docker-mcp-url": "http://localhost:9002/sse/",  # TODO: make this configurable
             },
         )
         if not green_reset:
