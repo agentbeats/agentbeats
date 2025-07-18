@@ -5,8 +5,10 @@
 		signUpWithEmail, 
 		signInWithMagicLink,
 		error as authError,
-		loading as authLoading
+		loading as authLoading,
+		setUser
 	} from "$lib/stores/auth";
+	import { goto } from "$app/navigation";
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
@@ -102,6 +104,34 @@
 		confirmPassword = "";
 		localError = "";
 		magicLinkSent = false;
+	}
+
+	function handleDevLogin() {
+		setUser({
+			id: 'dev-user-id',
+			email: 'dev@example.com',
+			user_metadata: { name: 'Dev User' },
+			app_metadata: { provider: 'dev' },
+			aud: 'authenticated',
+			created_at: new Date().toISOString(),
+			role: 'authenticated',
+			confirmed_at: new Date().toISOString(),
+			email_confirmed_at: new Date().toISOString(),
+			phone: null,
+			phone_confirmed_at: null,
+			last_sign_in_at: new Date().toISOString(),
+			invited_at: null,
+			action_link: null,
+			recovery_sent_at: null,
+			new_email: null,
+			new_phone: null,
+			is_anonymous: false,
+			identities: [],
+			factor_ids: [],
+			factors: [],
+			...({} as any) // fallback for any extra fields
+		});
+		goto('/dashboard');
 	}
 </script>
 
@@ -260,5 +290,11 @@
 				{/if}
 			</CardContent>
 		</Card>
+		<div class="mt-8 flex flex-col items-center">
+			<button on:click={handleDevLogin} class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors mt-4">
+				🚀 Automatic Login (Dev Only)
+			</button>
+			<span class="text-xs text-gray-500 mt-2">For development/testing only. Bypasses real authentication.</span>
+		</div>
 	</div>
 </div> 
