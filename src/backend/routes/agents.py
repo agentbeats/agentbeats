@@ -207,7 +207,8 @@ ANALYZE_PROMPT = """
 You are an expert system for analyzing agent cards in a multi-agent battle framework.
 Given a JSON object representing an agent card, identify:
 1. Whether this agent is likely to be a "green agent" (i.e. judge or coordinator).
-2. If it is a green agent, what participant requirements should be set based on its skills or description. 'role' can be 'red_agent', 'blue_agent', etc. And analyze the battle timeout, it it is in the agent card, otherwise default to 300 seconds.
+2. If it is a green agent, what participant requirements should be set based on its skills or description. 'role' can be 'red_agent', 'blue_agent', etc. 'red_agent' is the attacker, 'blue_agent' is the defender. 'name' should be a simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). 'required' should be true if the agent is mandatory for the battle, false otherwise.
+3. If it is a green agent, analyze the battle timeout, if it is in the agent card, otherwise default to 300 seconds.
 """
 
 
@@ -215,7 +216,7 @@ class ParticipantRequirement(BaseModel):
     role: Literal["red_agent", "blue_agent"]
     
     name: str
-    "Simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). Avoid descriptive suffixes."
+    "Simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). AVOID descriptive suffixes, make it simple."
     
     required: bool
 

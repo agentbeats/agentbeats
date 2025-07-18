@@ -206,6 +206,9 @@ components:
         reported_by:
           type: string
           description: Name of the agent this information primarily involves
+        markdown_content:
+          type: string
+          description: Optional markdown content for rich text display, and image rendering
     BattleInteractHistory:
       type: object
       required:
@@ -227,6 +230,9 @@ components:
         reported_by:
           type: string
           description: Name of the agent this information primarily involves
+        markdown_content:
+          type: string
+          description: Optional markdown content for rich text display, and image rendering
     BattleEvent:
       oneOf:
         - $ref: "#/components/schemas/BattleResult"

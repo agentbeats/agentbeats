@@ -16,12 +16,22 @@
   let unsubscribe: (() => void) | null = null;
 
   onMount(async () => {
-    // Check authentication immediately
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('Stage battle page: No session found, redirecting to login');
-      goto('/login');
-      return;
+    // Check authentication using user store (works with dev login)
+    const unsubscribeUser = user.subscribe(($user) => {
+      if (!$user && !$loading) {
+        console.log('Stage battle page: No user found, redirecting to login');
+        goto('/login');
+      }
+    });
+    
+    // If no user in store, check Supabase session as fallback
+    if (!$user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('Stage battle page: No session found, redirecting to login');
+        goto('/login');
+        return;
+      }
     }
     
     // Subscribe to auth state changes for logout detection
@@ -235,7 +245,7 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
           </div> -->
 
           <!-- Custom Configuration JSON Input -->
-          <div class="space-y-2">
+          <!-- <div class="space-y-2">
             <Label for="config_json">Custom Configuration (JSON)</Label>
             <textarea
               id="config_json"
@@ -252,7 +262,7 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
                 Enter a valid JSON object for battle configuration
               </div>
             {/if}
-          </div>
+          </div> -->
 
           <!-- Submit Button -->
           <div class="flex gap-2 pt-4">
