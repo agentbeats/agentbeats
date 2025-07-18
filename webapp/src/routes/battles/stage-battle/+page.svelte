@@ -235,7 +235,7 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
           </div> -->
 
           <!-- Custom Configuration JSON Input -->
-          <div class="space-y-2">
+          <!-- <div class="space-y-2">
             <Label for="config_json">Custom Configuration (JSON)</Label>
             <textarea
               id="config_json"
@@ -252,7 +252,7 @@ $: formData.green_agent_id = greenAgentArray[0] || '';
                 Enter a valid JSON object for battle configuration
               </div>
             {/if}
-          </div>
+          </div> -->
 
           <!-- Submit Button -->
           <div class="flex gap-2 pt-4">

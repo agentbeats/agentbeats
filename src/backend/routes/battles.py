@@ -592,10 +592,10 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
         participant_requirements = green_agent.get("register_info", {}).get("participant_requirements", [])
         participant_requirements_names = [p['name'] for p in participant_requirements]
         participants = battle_request.get('opponents', [])
-        if not isinstance(participants, list) or len(participants) < 1:
+        if not isinstance(participants, list):
             raise HTTPException(
                 status_code=400, 
-                detail="Opponents must be a list with at least one participant"
+                detail="Opponents must be a list"
             )
         for p in participants:
             if not isinstance(p, dict) and 'name' not in p or 'agent_id' not in p:
