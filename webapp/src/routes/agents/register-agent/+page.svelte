@@ -24,12 +24,22 @@
   let unsubscribe: (() => void) | null = null;
 
   onMount(async () => {
-    // Check authentication immediately
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('Register agent page: No session found, redirecting to login');
-      goto('/login');
-      return;
+    // Check authentication using user store (works with dev login)
+    const unsubscribeUser = user.subscribe(($user) => {
+      if (!$user && !$loading) {
+        console.log('Register agent page: No user found, redirecting to login');
+        goto('/login');
+      }
+    });
+    
+    // If no user in store, check Supabase session as fallback
+    if (!$user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('Register agent page: No session found, redirecting to login');
+        goto('/login');
+        return;
+      }
     }
     
     // Subscribe to auth state changes for logout detection
@@ -72,6 +82,28 @@
   let rolesJsonInput: string = $state("");
   let rolesJsonError: string | null = $state(null);
   let rolesPlaceholder: string = '{"green_agent_id": {"role": "green", "info": {}}}';
+
+  let isDescriptionExpanded: boolean = $state(false);
+  const DESCRIPTION_PREVIEW_LENGTH = 500;
+
+  function getDescriptionPreview(description: string): { preview: string; needsExpansion: boolean } {
+    if (!description || description.length <= DESCRIPTION_PREVIEW_LENGTH) {
+      return { preview: description, needsExpansion: false };
+    }
+    
+    const preview = description.substring(0, DESCRIPTION_PREVIEW_LENGTH).trim();
+    const lastSpaceIndex = preview.lastIndexOf(' ');
+    const truncatedPreview = lastSpaceIndex > 0 ? preview.substring(0, lastSpaceIndex) : preview;
+    
+    return { 
+      preview: truncatedPreview + '...', 
+      needsExpansion: true 
+    };
+  }
+
+  function toggleDescriptionExpansion() {
+    isDescriptionExpanded = !isDescriptionExpanded;
+  }
 
   function addParticipantRequirement() {
     formData.participant_requirements = [
@@ -267,10 +299,24 @@
         <div class="space-y-4">
           <div class="flex items-center space-x-3">
             <div class="text-4xl">🤖</div>
-            <div>
+            <div class="flex-1">
               <h3 class="font-semibold text-lg">{agentCard.name || 'Unnamed Agent'}</h3>
               {#if agentCard.description}
-                <p class="text-muted-foreground text-sm">{agentCard.description}</p>
+                {@const { preview, needsExpansion } = getDescriptionPreview(agentCard.description)}
+                <div class="text-muted-foreground text-sm">
+                  <p class="mb-1">
+                    {isDescriptionExpanded ? agentCard.description : preview}
+                  </p>
+                  {#if needsExpansion}
+                    <button 
+                      class="text-primary hover:text-primary/80 text-xs font-medium underline focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
+                      onclick={toggleDescriptionExpansion}
+                      type="button"
+                    >
+                      {isDescriptionExpanded ? 'Close' : 'Expand to Read More'}
+                    </button>
+                  {/if}
+                </div>
               {/if}
             </div>
           </div>

@@ -26,7 +26,7 @@ def echo(message: str) -> str:
     return f"Echo: {message}"
 
 @server.tool()
-def update_battle_process(battle_id: str, message: str, reported_by: str, detail: dict = None) -> str:
+def update_battle_process(battle_id: str, message: str, reported_by: str, detail: dict = None, markdown_content: str = None) -> str:
     """
     Log battle process updates to backend API and console.
     
@@ -42,6 +42,7 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
                       Example: {"prompt": "You are a helpful assistant...", "tool": "xxxTool"}
         reported_by (str): The role/agent that triggered this event
                           Example: "guardrailGenerator", "red_agent", "blue_agent", "evaluator"
+        markdown_content (str): Optional markdown content for rich text display, and image rendering
     
     Returns:
         str: Status message indicating where the log was recorded
@@ -62,6 +63,9 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
     }
     if detail:
         event_data["detail"] = detail
+
+    if markdown_content:
+        event_data["markdown_content"] = markdown_content
     try:
         # Call backend API
         response = requests.post(
@@ -93,7 +97,7 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
         return 'logged locally (network error)'
 
 @server.tool()
-def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict = None) -> str:
+def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict = None, markdown_content: str = None) -> str:
     """
     Report the final battle result to backend API. YOU MUST CALL THIS AT THE END OF THE BATTLE.
     
@@ -102,6 +106,7 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
         message: Simple, human-readable description of what happened
         winner: The winner of the battle ("green", "blue", "red", or "draw")
         detail: Additional detail information (optional)
+        markdown_content: Optional markdown content for rich text display, and image rendering
     """
     logger.info("Reporting battle result for %s: winner=%s", battle_id, winner)
     
@@ -116,6 +121,9 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
     
     if detail:
         result_data["detail"] = detail
+
+    if markdown_content:
+        result_data["markdown_content"] = markdown_content
     
     try:
         # Call backend API
@@ -147,6 +155,71 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
             f.write(line)
         return 'result logged locally (network error)'
 
+
+# @server.tool()
+# def test_markdown(battle_id: str) -> str:
+#     sample_markdown = """# Test Markdown Display
+
+# This is a **test** of the markdown rendering functionality.
+
+# ## Features Tested:
+# - **Bold text**
+# - *Italic text*
+# - `Inline code`
+# - [Links](https://example.com)
+
+# ### Code Block:
+# ```python
+# def hello_world():
+#     print("Hello, World!")
+#     return True
+# ```
+
+# ### Sample Table:
+# | Agent | Role | Status |
+# |-------|------|--------|
+# | Blue Agent | Defender | Active |
+# | Red Agent | Attacker | Ready |
+
+# ### Sample Image (placeholder):
+# ![Sample Image](https://kirkstrobeck.github.io/whatismarkdown.com/img/markdown.png)
+
+# > **Note**: This is a blockquote to test markdown styling.
+
+# ### List Example:
+# 1. First item
+# 2. Second item
+#    - Sub-item A
+#    - Sub-item B
+# 3. Third item
+
+# ---
+
+# *This markdown content tests various formatting elements.*
+# """
+
+#     event_data = {
+#         "is_result": False,
+#         "message": 'test markdown content',
+#         "reported_by": 'green_agent',
+#         "timestamp": datetime.utcnow().isoformat() + "Z",
+#         "markdown_content": sample_markdown
+#     }
+#     try:
+#         # Call backend API
+#         response = requests.post(
+#             f"{BACKEND_URL}/battles/{battle_id}",
+#             json=event_data,
+#             headers={"Content-Type": "application/json"},
+#             timeout=10
+#         )
+        
+#         if response.status_code == 204:
+#             logger.info("Successfully logged to backend for battle %s", battle_id)
+#             return 'logged to backend'
+            
+#     except requests.exceptions.RequestException as e:
+#         logger.error("Network error when logging to backend for battle %s: %s", battle_id, str(e))
 
 if __name__ == "__main__":
     server.run(transport="sse", 
