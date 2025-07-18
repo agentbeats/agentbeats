@@ -1,0 +1,35 @@
+# Core dependencies
+a2a-sdk
+uvicorn
+fastmcp
+openai-agents
+sqlalchemy
+websockets
+toml
+
+# FastAPI and related
+fastapi
+pydantic
+
+# Authentication and OAuth
+supabase
+PyJWT
+python-dotenv
+
+# HTTP client
+httpx
+
+# Async support
+asyncio
+
+# Logging and utilities
+python-multipart
+
+# Docker and SSH testing (for battle royale scenario)
+paramiko==3.4.0
+requests==2.31.0
+asyncio-mqtt==0.16.1
+paho-mqtt==1.6.1
+
+# Our official agentbeats package
+agentbeats

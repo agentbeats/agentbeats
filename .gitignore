@@ -1,8 +1,119 @@
+# Existing ignores
 **/__pycache__/
 **/tmp/
 **/data/
 venv/
 .DS_Store
 
+# Battle log files
+*.log
+
+# Node.js dependencies
+webapp/node_modules/
+
+# npm/yarn/pnpm lock files
+webapp/package-lock.json
+webapp/yarn.lock
+webapp/pnpm-lock.yaml
+
+# Build output
+webapp/build/
+webapp/dist/
+webapp/.svelte-kit/
+
+# Frontend specific ignores
+webapp/.output
+webapp/.vercel
+webapp/.netlify
+webapp/.wrangler
+webapp/vite.config.js.timestamp-*
+webapp/vite.config.ts.timestamp-*
+
+# ccache
+ccache/
+*.ccache
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+
+# Misc
+*.bak
+*.tmpi
+
+# --- Additional ignores for SvelteKit, Vite, Node, Python, pm2, and SSL ---
+# SvelteKit output (if not already ignored)
+webapp/.svelte-kit-output/
+webapp/.vite/
+webapp/.vite-temp/
+webapp/.output/
+
+# pm2 logs and dump
+~/.pm2/
+pm2.log
+pm2.pid
+dump.pm2.json
+
+# Python egg info
+*.egg-info/
+.eggs/
+
+# Python bytecode (in case not caught by previous rules)
+*.pyc
+*.pyo
+*.pyd
+
+# SvelteKit preview output (if using adapters that output .output/)
+webapp/.output/
+
+# SSL keys/certs (never commit these!)
+*.pem
+*.crt
+*.key
+
+# Certbot/letsencrypt (if you ever back up configs)
+etc/letsencrypt/
+
+# Local Vite config (dev proxy)
+webapp/vite.config.ts
+
+# --- Docker and Battle Royale specific ignores ---
+# Docker volumes and data
+scenarios/battle_royale/docker/shared/
+scenarios/battle_royale/docker/logs/
+scenarios/battle_royale/docker/dev-logs/
+scenarios/battle_royale/docker/dev-shared/
+scenarios/battle_royale/docker/dev-monitor-html/
+
+# Docker build artifacts
+scenarios/battle_royale/docker/.dockerignore.bak
+scenarios/battle_royale/docker/docker-compose.override.yml.bak
+
+# Battle Royale test artifacts
+scenarios/battle_royale/test_*.log
+scenarios/battle_royale/*_service.log
+scenarios/battle_royale/*_service.py
+
+# SSH keys and credentials (if any are generated)
+scenarios/battle_royale/ssh_keys/
+scenarios/battle_royale/credentials/
+
+# Container-specific files
+scenarios/battle_royale/container_data/
+scenarios/battle_royale/monitor-html/
+
+# .env files
+.env
+
+# logs folder
+logs/
+
+# build folder
 **/agentbeats/agentbeats.egg-info/
-**/agentbeats/build/
+**/build/
