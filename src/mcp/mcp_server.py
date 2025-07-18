@@ -63,6 +63,9 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
     }
     if detail:
         event_data["detail"] = detail
+
+    if markdown_content:
+        event_data["markdown_content"] = markdown_content
     try:
         # Call backend API
         response = requests.post(
@@ -118,6 +121,9 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
     
     if detail:
         result_data["detail"] = detail
+
+    if markdown_content:
+        result_data["markdown_content"] = markdown_content
     
     try:
         # Call backend API
