@@ -16,16 +16,29 @@ export const title = 'Agents';
 
 const { data } = $props();
 
+// Development bypass flag
+const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === 'true';
+
 let isAuthChecking = $state(true);
 let unsubscribe: (() => void) | null = null;
 
 onMount(async () => {
-  // Check authentication immediately
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    console.log('Agents page: No session found, redirecting to login');
-    goto('/login');
-    return;
+  // Check authentication using user store (works with dev login)
+  const unsubscribeUser = user.subscribe(($user) => {
+    if (!$user && !$loading) {
+      console.log('Agents page: No user found, redirecting to login');
+      goto('/login');
+    }
+  });
+  
+  // If no user in store, check Supabase session as fallback
+  if (!$user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('Agents page: No session found, redirecting to login');
+      goto('/login');
+      return;
+    }
   }
   
   isAuthChecking = false;
