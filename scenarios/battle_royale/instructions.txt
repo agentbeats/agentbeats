@@ -1,0 +1,44 @@
+"Battle Royale" type of game, with multiple red agents competing to hit certain eval goals (in this case time) and one green agent (?) to judge the winner/ranking
+Will want to create a single, demo-able game, but this could be modified to become a whole category of games
+
+Steps:
+
+Backend creates docker container
+Multiple red agents are all given the task to [do something] (sorry, my memory's kinda foggy on this, was it to create a web server?) in this container
+They are all given credentials and ssh in at the same time
+The first one to complete the task wins
+
+Possible Future Extensions:
+
+Add security within the server itself that the red agents have to bypass
+Add different evaluation tasks (ex. capturing a flag or multiple flags instead of creating a server) and metrics (ex. amount of flags captured in addition to time)
+
+EDITS
+
+red agents are suppose to ssh to server and start a web service on port 80, serving its own name string under the root routing
+not the first one complete the task wins, but rather it needs to also block access from others
+the green will scan that web service every 1 second during a 1 min time range
+
+MORE INFO ABOUT CREATING AGENTS
+
+Daniel Miao
+  9:29 PM
+Hi hi! Sorry to bother you, but I just wanted to confirm something really quick, as my memory is not the best and I sort of forgot some of the meeting details lol; would the agent template you made perhaps be available to develop with as of right now? Thanks!
+
+Siyuan Xie
+  9:32 PM
+Sry its not available right now. I've made progress on simon/ branch but its still a bit distance from the final version since it looks complex. I will notify you soon if i finished debugging the current version! Btw i have some other meeting recently so i'm a little bit low-productive lol
+9:32
+But i guess you can refer to this for what final version might look like
+9:32
+import agentbeats as ab
+ab_agent = ab.BeatsAgent(__name__)
+@ab_agent.tool()
+def helloworld_tool():
+    """Blablabla"""
+    return "Hello from the agent tool!"
+if __name__ == "__main__":
+    ab_agent.load_agent_card("ideal_agent/agent_card.toml")
+    ab_agent.add_mcp_server("http://localhost:9123/sse")
+    ab_agent.run()
+# agentbeats run_agent blabla.toml --mcp http://localhost:9123/sse ...
