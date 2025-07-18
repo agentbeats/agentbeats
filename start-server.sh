@@ -55,8 +55,8 @@ else
 fi
 
 # check for openrouter api key
-if [ -z "$OPENAI_API_KEY" ] || [[ ! "$OPENAI_API_KEY" =~ ^sk-or-v1 ]]; then
-    print_error "OpenRouter API key not set. Set it with: export OPENAI_API_KEY='sk-or-v1-...'"
+if [ -z "$OPENAI_API_KEY" ] || [[ ! "$OPENAI_API_KEY" =~ ^sk ]]; then
+    print_error "OpenAI API key not set. Set it with: export OPENAI_API_KEY='sk...'"
     exit 1
 fi
 

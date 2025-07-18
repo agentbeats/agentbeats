@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 import { page } from '$app/stores';
+import { marked } from 'marked';
 
 let battle: any = null;
 let loading = true;
@@ -10,8 +11,11 @@ let opponentNames: string[] = [];
 let ws: WebSocket | null = null;
 let greenAgentInfo: any = null;
 let opponentRoleMap = new Map<string, string>(); // name -> role mapping
+let interactHistoryContainer: HTMLDivElement | null = null;
 
 $: battleId = $page.params.battle_id;
+
+$: battleInProgress = battle ? isBattleInProgress() : false;
 
 async function fetchAgentName(agentId: string): Promise<string> {
   try {
@@ -81,6 +85,44 @@ function getEntryBackgroundClass(reportedBy: string): string {
   return 'bg-yellow-50 border-yellow-200';
 }
 
+function renderMarkdown(content: string): string {
+  if (!content) return '';
+  
+  // Configure marked to allow images and other features
+  marked.setOptions({
+    breaks: true,
+    gfm: true
+  });
+  
+  const result = marked(content);
+  return typeof result === 'string' ? result : '';
+}
+
+function scrollToBottom() {
+  if (interactHistoryContainer) {
+    setTimeout(() => {
+      interactHistoryContainer?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'end' 
+      });
+    }, 100);
+  }
+}
+
+function isBattleInProgress(): boolean {
+  if (!battle) return false;
+  
+  if (battle.state === 'finished' || battle.state === 'error') {
+    return false;
+  }
+  
+  if (battle.interact_history && Array.isArray(battle.interact_history)) {
+    return !battle.interact_history.some((entry: any) => entry.is_result);
+  }
+  
+  return true;
+}
+
 onMount(async () => {
   loading = true;
   error = '';
@@ -122,7 +164,11 @@ onMount(async () => {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'battle_update' && data.battle.battle_id === battleId) {
-        battle = data.battle;
+        const previousHistoryLength = battle?.interact_history?.length || 0;
+        
+        // create a new battle object to trigger Svelte's reactivity
+        battle = { ...data.battle };
+        
         // Update agent names if needed
         if (battle.green_agent_id && !greenAgentName) {
           fetchAgentName(battle.green_agent_id).then(name => greenAgentName = name);
@@ -132,6 +178,18 @@ onMount(async () => {
             const agentName = await fetchAgentName(opponent.agent_id);
             return `${agentName} (${opponent.name})`;
           })).then(names => opponentNames = names);
+        }
+        
+        // Auto-scroll if new interact history entries were added
+        const currentHistoryLength = battle?.interact_history?.length || 0;
+        if (currentHistoryLength > previousHistoryLength) {
+          scrollToBottom();
+        }
+        
+        // Also scroll when battle state changes (for loading indicator updates)
+        if (battle.state === 'finished' || battle.state === 'error') {
+          console.log('Battle finished, triggering scroll');
+          scrollToBottom();
         }
       }
     };
@@ -182,7 +240,7 @@ onDestroy(() => {
     </div>
     <!-- Interact History -->
     {#if battle.interact_history && battle.interact_history.length > 0}
-      <div class="flex flex-col gap-3 mt-6">
+      <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
         <h2 class="text-lg font-semibold mb-2">Interact History</h2>
         {#each battle.interact_history as entry, i (entry.timestamp + entry.message + i)}
           <div class="border rounded-lg p-3 {getEntryBackgroundClass(entry.reported_by)}">
@@ -194,6 +252,11 @@ onDestroy(() => {
               {/if}
             </div>
             <div class="text-sm font-medium mb-1">{entry.message}</div>
+            {#if entry.markdown_content}
+              <div class="markdown-content mt-2 bg-white p-3 rounded border text-sm">
+                {@html renderMarkdown(entry.markdown_content)}
+              </div>
+            {/if}
             {#if entry.detail}
               <pre class="text-xs bg-muted p-2 rounded overflow-x-auto mt-1">{JSON.stringify(entry.detail, null, 2)}</pre>
             {/if}
@@ -202,7 +265,124 @@ onDestroy(() => {
             {/if}
           </div>
         {/each}
+        
+        <!-- Loading indicator for battles in progress -->
+        {#if battleInProgress}
+          <div class="border rounded-lg p-4 bg-purple-50 border-purple-200 flex items-center justify-center space-x-3">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+            <span class="text-sm text-purple-700 font-medium">Battle in progress...</span>
+          </div>
+        {/if}
+      </div>
+    {:else if battle && battleInProgress}
+      <!-- Show loading if no history yet but battle is starting -->
+      <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
+        <h2 class="text-lg font-semibold mb-2">Interact History</h2>
+        <div class="border rounded-lg p-4 bg-purple-50 border-purple-200 flex items-center justify-center space-x-3">
+          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+          <span class="text-sm text-purple-700 font-medium">Waiting for battle to start...</span>
+        </div>
       </div>
     {/if}
   {/if}
-</main> 
+</main>
+
+<style>
+  :global(.markdown-content h1) {
+    font-size: 1.125rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  :global(.markdown-content h2) {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  
+  :global(.markdown-content h3) {
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    margin-top: 0.5rem;
+  }
+  
+  :global(.markdown-content p) {
+    margin-bottom: 0.5rem;
+    line-height: 1.625;
+  }
+  
+  :global(.markdown-content ul, .markdown-content ol) {
+    margin-left: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content li) {
+    margin-bottom: 0.25rem;
+  }
+  
+  :global(.markdown-content code) {
+    background-color: #f3f4f6;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+  
+  :global(.markdown-content pre) {
+    background-color: #f3f4f6;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content pre code) {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  :global(.markdown-content blockquote) {
+    border-left: 4px solid #d1d5db;
+    padding-left: 1rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content a) {
+    color: #2563eb;
+    text-decoration: none;
+  }
+  
+  :global(.markdown-content a:hover) {
+    text-decoration: underline;
+  }
+  
+  :global(.markdown-content table) {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #d1d5db;
+    margin-bottom: 0.5rem;
+  }
+  
+  :global(.markdown-content th, .markdown-content td) {
+    border: 1px solid #d1d5db;
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+  }
+  
+  :global(.markdown-content th) {
+    background-color: #f3f4f6;
+    font-weight: bold;
+  }
+</style> 
