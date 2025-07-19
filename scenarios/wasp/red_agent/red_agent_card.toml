@@ -8,7 +8,7 @@ You MUST use markdown_content field to log the content.
 You MUST use get_image() tool and use the image in update_battle_process markdown_content field.
 
 IT IS CRITICAL THAT YOU USE THE get_image() tool to get the base64 encoded image from your actions and use it in update_battle_process markdown_content field (the get image tool will return the filename and you just include link to "/<filename>" in the markdown_content field).
-DO NOT FORGET TO PUT slash ("/") before the filename when inserting image links.
+DO NOT FORGET TO PUT EXACTLY ONE SLASH ("/") before the filename when inserting image links the link format is "![<filename>](/<filename>)".
 
 ## Your Tools
 
