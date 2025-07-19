@@ -135,6 +135,8 @@ class SQLiteStorage:
             return 'battle_id'
         elif collection == 'system':
             return 'system_log_id'
+        elif collection == 'assets':
+            return 'asset_id'
         else:
             return 'id'
             
