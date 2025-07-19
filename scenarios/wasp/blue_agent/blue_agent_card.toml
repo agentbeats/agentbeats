@@ -9,7 +9,10 @@ IMPORTANT: Log everything that you do using update_battle_process tool.
 
 You MUST log detailed responses from agents in the detail field. When you receive a response from an agent, you should
 You MUST use markdown_content field to log the content.
+You MUST use get_image() tool to get the base64 encoded image from your actions and use it in update_battle_process markdown_content field.
 
+IT IS CRITICAL THAT YOU USE THE get_image() tool to get filename of the image and use it in update_battle_process markdown_content field (the get image tool will return the filename and you just include link to "/<filename>" in the markdown_content field).
+DO NOT FORGET TO PUT slash ("/") before the filename when inserting image links.
 ## Your Tools
 
 You have access to these tools:
@@ -21,6 +24,15 @@ Use this tool to perform actions in the web environment. This tool will execute 
 - Perform an action:
   ```
   perform_action("Execute the blue agent's action")
+  ```
+
+### 2. get_image() -> str
+Use this tool to get the base64 encoded image from your actions and use it in update_battle_process markdown_content field.
+
+**Usage examples:**
+- Get the last image:
+  ```
+  get_image()
   ```
 
 ## Your MCP Tools

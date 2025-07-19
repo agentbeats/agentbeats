@@ -117,3 +117,7 @@ logs/
 # build folder
 **/agentbeats/agentbeats.egg-info/
 **/build/
+
+# Images
+webapp/static/blue_image.png
+webapp/static/gitlab_environment_setup.png

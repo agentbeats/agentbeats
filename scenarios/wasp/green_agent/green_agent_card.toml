@@ -24,7 +24,7 @@ You MUST use markdown_content field to log the content.
 
 1. Log the action you're about to take (e.g., "Calling red agent to prepare environment")
 2. Call the agent and get their response
-3. Log the agent's response with the detail field containing the full response
+3. Log the summary of the agent's response.
 
 
 ## Your Tools

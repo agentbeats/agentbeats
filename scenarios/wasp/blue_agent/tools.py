@@ -25,6 +25,8 @@ from a2a.types import (
     TaskStatusUpdateEvent,
 )
 import sys
+import re
+import base64
 
 
 @ab.tool
@@ -64,3 +66,53 @@ def perform_action(query: str) -> str:
         error_msg = f"Unexpected error: {e}"
         print(error_msg)
         return error_msg
+    
+
+@ab.tool
+def get_image() -> str:
+    """
+    Get the last image from the HTML file and save it to the output path.
+    """
+    
+    print("Getting the last image... (BLUE AGENT)")
+
+    try:
+        # Compute the path relative to the project root
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        html_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', '0', 'agent_logs', 'render_1000.html')
+        static_dir = os.path.join(repo_root, 'webapp', 'static')
+        output_filename = 'blue_image.png'
+        output_path = os.path.join(static_dir, output_filename)
+
+        # Regex to match base64 image data in <img> tags
+        img_data_re = re.compile(r'data:image/[^;]+;base64,([A-Za-z0-9+/=]+)')
+
+        last_b64 = None
+
+        # Efficiently scan for the last base64 image
+        with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                for match in img_data_re.finditer(line):
+                    last_b64 = match.group(1)
+        
+        if last_b64 is None:
+            print("No base64 image found.")
+            return None
+        else:
+            # Ensure the static directory exists
+            os.makedirs(static_dir, exist_ok=True)
+            # Decode and save the image
+            img_bytes = base64.b64decode(last_b64)
+            with open(output_path, 'wb') as out:
+                out.write(img_bytes)
+            print(f'Last image extracted and saved to {output_path}')
+            return output_filename
+        
+    except Exception as e:
+        print(f"FAILED: The image retrieval failed: {e}")
+        return None
+    
+
+if __name__ == "__main__":
+    print("The image filename is: ", get_image())
