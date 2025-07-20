@@ -23,15 +23,15 @@ SCENARIO_NAME = "tensortrust"
 AGENT_COMMANDS = [
     {
         "name": "Blue Agent",
-        "command": "agentbeats run blue_agent/blue_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9010 --backend http://localhost:9000"
+        "command": "agentbeats run blue_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9010 --agent_host 0.0.0.0 --agent_port 9011 --backend http://localhost:9000"
     },
     {
         "name": "Red Agent", 
-        "command": "agentbeats run red_agent/red_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9020 --backend http://localhost:9000"
+        "command": "agentbeats run red_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9020 --agent_host 0.0.0.0 --agent_port 9021 --backend http://localhost:9000"
     },
     {
         "name": "Green Agent",
-        "command": "agentbeats run green_agent/green_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9030 --backend http://localhost:9000 --mcp http://localhost:9001/sse --tool green_agent/tools.py"
+        "command": "agentbeats run green_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9030 --agent_host 0.0.0.0 --agent_port 9031 --backend http://localhost:9000 --mcp http://localhost:9001/sse --tool green_agent/tools.py"
     }
 ]
 
