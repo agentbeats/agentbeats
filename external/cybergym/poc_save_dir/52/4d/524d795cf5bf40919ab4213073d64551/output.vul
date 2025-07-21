@@ -1,0 +1,11 @@
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 678259067
+INFO: Loaded 1 modules   (22082 inline 8-bit counters): 22082 [0x8bfcd8, 0x8c531a), 
+INFO: Loaded 1 PC tables (22082 PCs): 22082 [0x7f8270,0x84e690), 
+/out/ftfuzzer: Running 1 inputs 1 time(s) each.
+Running: /tmp/poc
+Executed /tmp/poc in 19 ms
+***
+*** NOTE: fuzzing was not performed, you have only
+***       executed the target code on a fixed set of inputs.
+***

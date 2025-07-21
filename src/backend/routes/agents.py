@@ -24,7 +24,8 @@ async def register_agent(agent_info: Dict[str, Any]):
             # or "roles" not in agent_info
         ):
             raise HTTPException(
-                status_code=400, detail="Missing required fields: alias, agent_url, launcher_url, is_green, roles"
+                status_code=400,
+                detail="Missing required fields: alias, agent_url, launcher_url, is_green, roles",
             )
 
         if not isinstance(agent_info.get("is_green"), bool):
@@ -39,7 +40,10 @@ async def register_agent(agent_info: Dict[str, Any]):
         #     )
 
         # Green agent must provide participant_requirements
-        if agent_info["is_green"] and "participant_requirements" not in agent_info:
+        if (
+            agent_info["is_green"]
+            and "participant_requirements" not in agent_info
+        ):
             raise HTTPException(
                 status_code=400,
                 detail="Green agents must provide participant_requirements",
@@ -62,7 +66,8 @@ async def register_agent(agent_info: Dict[str, Any]):
         agent_card = await a2a_client.get_agent_card(agent_info["agent_url"])
         if not agent_card:
             raise HTTPException(
-                status_code=400, detail="Failed to get agent card from agent_url"
+                status_code=400,
+                detail="Failed to get agent card from agent_url",
             )
 
         # Create agent record
@@ -84,9 +89,9 @@ async def register_agent(agent_info: Dict[str, Any]):
                     "win_rate": 0.0,
                     "loss_rate": 0.0,
                     "draw_rate": 0.0,
-                    "error_rate": 0.0
-                }
-            }
+                    "error_rate": 0.0,
+                },
+            },
         }
 
         # Save to database
@@ -107,7 +112,9 @@ def list_agents() -> List[Dict[str, Any]]:
         agents = db.list("agents")
         return agents
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing agents: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error listing agents: {str(e)}"
+        )
 
 
 @router.get("/agents/{agent_id}")
@@ -123,7 +130,9 @@ def get_agent(agent_id: str) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving agent: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving agent: {str(e)}"
+        )
 
 
 @router.put("/agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -149,7 +158,29 @@ def update_agent(agent_id: str, update: Dict[str, Any]):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error updating agent: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error updating agent: {str(e)}"
+        )
+
+
+@router.delete("/agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_agent(agent_id: str):
+    """Delete an agent by ID."""
+    try:
+        agent = db.read("agents", agent_id)
+        if not agent:
+            raise HTTPException(
+                status_code=404, detail=f"Agent with ID {agent_id} not found"
+            )
+
+        db.delete("agents", agent_id)
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting agent: {str(e)}"
+        )
 
 
 @router.post("/mcp/agents/{agent_id}/card")
@@ -185,13 +216,16 @@ async def get_agent_card(request: Dict[str, Any]):
 
         agent_url = request["agent_url"]
         if not agent_url:
-            raise HTTPException(status_code=400, detail="agent_url cannot be empty")
+            raise HTTPException(
+                status_code=400, detail="agent_url cannot be empty"
+            )
 
         # Get agent card from the agent_url using a2a_client
         agent_card = await a2a_client.get_agent_card(agent_url)
         if not agent_card:
             raise HTTPException(
-                status_code=400, detail="Failed to get agent card from agent_url"
+                status_code=400,
+                detail="Failed to get agent card from agent_url",
             )
 
         return agent_card
@@ -214,10 +248,10 @@ Given a JSON object representing an agent card, identify:
 
 class ParticipantRequirement(BaseModel):
     role: Literal["red_agent", "blue_agent"]
-    
+
     name: str
     "Simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). AVOID descriptive suffixes, make it simple."
-    
+
     required: bool
 
 
@@ -243,7 +277,9 @@ async def analyze_agent_card(request: Dict[str, Any]):
 
         agent_card = request["agent_card"]
         if not agent_card:
-            raise HTTPException(status_code=400, detail="agent_card cannot be empty")
+            raise HTTPException(
+                status_code=400, detail="agent_card cannot be empty"
+            )
 
         analyze_agent = Agent(
             name="Agent Card Analyzer",

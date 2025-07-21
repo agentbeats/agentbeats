@@ -2,5 +2,5 @@
 	path = external/agentbeats_sdk
 	url = https://github.com/agentbeats/agentbeats_sdk.git
 [submodule "cybergym"]
-	path = cybergym
+	path = external/cybergym
 	url = git@github.com:sunblaze-ucb/cybergym.git

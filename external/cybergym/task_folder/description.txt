@@ -1,0 +1,1 @@
+A vulnerability exists in `src/cff/cffload.c` within the `cff_blend_doBlend` function, where multiple `blend` operators in a row are not handled correctly. The issue arises from not adjusting `parser->stack` pointers into `subFont->blend_stack` after reallocation.

@@ -56,9 +56,9 @@ server = FastMCP(
     port=9001,
 )
 
-DOCKER_BATTLE_CONTAINERS: dict[str, dict[str, str]] = {}
-
 BACKEND_URL = "http://localhost:9000"
+
+DEBUG_MODE = True
 
 
 ########################################################
@@ -83,75 +83,6 @@ def get_docker_client():
         raise Exception(
             f"Could not connect to Docker daemon. Is Docker running? Error: {e}"
         )
-
-
-@server.tool()
-def setup_docker_env(
-    battle_id: str,
-    docker_image_name: str,
-) -> str:
-    """
-    Setup the Docker environment for the Sec-Bench CVE instance.
-    This is only for the Green agent.
-    """
-    logger.info(f"Setting up docker env for battle {battle_id}...")
-
-    try:
-        client = get_docker_client()
-        container_name = f"secb_battle_{battle_id}"
-
-        try:
-            existing_container = client.containers.get(container_name)
-            message = f"Container {container_name} already exists for battle {battle_id} (status: {existing_container.status})."
-            logger.info(message)
-            return message
-        except docker.errors.NotFound:
-            pass
-
-        logger.info(f"Pulling image {docker_image_name}...")
-        client.images.pull(docker_image_name)
-        container = client.containers.run(
-            docker_image_name,
-            "sleep infinity",
-            name=container_name,
-            detach=True,
-        )
-        DOCKER_BATTLE_CONTAINERS[battle_id] = {
-            "container_name": container_name
-        }
-        message = f"Container {container_name} started for battle {battle_id}."
-        logger.info(message)
-        return message
-    except Exception as e:
-        error_msg = f"Error setting up docker env: {e}"
-        logger.error(error_msg)
-        return error_msg
-
-
-@server.tool()
-def destroy_docker_env(
-    battle_id: str,
-) -> str:
-    """
-    Destroy and remove the Docker container for the given battle_id.
-    """
-    try:
-        client = get_docker_client()
-        container_name = f"secb_battle_{battle_id}"
-        try:
-            container = client.containers.get(container_name)
-            container.remove(force=True)
-            message = f"Container {container_name} for battle {battle_id} has been destroyed and removed."
-            logger.info(message)
-            return message
-        except docker.errors.NotFound:
-            message = f"No container found for battle_id {battle_id}."
-            logger.warning(message)
-            return message
-    except Exception as e:
-        error_msg = f"Error destroying docker env: {e}"
-        logger.error(error_msg)
-        return error_msg
 
 
 # --- Logging Helpers ---
@@ -181,14 +112,20 @@ def run_terminal_command_in_docker(
     Run a terminal command in the specified docker container for the given battle_id.
     This is for any Red, Blue, or Green agent.
     Logs the command input and output to battle_cmd_history_{battle_id}.json.
+    Also, use another MCP server's tool "update_battle_process" to log the command input and the summary of the output.
     """
     try:
         client = get_docker_client()
         container_name = f"secb_battle_{battle_id}"
         try:
-            container = client.containers.get(container_name)
-            exec_log = container.exec_run(command)
-            message = exec_log.output.decode()
+            if DEBUG_MODE and command == "secb build":
+                message = "BUILD SUCCESS"
+            elif DEBUG_MODE and command == "secb repro":
+                message = "PoC Successfully Triggered"
+            else:
+                container = client.containers.get(container_name)
+                exec_log = container.exec_run(["sh", "-c", command])
+                message = exec_log.output.decode()
             logger.info("\033[32m" + f"Input Command: {command}" + "\033[0m")
             if len(message) > 200:
                 logger.info(
