@@ -9,7 +9,7 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
-from .routes import agents, battles, users
+from .routes import agents, battles, users, assets
 from .auth.routes import router as auth_router
 from .a2a_client import a2a_client
 
@@ -41,6 +41,7 @@ app.include_router(auth_router)
 app.include_router(agents.router)
 app.include_router(battles.router)
 app.include_router(users.router)
+app.include_router(assets.router)
 
 # Add request logging middleware
 @app.middleware("http")
