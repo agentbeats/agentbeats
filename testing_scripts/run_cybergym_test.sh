@@ -3,7 +3,7 @@
 # Configuration
 PROJECT_DIR=$HOME/agentbeats
 SETUP_COMMAND="cd $PROJECT_DIR && source venv/bin/activate"
-CYBERGYM_SETUP_COMMAND="cd scenarios/cybergym/new_sdk"
+CYBERGYM_SETUP_COMMAND="cd scenarios/cybergym"
 MAIN_MCP_URL="http://localhost:9001/sse"
 DOCKER_MCP_URL="http://localhost:9002/sse"
 SESSION_NAME="cybergym"

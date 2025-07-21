@@ -93,6 +93,7 @@ scenarios/battle_royale/docker/logs/
 scenarios/battle_royale/docker/dev-logs/
 scenarios/battle_royale/docker/dev-shared/
 scenarios/battle_royale/docker/dev-monitor-html/
+scenarios/cybergym/logs/
 
 # Docker build artifacts
 scenarios/battle_royale/docker/.dockerignore.bak
