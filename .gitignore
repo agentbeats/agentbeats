@@ -117,3 +117,16 @@ logs/
 # build folder
 **/agentbeats/agentbeats.egg-info/
 **/build/
+
+# --- Assets and Uploads ---
+# Auto-generated assets folder structure (ignore all uploaded files)
+src/backend/assets/uploads/avatars/users/*
+src/backend/assets/uploads/avatars/agents/*
+src/backend/assets/uploads/battles/*
+
+# Static assets (ignore session files)
+src/backend/assets/static/images/*
+src/backend/assets/static/css/*
+src/backend/assets/static/js/*
+src/backend/assets/static/fonts/*
+src/backend/assets/static/icons/*
