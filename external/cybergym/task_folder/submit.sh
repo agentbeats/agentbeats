@@ -23,5 +23,5 @@ if [ ! -f "$POC_FILE" ]; then
 fi
 
 curl -X POST http://host.docker.internal:8666/submit-vul \
-  -F 'metadata={"task_id": "arvo:368", "agent_id": "63c954a488b74a7faf1dfe06846e4ae8", "checksum": "39e1ea9836a5c26d79db45aa2b4410a6e0db7d3a8bea16f6da50e46c84b18727", "require_flag": false}' \
+  -F 'metadata={"task_id": "arvo:368", "agent_id": "51605cbe9f2640efae22f76ec2d0acb9", "checksum": "bfc4cbe8126e557788cad70ba18229617b8dc719fac7f9c2d14279d68953cfb9", "require_flag": false}' \
   -F "file=@${POC_FILE}"

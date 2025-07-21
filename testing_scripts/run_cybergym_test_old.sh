@@ -3,7 +3,6 @@
 # Configuration
 PROJECT_DIR=$HOME/agentbeats
 SETUP_COMMAND="cd $PROJECT_DIR && source venv/bin/activate"
-CYBERGYM_SETUP_COMMAND="cd scenarios/cybergym/new_sdk"
 MAIN_MCP_URL="http://localhost:9001/sse"
 DOCKER_MCP_URL="http://localhost:9002/sse"
 SESSION_NAME="cybergym"
@@ -39,29 +38,28 @@ tmux kill-session -t $SESSION_NAME 2>/dev/null || true
 tmux new-session -d -s $SESSION_NAME
 
 # Start MCP server in the first pane
-tmux send-keys -t $SESSION_NAME "$(create_banner 'CyberGym MCP SERVER')" C-m
+tmux send-keys -t $SESSION_NAME "$(create_banner 'MCP SERVER')" C-m
 tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python -m src.mcp.cybergym_mcp_server" C-m
 
 # Start another MCP server in the second pane
 tmux split-window -v -t $SESSION_NAME
-tmux send-keys -t $SESSION_NAME "$(create_banner 'Main MCP SERVER')" C-m
+tmux send-keys -t $SESSION_NAME "$(create_banner 'MCP SERVER')" C-m
 tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python -m src.mcp.mcp_server" C-m
 
-# Start another MCP server in the third pane
-tmux split-window -v -t $SESSION_NAME
-tmux send-keys -t $SESSION_NAME "$(create_banner 'backend')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python -m src.backend.run" C-m
+# Wait for MCP server to start
+# echo "Waiting for MCP server to start..."
+# sleep 5
 
 # Setup green agent
 tmux split-window -h -t $SESSION_NAME
 tmux send-keys -t $SESSION_NAME "$(create_banner 'GREEN AGENT')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && $CYBERGYM_SETUP_COMMAND && agentbeats run green_agent/agent_card.toml --launcher_host 0.0.0.0 --launcher_port $GREEN_PORT --agent_host 0.0.0.0 --agent_port $((GREEN_PORT+1)) --backend http://localhost:9000 --mcp http://localhost:9001/sse --mcp http://localhost:9002/sse --tool green_agent/tools.py" C-m
+tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python -m scenarios.cybergym.old_sdk.agent_launcher --file scenarios/cybergym/old_sdk/green_agent/main.py --port $GREEN_PORT --mcp-url $MAIN_MCP_URL --docker-mcp-url $DOCKER_MCP_URL" C-m
 tmux select-layout -t $SESSION_NAME even-vertical
 
 # Setup red agent
 tmux split-window -v -t $SESSION_NAME
 tmux send-keys -t $SESSION_NAME "$(create_banner 'RED AGENT')" C-m
-tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && $CYBERGYM_SETUP_COMMAND && agentbeats run red_agent_card.toml --launcher_host 0.0.0.0 --launcher_port $RED_PORT --agent_host 0.0.0.0 --agent_port $((RED_PORT+1)) --backend http://localhost:9000 --mcp http://localhost:9001/sse --mcp http://localhost:9002/sse" C-m
+tmux send-keys -t $SESSION_NAME "$SETUP_COMMAND && python scenarios/cybergym/old_sdk/agent_launcher.py --file scenarios/cybergym/old_sdk/red_agent/main.py --port $RED_PORT --mcp-url $MAIN_MCP_URL --docker-mcp-url $DOCKER_MCP_URL" C-m
 tmux select-layout -t $SESSION_NAME even-vertical
 
 # # Create a horizontal pane for the test script

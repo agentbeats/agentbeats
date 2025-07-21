@@ -37,7 +37,7 @@ OPENROUTER_BASE_URL = os.getenv(
     "OPENAI_API_BASE", "https://openrouter.ai/api/v1"
 )
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-MODEL_NAME = "o4-mini"
+MODEL_NAME = "gpt-4.1"
 
 custom_client = AsyncOpenAI(
     base_url=OPENROUTER_BASE_URL, api_key=OPENROUTER_API_KEY
