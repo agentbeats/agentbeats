@@ -36,8 +36,8 @@ class BattleOrchestrator:
             ("http://localhost:8030", "http://localhost:8031")
         ]
         self.docker_arena_url = "http://localhost:9001"
-        self.battle_duration = 60  # 1 minute
-        self.monitoring_interval = 30  # 30 seconds
+        self.battle_duration = 180  # 3 minutes (matches green agent)
+        self.monitoring_interval = 5  # 5 seconds (matches green agent)
         self.rpc_id_counter = itertools.count(1)
         
     async def check_agent_health(self, agent_url: str) -> bool:
@@ -178,7 +178,8 @@ class BattleOrchestrator:
         start_time = time.time()
         monitoring_data = []
         
-        while time.time() - start_time < self.battle_duration:
+        # Wait for the green agent's monitoring to complete
+        while time.time() - start_time < self.battle_duration + 60:  # Add 60 seconds buffer
             try:
                 # Get battle status from green agent
                 async with aiohttp.ClientSession() as session:
@@ -203,6 +204,13 @@ class BattleOrchestrator:
                                 "status": result
                             })
                             logger.info(f"Battle status: {result}")
+                            
+                            # Check if the response indicates monitoring is complete
+                            if isinstance(result, dict) and "result" in result:
+                                result_text = result["result"]
+                                if "Battle monitoring not complete" not in result_text and "still active" not in result_text:
+                                    logger.info("Green agent monitoring appears to be complete")
+                                    break
                         else:
                             logger.warning(f"Failed to get battle status: {response.status}")
                 
@@ -211,11 +219,11 @@ class BattleOrchestrator:
                 logger.error(f"Error during monitoring: {e}")
                 await asyncio.sleep(self.monitoring_interval)
         
-        return {"monitoring_data": monitoring_data, "duration": self.battle_duration}
+        return {"monitoring_data": monitoring_data, "duration": time.time() - start_time}
     
     async def end_battle(self) -> Dict:
-        """End the battle and determine winner."""
-        logger.info("Ending battle...")
+        """Get the final battle result from the green agent."""
+        logger.info("Getting final battle result...")
         try:
             async with aiohttp.ClientSession() as session:
                 rpc_id = next(self.rpc_id_counter)
@@ -227,20 +235,20 @@ class BattleOrchestrator:
                         "message": {
                             "messageId": uuid.uuid4().hex,
                             "role": "user",
-                            "parts": [{"text": "End the battle and determine the winner based on service uptime and performance."}]
+                            "parts": [{"text": "Get the final battle result and winner."}]
                         }
                     }
                 }
                 async with session.post(f"{self.green_agent_url}/", json=payload) as response:
                     if response.status == 200:
                         result = await response.json()
-                        logger.info(f"Battle ended: {result}")
+                        logger.info(f"Final battle result: {result}")
                         return result
                     else:
-                        logger.error(f"Failed to end battle: {response.status}")
-                        return {"error": "Failed to end battle"}
+                        logger.error(f"Failed to get final battle result: {response.status}")
+                        return {"error": "Failed to get final battle result"}
         except Exception as e:
-            logger.error(f"Error ending battle: {e}")
+            logger.error(f"Error getting final battle result: {e}")
             return {"error": str(e)}
     
     async def cleanup(self):
@@ -333,10 +341,10 @@ class BattleOrchestrator:
                 logger.error("Failed to start battle")
                 return False
             
-            # 5. Monitor battle
+            # 5. Monitor battle and wait for green agent monitoring to complete
             monitoring_results = await self.monitor_battle()
             
-            # 6. End battle and determine winner
+            # 6. Get final battle result from green agent
             battle_results = await self.end_battle()
             
             # 7. Generate summary
