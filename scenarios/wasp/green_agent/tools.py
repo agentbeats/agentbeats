@@ -13,6 +13,7 @@ import string
 import agentbeats as ab
 from openai import OpenAI
 import sys
+import time
 
 from uuid import uuid4
 from typing import List
@@ -109,6 +110,26 @@ def run_evaluator(battle_id: str) -> str:
     except Exception as e:
         print(f"FAILED: The evaluator failed: {e}")
         return f"FAILED: The evaluator failed: {e}"
+
+@ab.tool
+def reset_battle(battle_id: str) -> str:
+    try:
+        print("Resetting battle properly for battle_id: " + battle_id)
+
+        # Reset the server
+        import requests
+        response = requests.post("http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:5001/reset-server")
+        print("Reset server response:", response.text)
+
+        print("Waiting for 80 seconds for gitlab docker to start up")
+        # Wait for 80 seconds for gitlab docker to start up
+        time.sleep(80)
+
+        return "Battle reset successfully"
+    
+    except Exception as e:
+        print(f"FAILED: The reset battle failed: {e}")
+        return f"FAILED: The reset battle failed: {e}"
 
 if __name__ == "__main__":
     battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
