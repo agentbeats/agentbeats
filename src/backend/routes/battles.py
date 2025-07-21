@@ -587,6 +587,12 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
                 status_code=404, 
                 detail=f"Green agent with ID {battle_request['green_agent_id']} not found"
             )
+        # check lock
+        if green_agent.get("status") != "unlocked":
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Green agent {green_agent['agent_id']} is not unlocked"
+            )
 
         # Validate opponent agents
         participant_requirements = green_agent.get("register_info", {}).get("participant_requirements", [])
@@ -614,6 +620,13 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
                 raise HTTPException(
                     status_code=404, 
                     detail=f"Opponent agent {p['name']} with ID {p['agent_id']} not found"
+                )
+
+            # check lock
+            if opponent_agent.get("status") != "unlocked":
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Opponent agent {p['name']} with ID {p['agent_id']} is not unlocked"
                 )
 
         for p_req in participant_requirements:
