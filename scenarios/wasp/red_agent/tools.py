@@ -33,30 +33,45 @@ import shutil
 
 
 @ab.tool
-def prepare_prompt_environment(query: str) -> str:
-    print("Preparing prompt environment... (RED AGENT)")
-    
+def prepare_prompt_environment(battle_id: str) -> str:
     try:
-        # Change working directory to the top level of the repo
-        import os
-        import subprocess
+        max_retries = 3
+        for _ in range(max_retries):
+            print("Preparing environment properly")
+            
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+            os.chdir(repo_root)
+            result = subprocess.run([
+                "wasp/visualwebarena/venv/bin/python",
+                "wasp/webarena_prompt_injections/prompt_injector.py",
+                "--config", "wasp/webarena_prompt_injections/configs/experiment_config_reduced.raw.json",
+                "--gitlab-domain", "http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:8023",
+                "--reddit-domain", "http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:9999",
+                "--model", "gpt-4o-mini",
+                "--system_prompt", "wasp/webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
+                "--output-dir", "wasp/webarena_prompt_injections/testdir-with-output/" + battle_id,
+                "--user_goal_idx", "0",
+                "--injection_format", "goal_hijacking_plain_text",
+                "--output-format", "webarena"
+            ], capture_output=True, text=True)
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        os.chdir(repo_root)
-        result = subprocess.run(["python", "scenarios/wasp/red_agent/prep.py"], capture_output=True, text=True)
-        print("RED AGENT: " + result.stdout)
-        print("RED AGENT: " + result.stderr)
-        return result.stdout
+            print("STDOUT: " + result.stdout)
+            print("STDERR: " + result.stderr)
+
+            if "Failed to end up at the expected URL" in result.stdout:
+                print("Retrying...")
+            else:
+                return result.stdout
 
     except Exception as e:
         print(f"FAILED: The environment preparation failed: {e}")
-        result = f"FAILED: The environment preparation failed: {e}"
-    
-    return result
+        return f"FAILED: The environment preparation failed: {e}"
+
+    return "FAILED: The environment preparation failed after 3 attempts"
 
 @ab.tool
-def get_image() -> str:
+def get_image(battle_id: str) -> str:
     """
     Get the last image from the HTML file and save it to the output path.
     """
@@ -67,7 +82,7 @@ def get_image() -> str:
         # Compute the path relative to the project root
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        image_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', '0', 'gitlab_environment_setup.png')
+        image_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', battle_id, 'gitlab_environment_setup.png')
         static_dir = os.path.join(repo_root, 'webapp', 'static')
         output_filename = 'gitlab_environment_setup.png'
 
@@ -84,5 +99,8 @@ def get_image() -> str:
     
     return None
 
+
 if __name__ == "__main__":
-    prepare_prompt_environment("a")
+    battle_id = "test-battle-id"
+    prepare_prompt_environment(battle_id)
+    get_image(battle_id)

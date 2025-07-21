@@ -27,49 +27,70 @@ from a2a.types import (
 import sys
 import re
 import base64
-
+import subprocess
 
 @ab.tool
-def perform_action(query: str) -> str:
-    print("BLUE AGENT: Perform action tool called from blue agent.")
-    
-    import subprocess
-    import os
-    from pathlib import Path
-    
-    # Get the project root directory
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent.parent.parent
-    
-    # Path to the perform_action_wrapper.py script
-    wrapper_script = script_dir / 'perform_action_wrapper.py'
-    
-    if not wrapper_script.exists():
-        return "Error: perform_action_wrapper.py not found"
-    
+def perform_action(battle_id: str) -> str:
     try:
-        # Run the wrapper script
-        result = subprocess.run(
-            [sys.executable, str(wrapper_script)],
-            cwd=project_root,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        print("Blue agent action completed successfully")
+        print("Performing action properly")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        visualwebarena_dir = os.path.join(repo_root, "wasp", "visualwebarena")
+        os.chdir(visualwebarena_dir)
+        
+        # Get the absolute path to the Python interpreter in the virtual environment
+        python_path = os.path.join(visualwebarena_dir, "venv", "bin", "python")
+        
+        # Set up environment variables for the virtual environment
+        env = os.environ.copy()
+        env['PATH'] = os.path.join(visualwebarena_dir, "venv", "bin") + ":" + env.get('PATH', '')
+        env['VIRTUAL_ENV'] = os.path.join(visualwebarena_dir, "venv")
+        env['PYTHONPATH'] = os.path.join(visualwebarena_dir, "venv", "lib", "python3.10", "site-packages")
+                
+        result = subprocess.run([
+            python_path,
+            "run.py",
+            "--render",
+            "--slow_mo", "0",
+            "--action_set_tag", "som",
+            "--observation_type", "image_som",
+            "--viewport_width", "1280",
+            "--viewport_height", "2048",
+            "--sleep_after_execution", "0.0",
+            "--max_steps", "15",
+            "--agent_type", "prompt",
+            "--instruction_path", "../webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
+            "--parsing_failure_th", "3",
+            "--repeating_action_failure_th", "5",
+            "--test_config_base_dir", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/webarena_tasks",
+            "--eval_captioning_model_device", "cpu",
+            "--eval_captioning_model", "Salesforce/blip2-flan-t5-xl",
+            "--captioning_model", "Salesforce/blip2-flan-t5-xl",
+            "--provider", "openai",
+            "--model", "gpt-4o-mini",
+            "--mode", "chat",
+            "--temperature", "1.0",
+            "--top_p", "0.9",
+            "--context_length", "0",
+            "--max_tokens", "384",
+            "--max_retry", "1",
+            "--max_obs_length", "3840",
+            "--test_start_idx", "1000",
+            "--test_end_idx", "1001",
+            "--result_dir", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/agent_logs"
+        ], capture_output=True, text=True, cwd=visualwebarena_dir, env=env)
+
+        print("STDOUT: " + result.stdout)
+        print("STDERR: " + result.stderr)
+        
         return result.stdout
-    except subprocess.CalledProcessError as e:
-        error_msg = f"BLUE AGENT: Error running blue agent action: {e.stderr}"
-        print(error_msg)
-        return error_msg
+
     except Exception as e:
-        error_msg = f"Unexpected error: {e}"
-        print(error_msg)
-        return error_msg
-    
+        print(f"FAILED: The action failed: {e}")
+        return f"FAILED: The action failed: {e}"
 
 @ab.tool
-def get_image() -> str:
+def get_image(battle_id: str) -> str:
     """
     Get the last image from the HTML file and save it to the output path.
     """
@@ -80,7 +101,7 @@ def get_image() -> str:
         # Compute the path relative to the project root
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        html_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', '0', 'agent_logs', 'render_1000.html')
+        html_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', battle_id, 'agent_logs', 'render_1000.html')
         static_dir = os.path.join(repo_root, 'webapp', 'static')
         output_filename = 'blue_image.png'
         output_path = os.path.join(static_dir, output_filename)
@@ -111,8 +132,11 @@ def get_image() -> str:
         
     except Exception as e:
         print(f"FAILED: The image retrieval failed: {e}")
-        return None
-    
+        return "FAILED: The image retrieval failed"
+
 
 if __name__ == "__main__":
-    print("The image filename is: ", get_image())
+    battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
+    perform_action(battle_id)
+    get_image(battle_id)
+    print("Blue agent completed successfully")

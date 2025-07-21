@@ -25,6 +25,7 @@ from a2a.types import (
     TaskArtifactUpdateEvent,
     TaskStatusUpdateEvent,
 )
+import subprocess
 
 @ab.tool
 async def talk_to_agent(query: str, target_url: str) -> str:
@@ -69,43 +70,46 @@ async def talk_to_agent(query: str, target_url: str) -> str:
                         chunks.append(p.root.text)
 
     return "".join(chunks).strip() or "No response from agent."
-
+    
 @ab.tool
-def run_evaluator(query: str) -> str:
-    """
-    Run the evaluator script to assess the battle results.
-    """
-    print("Evaluator tool called from green agent.")
-    
-    import subprocess
-    import os
-    from pathlib import Path
-    
-    # Get the project root directory
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent.parent
-    
-    # Path to the evaluator_final_wrapper.py script
-    wrapper_script = script_dir / 'evaluator_final_wrapper.py'
-    
-    if not wrapper_script.exists():
-        return "Error: evaluator_final_wrapper.py not found"
-    
+def run_evaluator(battle_id: str) -> str:
     try:
-        # Run the wrapper script
-        result = subprocess.run(
-            [sys.executable, str(wrapper_script)],
-            cwd=project_root,
-            capture_output=True,
-            text=True
-        )
-        print("Evaluator completed successfully")
-        return str({"stdout": result.stdout, "stderr": result.stderr})
-    except subprocess.CalledProcessError as e:
-        error_msg = f"Error running evaluator: {e.stderr}"
-        print(error_msg)
-        return error_msg
+        print("Running evaluator properly")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        visualwebarena_dir = os.path.join(repo_root, "wasp", "visualwebarena")
+        os.chdir(visualwebarena_dir)
+        
+        # Get the absolute path to the Python interpreter in the virtual environment
+        python_path = os.path.join(visualwebarena_dir, "venv", "bin", "python")
+
+        result = subprocess.run([
+            python_path,
+            "evaluator_final_step.py",
+            "--log-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/agent_logs",
+            "--task-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/webarena_tasks_attacker",
+            "--format", "webarena"
+        ], capture_output=True, text=True, cwd=visualwebarena_dir)
+        
+        print("STDOUT (EVALUATOR OF ATTACKER TASK): " + result.stdout)
+        print("STDERR (EVALUATOR OF ATTACKER TASK): " + result.stderr)
+
+        result_2 = subprocess.run([
+            python_path,
+            "evaluator_final_step.py",
+            "--log-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/agent_logs",
+            "--task-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/webarena_tasks",
+        ], capture_output=True, text=True, cwd=visualwebarena_dir)
+
+        print("STDOUT (EVALUATOR OF USER TASK): " + result_2.stdout)
+        print("STDERR (EVALUATOR OF USER TASK): " + result_2.stderr)
+        
+        return result.stdout + result_2.stdout
+    
     except Exception as e:
-        error_msg = f"Unexpected error: {e}"
-        print(error_msg)
-        return error_msg
+        print(f"FAILED: The evaluator failed: {e}")
+        return f"FAILED: The evaluator failed: {e}"
+
+if __name__ == "__main__":
+    battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
+    run_evaluator(battle_id)
