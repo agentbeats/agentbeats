@@ -46,8 +46,6 @@ Use this tool to report the final battle result:
 - detail: Optional additional information, e.g., {"guardrail_generator_prompt": "...", "propmpt_injector_prompt": "...", "evaluation_output": "..."}
 '''
 url                 = "http://localhost:9031/"
-host                = "0.0.0.0"
-port                = 9031
 version             = "1.0.0"
 
 defaultInputModes   = ["text"]
