@@ -18,6 +18,12 @@ agentbeats run green_agent/green_agent_card.toml --launcher_host 0.0.0.0 --launc
 # Then register agent & host battle in frontend plz.
 ```
 
+## Changing Models:
+
+```
+agentbeats run blue_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9010 --agent_host 0.0.0.0 --agent_port 9011 --backend http://localhost:9000 --model_type openrouter --model_name anthropic/claude-3.5-sonnet
+```
+
 ## Bonus: Agent-only mode
 
 If you prefer agent-only mode (without wrapper server):
