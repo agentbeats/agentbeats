@@ -1,6 +1,7 @@
 [submodule "external/agentbeats_sdk"]
 	path = external/agentbeats_sdk
 	url = https://github.com/agentbeats/agentbeats_sdk.git
+	branch = main
 [submodule "cybergym"]
 	path = external/cybergym
 	url = git@github.com:sunblaze-ucb/cybergym.git

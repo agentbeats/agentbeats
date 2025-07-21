@@ -73,6 +73,9 @@ def update_battle_process(
     if detail:
         event_data["detail"] = detail
 
+    if markdown_content:
+        event_data["markdown_content"] = markdown_content
+
     # log into a logger
     logger.info("[update_battle_process] %s: %s", battle_id, event_data)
 
@@ -154,6 +157,9 @@ def report_on_battle_end(
 
     if detail:
         result_data["detail"] = detail
+
+    if markdown_content:
+        result_data["markdown_content"] = markdown_content
 
     try:
         # Call backend API
