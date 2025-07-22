@@ -198,7 +198,7 @@ class AgentBeatsA2AClient:
                 role=Role.user,
                 parts=parts,
                 messageId=uuid.uuid4().hex,
-                taskId=uuid.uuid4().hex
+                taskId=None
             )
             
             params = MessageSendParams(message=message)
@@ -251,7 +251,7 @@ class AgentBeatsA2AClient:
                     role=Role.user,
                     parts=parts,
                     messageId=uuid.uuid4().hex,
-                    taskId=uuid.uuid4().hex
+                    taskId=None
                 )
                 
                 params = MessageSendParams(message=message)
