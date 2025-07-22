@@ -17,86 +17,30 @@ from a2a.types import (
     TextPart,
 )
 
+# Import SDK functions
+from agentbeats.utils.agents import get_agent_card, send_message_to_agent
+
 logger = logging.getLogger(__name__)
 
 class AgentBeatsA2AClient:
-    # TODO: change this name, make it more clear
     """Client for communicating with agents/launcher via A2A protocol using the official SDK."""
     
     def __init__(self):
-        self.agent_clients = {}  # Cache of A2AClient instances by endpoint
-
-    
-    async def _get_fresh_httpx_client(self):
-        return httpx.AsyncClient(timeout=30.0)
+        pass  # No longer need client caching since SDK handles it
             
     async def close(self):
-        self.agent_clients.clear()
-            
-    async def get_agent_card(self, endpoint: str) -> Optional[Dict[str, Any]]:
-        httpx_client = None
-        try:
-            httpx_client = await self._get_fresh_httpx_client()
-            # Initialize the card resolver
-            resolver = A2ACardResolver(
-                httpx_client=httpx_client,
-                base_url=endpoint,
-            )
-            
-            # Fetch the agent card
-            agent_card = await resolver.get_agent_card()
-            
-            if agent_card:
-                # Return as dict for storage compatibility
-                return agent_card.model_dump(exclude_none=True)
-            else:
-                logger.error(f"Failed to get agent card from {endpoint}")
-                return None
-        except Exception as e:
-            logger.error(f"Error getting agent card from {endpoint}: {str(e)}")
-            return None
+        pass  # SDK handles cleanup
     
-    async def _get_or_create_client(self, endpoint: str) -> Optional[A2AClient]:
-        """Get or create an A2AClient for the endpoint."""
-
-        httpx_client = None   
-        try:
-            httpx_client = await self._get_fresh_httpx_client()
-            
-            # Initialize the card resolver
-            resolver = A2ACardResolver(
-                httpx_client=httpx_client,
-                base_url=endpoint,
-            )
-            
-            # Fetch the agent card
-            logger.info(f"Fetching agent card from resolver...")
-            agent_card = await resolver.get_agent_card()
-            
-            if agent_card:
-                # Create the client
-                logger.info(f"Successfully got agent card: {agent_card.model_dump(exclude_none=True)}")
-                client = A2AClient(
-                    httpx_client=httpx_client,
-                    agent_card=agent_card
-                )
-                self.agent_clients[endpoint] = client
-                return client
-            else:
-                logger.error(f"Failed to get agent card for client creation: {endpoint}")
-                return None
-        except Exception as e:
-            logger.error(f"Error creating A2A client for {endpoint}: {str(e)}")
-            logger.error(f"Exception type: {type(e).__name__}")
-            import traceback
-            logger.error(f"Full traceback: {traceback.format_exc()}")
-            return None
+    async def get_agent_card(self, endpoint: str) -> Optional[Dict[str, Any]]:
+        """Get agent card using SDK function."""
+        return await get_agent_card(endpoint)
             
     async def reset_agent_trigger(self, launcher_url: str, agent_id: str, extra_args: dict = None) -> bool:
+        """Reset an agent via its launcher."""
         httpx_client = None
         try:
             extra_args = extra_args or {}
-            httpx_client = await self._get_fresh_httpx_client()
+            httpx_client = httpx.AsyncClient()
             
             reset_payload = {
                 "signal": "reset",
@@ -119,177 +63,107 @@ class AgentBeatsA2AClient:
         except Exception as e:
             logger.error(f"Error resetting agent at {launcher_url}: {str(e)}")
             return False
-            
-    # async def notify_green_agent(self, 
-    #                             endpoint: str, 
-    #                             blue_agent_url: str, 
-    #                             red_agent_url: Optional[str], 
-    #                             battle_id: str) -> bool:
-    #     """Notify the green agent about a battle and provide opponent agent cards."""
-    #     try:
-    #         client = await self._get_or_create_client(endpoint)
-    #         if not client:
-    #             return False
-                
-    #         # Create battle information with agent cards
-    #         battle_info = {
-    #             "type": "battle_start",
-    #             "battle_id": battle_id,
-    #             "blue_agent_url": blue_agent_url,
-    #             "red_agent_url": red_agent_url
-    #         }
-            
-    #         # Create message parts with the JSON data
-            
-    #         # Create the message
-    #         message_payload = {
-    #             "message": {
-    #                 "role": "user",
-    #                 "parts": [{"kind": "text", "text": json.dumps(battle_info)}],
-    #                 'messageId': uuid.uuid4().hex,
-    #             }
-    #         }
-            
-    #         # Create the request parameters
-    #         params = MessageSendParams(**message_payload)
-            
-    #         # Create the request
-    #         request = SendMessageRequest(
-    #             id=str(uuid.uuid4()),
-    #             params=params
-    #         )
-            
-    #         # Send the message
-    #         response = await client.send_message(request)
-    #         print(response.model_dump(mode='json', exclude_none=True))
-    #         print('=========================================')
-
-    #         return True
-    #     except Exception as e:
-    #         logger.error(f"Error notifying green agent at {endpoint}: {str(e)}")
-    #         return False
+        finally:
+            if httpx_client:
+                await httpx_client.aclose()
         
     async def notify_green_agent(self, 
                                 endpoint: str,                                 
                                 opponent_infos: List[Dict[str, Any]],
-                                battle_id: str) -> bool:
-        """Notify the green agent about a battle using streaming message format."""
+                                battle_id: str,
+                                backend_url: str = "http://localhost:9000",
+                                green_agent_name: str = "green_agent",
+                                red_agent_names: Dict[str, str] = None) -> bool:
+        """Notify the green agent about a battle using SDK message sending."""
         try:
             # TODO: make this more eligant, for exmaple, 
             # the launcher should send PUT request after agent is really set
             await asyncio.sleep(5)
-            client = await self._get_or_create_client(endpoint)
-            if not client:
-                return False
+            
+            # Import BattleContext here to avoid circular imports
+            from agentbeats.logging import BattleContext
                 
-            # Create battle information with agent cards
+            # Create battle information with BattleContext objects (convert to dicts for JSON serialization)
+            green_context = BattleContext(
+                battle_id=battle_id, 
+                backend_url=backend_url, 
+                agent_name=green_agent_name  # Use actual agent name from database
+            )
+            
+            red_contexts = {}
+            for opp in opponent_infos:
+                if opp.get("agent_url"):
+                    # Use actual agent name from database if available, otherwise fall back to opponent info
+                    agent_name = "red_agent"
+                    if red_agent_names and opp["agent_url"] in red_agent_names:
+                        agent_name = red_agent_names[opp["agent_url"]]
+                    elif opp.get("name"):
+                        agent_name = opp["name"]
+                    
+                    red_contexts[opp["agent_url"]] = BattleContext(
+                        battle_id=battle_id, 
+                        backend_url=backend_url, 
+                        agent_name=agent_name
+                    )
+            
             battle_info = {
                 "type": "battle_start",
                 "battle_id": battle_id,
-                "opponent_infos": opponent_infos,  # List of opponent agent info: name and agent_url
+                "green_battle_context": {
+                    "battle_id": green_context.battle_id,
+                    "backend_url": green_context.backend_url,
+                    "agent_name": green_context.agent_name
+                },
+                "red_battle_contexts": {
+                    url: {
+                        "battle_id": ctx.battle_id,
+                        "backend_url": ctx.backend_url,
+                        "agent_name": ctx.agent_name
+                    }
+                    for url, ctx in red_contexts.items()
+                },
+                "opponent_infos": opponent_infos,  # Keep for backward compatibility
             }
             
-            logger.info(f"Sending battle info to {endpoint}: {json.dumps(battle_info, indent=2)}")
+            # Debug: Test JSON serialization
+            try:
+                json_str = json.dumps(battle_info, indent=2)
+                logger.info(f"JSON serialization successful, length: {len(json_str)}")
+                logger.info(f"Sending battle info to {endpoint}: {json_str}")
+            except Exception as json_error:
+                logger.error(f"JSON serialization failed: {json_error}")
+                logger.error(f"BattleContext objects may not be JSON serializable")
+                # Try to serialize without BattleContext objects to isolate the issue
+                try:
+                    test_info = {
+                        "type": "battle_start",
+                        "battle_id": battle_id,
+                        "opponent_infos": opponent_infos,
+                    }
+                    json.dumps(test_info)
+                    logger.error("Basic info serializes fine, BattleContext is the issue")
+                except Exception as e2:
+                    logger.error(f"Even basic info fails: {e2}")
+                raise json_error
             
+            # Use SDK function to send message
+            logger.info(f"About to send message to {endpoint}")
+            try:
+                response = await send_message_to_agent(endpoint, json.dumps(battle_info))
+                logger.info(f"Message sent successfully, response: {response}")
+            except Exception as send_error:
+                logger.error(f"Failed to send message to {endpoint}: {send_error}")
+                logger.error(f"Exception type: {type(send_error).__name__}")
+                raise send_error
             
-            parts = [Part(root=TextPart(text=json.dumps(battle_info)))]
-            
-            message = Message(
-                role=Role.user,
-                parts=parts,
-                messageId=uuid.uuid4().hex,
-                taskId=None
-            )
-            
-            params = MessageSendParams(message=message)
-            request = SendStreamingMessageRequest(
-                id=str(uuid.uuid4()),
-                params=params
-            )
-
-            response_received = False
-            async for chunk in client.send_message_streaming(request):
-                response_received = True
-                # break
-                
-            return response_received
+            # Return True if we got any response (not an error)
+            success = response and not response.startswith("Error:")
+            logger.info(f"Green agent notification {'succeeded' if success else 'failed'}")
+            return success
                             
         except Exception as e:
             logger.error(f"Error in notify_green_agent for {endpoint}: {str(e)}")
             logger.error(f"Exception type: {type(e).__name__}")
-            return False
-    
-    async def send_custom_message(self, 
-                                 endpoint: str, 
-                                 message_content: str,
-                                 message_type: str = "custom") -> bool:
-        """
-        Generic method to send any custom message to an agent.
-        This can be used for testing or sending arbitrary messages.
-        """
-        try:
-            client = await self._get_or_create_client(endpoint)
-            if not client:
-                logger.error(f"Failed to create client for {endpoint}")
-                return False
-            
-            # Create custom message payload
-            custom_data = {
-                "type": message_type,
-                "content": message_content,
-                "timestamp": str(uuid.uuid4()),
-                "sender": "a2a_client"
-            }
-            
-            logger.info(f"Sending custom message to {endpoint}: {message_content[:100]}...")
-            
-            # Try with streaming first
-            try:
-                parts = [Part(root=TextPart(text=json.dumps(custom_data)))]
-                
-                message = Message(
-                    role=Role.user,
-                    parts=parts,
-                    messageId=uuid.uuid4().hex,
-                    taskId=None
-                )
-                
-                params = MessageSendParams(message=message)
-                request = SendStreamingMessageRequest(
-                    id=str(uuid.uuid4()),
-                    params=params
-                )
-                
-                response_received = False
-                async for chunk in client.send_message_streaming(request):
-                    response_received = True
-                    logger.info(f"Custom message response: {chunk}")
-                    # break
-                
-                return response_received
-                
-            except Exception as streaming_error:
-                logger.warning(f"Streaming failed for custom message: {streaming_error}")
-                
-                # Fallback to non-streaming
-                message = Message(
-                    role=Role.user,
-                    parts=[Part(root=TextPart(text=json.dumps(custom_data)))],
-                    messageId=uuid.uuid4().hex
-                )
-                
-                params = MessageSendParams(message=message)
-                request = SendMessageRequest(
-                    id=str(uuid.uuid4()),
-                    params=params
-                )
-                
-                response = await client.send_message(request)
-                logger.info(f"Custom message sent via non-streaming: {response}")
-                return True
-                
-        except Exception as e:
-            logger.error(f"Error sending custom message to {endpoint}: {str(e)}")
             return False
 
 # Create a client instance
