@@ -27,7 +27,7 @@ AGENT_COMMANDS = [
     },
     {
         "name": "Red Agent", 
-        "command": "agentbeats run red_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9020 --agent_host 0.0.0.0 --agent_port 9021 --backend http://localhost:9000 --model_type openai --model_name gpt-4o-mini" # use gpt-4o-mini in case it refuses to answer
+        "command": "agentbeats run red(stronger)_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9020 --agent_host 0.0.0.0 --agent_port 9021 --backend http://localhost:9000 --model_type openai --model_name gpt-4o-mini" # use gpt-4o-mini in case it refuses to answer
     },
     {
         "name": "Green Agent",
