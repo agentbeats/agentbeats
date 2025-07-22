@@ -12,7 +12,7 @@ moved websocket functions to separate file websockets.py, revamped for clarity, 
 added cleanup function to unlock all agents when backend starts up/restarts -- avoid softlocks
 changed backend to send actual agent aliases instead of "red_agent," "green_agent," etc.
 slightly newer versions of some packages in requirements.txt -- hopefully shouldn't break anything
-deleted battle-royale scenario
+deleted battle-royale scenario (moved to sdk)
 started working on new frontend in webapp-v2
 
 TODOS:
