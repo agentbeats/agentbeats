@@ -5,6 +5,7 @@
     registerAgent,
     fetchAgentCard,
     analyzeAgentCard,
+    checkLauncherStatus,
   } from "$lib/api/agents";
   import {
     Card,
@@ -78,6 +79,9 @@
 
   let isAnalyzing: boolean = $state(false);
   let analysisError: string | null = $state(null);
+
+  let isCheckingLauncher: boolean = $state(false);
+  let launcherStatus: 'unknown' | 'checking' | 'online' | 'offline' = $state('unknown');
 
   let rolesJsonInput: string = $state("");
   let rolesJsonError: string | null = $state(null);
@@ -173,8 +177,33 @@
     }
   }
 
+  async function checkLauncherStatusAsync() {
+    if (!formData.launcher_url.trim()) {
+      launcherStatus = 'unknown';
+      return;
+    }
+
+    try {
+      isCheckingLauncher = true;
+      launcherStatus = 'checking';
+
+      // Use the backend API to check launcher status
+      const result = await checkLauncherStatus(formData.launcher_url);
+      launcherStatus = result.online ? 'online' : 'offline';
+    } catch (err) {
+      launcherStatus = 'offline';
+      console.error("Launcher status check failed:", err);
+    } finally {
+      isCheckingLauncher = false;
+    }
+  }
+
   function handleAgentUrlBlur() {
     loadAgentCard();
+  }
+
+  function handleLauncherUrlBlur() {
+    checkLauncherStatusAsync();
   }
 
   function handleRolesJsonInput() {
@@ -223,7 +252,12 @@
         is_green: false,
         participant_requirements: [],
       };
-      setTimeout(() => goto("/agents"), 2000);
+      if (result?.agent_id) {
+        setTimeout(() => goto(`/agents/${result.agent_id}`), 2000);
+      } else {
+        // Fallback to agents list if no ID returned
+        setTimeout(() => goto("/agents"), 2000);
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to register agent";
     } finally {
@@ -386,14 +420,30 @@
         >
           <div class="space-y-2">
             <Label for="agent_url">Agent URL</Label>
-            <Input
-              id="agent_url"
-              type="text"
-              bind:value={formData.agent_url}
-              placeholder="http://localhost:6001"
-              onblur={handleAgentUrlBlur}
-              required
-            />
+            <div class="flex items-center gap-2">
+              <Input
+                id="agent_url"
+                type="text"
+                bind:value={formData.agent_url}
+                placeholder="http://localhost:6001"
+                onblur={handleAgentUrlBlur}
+                required
+                class="flex-1"
+              />
+              <div class="flex-shrink-0 w-6 h-6">
+                {#if formData.agent_url.trim()}
+                  {#if isLoadingAgentCard}
+                    <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  {:else if canRegister}
+                    <div class="w-4 h-4 bg-green-500 rounded-full" title="Agent URL is accessible"></div>
+                  {:else}
+                    <div class="w-4 h-4 bg-red-500 rounded-full" title="Agent URL is not accessible"></div>
+                  {/if}
+                {:else}
+                  <div class="w-4 h-4 bg-gray-300 rounded-full" title="No URL entered"></div>
+                {/if}
+              </div>
+            </div>
             {#if isLoadingAgentCard}
               <div class="text-sm text-muted-foreground">
                 Loading agent card...
@@ -402,13 +452,32 @@
           </div>
           <div class="space-y-2">
             <Label for="launcher_url">Launcher URL</Label>
-            <Input
-              id="launcher_url"
-              type="text"
-              bind:value={formData.launcher_url}
-              placeholder="http://localhost:6001/launcher"
-              required
-            />
+            <div class="flex items-center gap-2">
+              <Input
+                id="launcher_url"
+                type="text"
+                bind:value={formData.launcher_url}
+                placeholder="http://localhost:6001/launcher"
+                onblur={handleLauncherUrlBlur}
+                required
+                class="flex-1"
+              />
+              <div class="flex-shrink-0 w-6 h-6">
+                {#if formData.launcher_url.trim()}
+                  {#if launcherStatus === 'checking'}
+                    <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  {:else if launcherStatus === 'online'}
+                    <div class="w-4 h-4 bg-green-500 rounded-full" title="Launcher server is running"></div>
+                  {:else if launcherStatus === 'offline'}
+                    <div class="w-4 h-4 bg-red-500 rounded-full" title="Launcher server is not accessible"></div>
+                  {:else}
+                    <div class="w-4 h-4 bg-gray-300 rounded-full" title="Status unknown"></div>
+                  {/if}
+                {:else}
+                  <div class="w-4 h-4 bg-gray-300 rounded-full" title="No URL entered"></div>
+                {/if}
+              </div>
+            </div>
           </div>
           <div class="space-y-2">
             <Label for="name">Agent Alias (Optional)</Label>
