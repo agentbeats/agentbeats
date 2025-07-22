@@ -24,25 +24,22 @@ class AgentBeatsA2AClient:
     """Client for communicating with agents/launcher via A2A protocol using the official SDK."""
     
     def __init__(self):
-        self.httpx_client = None
         self.agent_clients = {}  # Cache of A2AClient instances by endpoint
-        
-    async def _ensure_httpx_client(self):
-        if self.httpx_client is None:
-            self.httpx_client = httpx.AsyncClient()
+
+    
+    async def _get_fresh_httpx_client(self):
+        return httpx.AsyncClient(timeout=30.0)
             
     async def close(self):
-        if self.httpx_client:
-            await self.httpx_client.aclose()
-            self.httpx_client = None
+        self.agent_clients.clear()
             
     async def get_agent_card(self, endpoint: str) -> Optional[Dict[str, Any]]:
+        httpx_client = None
         try:
-            await self._ensure_httpx_client()
-            
+            httpx_client = await self._get_fresh_httpx_client()
             # Initialize the card resolver
             resolver = A2ACardResolver(
-                httpx_client=self.httpx_client,
+                httpx_client=httpx_client,
                 base_url=endpoint,
             )
             
@@ -61,15 +58,14 @@ class AgentBeatsA2AClient:
     
     async def _get_or_create_client(self, endpoint: str) -> Optional[A2AClient]:
         """Get or create an A2AClient for the endpoint."""
-        if endpoint in self.agent_clients:
-            return self.agent_clients[endpoint]
-            
+
+        httpx_client = None   
         try:
-            await self._ensure_httpx_client()
+            httpx_client = await self._get_fresh_httpx_client()
             
             # Initialize the card resolver
             resolver = A2ACardResolver(
-                httpx_client=self.httpx_client,
+                httpx_client=httpx_client,
                 base_url=endpoint,
             )
             
@@ -81,7 +77,7 @@ class AgentBeatsA2AClient:
                 # Create the client
                 logger.info(f"Successfully got agent card: {agent_card.model_dump(exclude_none=True)}")
                 client = A2AClient(
-                    httpx_client=self.httpx_client,
+                    httpx_client=httpx_client,
                     agent_card=agent_card
                 )
                 self.agent_clients[endpoint] = client
@@ -96,16 +92,19 @@ class AgentBeatsA2AClient:
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
             
-    async def reset_agent_trigger(self, launcher_url: str, agent_id: str, extra_args: dict = {}) -> bool:
+    async def reset_agent_trigger(self, launcher_url: str, agent_id: str, extra_args: dict = None) -> bool:
+        httpx_client = None
         try:
-            await self._ensure_httpx_client()
+            extra_args = extra_args or {}
+            httpx_client = await self._get_fresh_httpx_client()
+            
             reset_payload = {
                 "signal": "reset",
                 "agent_id": agent_id,
                 "extra_args": extra_args
             }
 
-            response = await self.httpx_client.post(
+            response = await httpx_client.post(
                 f"{launcher_url}/reset",
                 json=reset_payload
             )
@@ -199,7 +198,7 @@ class AgentBeatsA2AClient:
                 role=Role.user,
                 parts=parts,
                 messageId=uuid.uuid4().hex,
-                taskId=uuid.uuid4().hex
+                taskId=None
             )
             
             params = MessageSendParams(message=message)
@@ -252,7 +251,7 @@ class AgentBeatsA2AClient:
                     role=Role.user,
                     parts=parts,
                     messageId=uuid.uuid4().hex,
-                    taskId=uuid.uuid4().hex
+                    taskId=None
                 )
                 
                 params = MessageSendParams(message=message)

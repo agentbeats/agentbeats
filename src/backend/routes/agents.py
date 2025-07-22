@@ -284,3 +284,42 @@ async def analyze_agent_card(request: Dict[str, Any]):
         raise HTTPException(
             status_code=500, detail=f"Error analyzing agent card: {str(e)}"
         )
+
+
+class LauncherCheckRequest(BaseModel):
+    launcher_url: str = Field(..., description="The launcher URL to check")
+
+
+@router.post("/agents/check_launcher")
+async def check_launcher_status(request: LauncherCheckRequest):
+    """Check if a launcher URL is accessible and running."""
+    try:
+        import httpx
+        
+        launcher_url = request.launcher_url.rstrip('/')
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(f"{launcher_url}/status")
+            
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    is_online = data.get("status") == "server up, with agent running"
+                except:
+                    is_online = False
+            else:
+                is_online = False
+                
+        return {
+            "online": is_online,
+            "status_code": response.status_code,
+            "launcher_url": launcher_url
+        }
+        
+    except Exception as e:
+        print(f"Error checking launcher status: {str(e)}")
+        return {
+            "online": False,
+            "error": str(e),
+            "launcher_url": request.launcher_url
+        }
