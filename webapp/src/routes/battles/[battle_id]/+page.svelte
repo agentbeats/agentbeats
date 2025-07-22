@@ -69,9 +69,14 @@ function buildOpponentRoleMap(greenAgentInfo: any, battleOpponents: any[]): Map<
 }
 
 function getEntryBackgroundClass(reportedBy: string): string {
+  const lowerReportedBy = reportedBy.toLowerCase();
   if (reportedBy === 'system') {
     return 'bg-gray-50 border-gray-200';
-  } else if (reportedBy === 'green_agent') {
+  } else if (lowerReportedBy.includes('blue')) {
+    return 'bg-blue-50 border-blue-200';
+  } else if (lowerReportedBy.includes('red')) {
+    return 'bg-red-50 border-red-200';
+  } else if (reportedBy === 'green_agent' || lowerReportedBy.includes('green')) {
     return 'bg-green-50 border-green-200';
   } else if (opponentRoleMap.has(reportedBy)) {
     const role = opponentRoleMap.get(reportedBy);
