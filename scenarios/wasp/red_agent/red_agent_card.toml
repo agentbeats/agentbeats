@@ -74,7 +74,7 @@ defaultOutputModes  = ["text"]
 streaming               = true
 
 [[skills]]
-id          = "red_attack_prompt"
+id          = "wasp_red_attack_prompt"
 name        = "Red Attack Prompt"
 description = "WASP red agent."
 tags        = ["attack", "prompt", "a2a"]

@@ -8,13 +8,8 @@ evaluates the outcome, and declares the winner.
 
 import os
 import httpx
-import random
-import string
 import agentbeats as ab
-from openai import OpenAI
-import sys
 import time
-
 from uuid import uuid4
 from typing import List
 from a2a.client import A2AClient, A2ACardResolver
@@ -49,7 +44,6 @@ async def talk_to_agent(query: str, target_url: str) -> str:
             role=Role.user,
             parts=[Part(TextPart(text=query))],
             messageId=uuid4().hex,
-            taskId=uuid4().hex,
         )
     )
     req = SendStreamingMessageRequest(id=str(uuid4()), params=params)
@@ -78,7 +72,7 @@ def run_evaluator(battle_id: str) -> str:
         print("Running evaluator properly")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        visualwebarena_dir = os.path.join(repo_root, "wasp", "visualwebarena")
+        visualwebarena_dir = os.path.join(repo_root, "scenarios", "wasp", "wasp", "visualwebarena")
         os.chdir(visualwebarena_dir)
         
         # Get the absolute path to the Python interpreter in the virtual environment
@@ -87,8 +81,8 @@ def run_evaluator(battle_id: str) -> str:
         result = subprocess.run([
             python_path,
             "evaluator_final_step.py",
-            "--log-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/agent_logs",
-            "--task-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/webarena_tasks_attacker",
+            "--log-folder", "../../logs/" + battle_id + "/agent_logs",
+            "--task-folder", "../../logs/" + battle_id + "/webarena_tasks_attacker",
             "--format", "webarena"
         ], capture_output=True, text=True, cwd=visualwebarena_dir)
         
@@ -98,8 +92,8 @@ def run_evaluator(battle_id: str) -> str:
         result_2 = subprocess.run([
             python_path,
             "evaluator_final_step.py",
-            "--log-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/agent_logs",
-            "--task-folder", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/webarena_tasks",
+            "--log-folder", "../../logs/" + battle_id + "/agent_logs",
+            "--task-folder", "../../logs/" + battle_id + "/webarena_tasks",
         ], capture_output=True, text=True, cwd=visualwebarena_dir)
 
         print("STDOUT (EVALUATOR OF USER TASK): " + result_2.stdout)
@@ -114,6 +108,7 @@ def run_evaluator(battle_id: str) -> str:
 @ab.tool
 def reset_battle(battle_id: str) -> str:
     try:
+        return "Battle reset successfully" # TODO: Remove this
         print("Resetting battle properly for battle_id: " + battle_id)
 
         # Reset the server

@@ -1,33 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-A implementation of a green agent that follows the specification in TensorTrust
-(https://arxiv.org/abs/2311.01011)
-This agent hosts Blue ( defender ) vs Red ( attacker ) prompt-injection battles,
-evaluates the outcome, and declares the winner.
-"""
 
 import os
-import httpx
-import random
-import string
 import agentbeats as ab
-from openai import OpenAI
 import re
 import base64
-
-from uuid import uuid4
-from typing import List
-from a2a.client import A2AClient, A2ACardResolver
-from a2a.types import (
-    AgentCard, Message, Part, TextPart, Role, 
-    SendStreamingMessageRequest,
-    SendStreamingMessageSuccessResponse,
-    MessageSendParams,
-    TaskArtifactUpdateEvent,
-    TaskStatusUpdateEvent,
-)
 import subprocess
-from argparse import Namespace
 import shutil
 
 
@@ -38,10 +15,6 @@ def prepare_prompt_environment(battle_id: str) -> str:
         max_retries = 3
         for _ in range(max_retries):
             print("Preparing environment properly")
-            
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-            os.chdir(repo_root)
             result = subprocess.run([
                 "wasp/visualwebarena/venv/bin/python",
                 "wasp/webarena_prompt_injections/prompt_injector.py",
@@ -50,7 +23,7 @@ def prepare_prompt_environment(battle_id: str) -> str:
                 "--reddit-domain", "http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:9999",
                 "--model", "gpt-4o-mini",
                 "--system_prompt", "wasp/webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
-                "--output-dir", "wasp/webarena_prompt_injections/testdir-with-output/" + battle_id,
+                "--output-dir", "logs/" + battle_id,
                 "--user_goal_idx", "0",
                 "--injection_format", "goal_hijacking_plain_text",
                 "--output-format", "webarena"
@@ -82,7 +55,7 @@ def get_image(battle_id: str) -> str:
         # Compute the path relative to the project root
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        image_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', battle_id, 'gitlab_environment_setup.png')
+        image_path = os.path.join(repo_root, 'scenarios', 'wasp', 'logs', battle_id, 'gitlab_environment_setup.png')
         static_dir = os.path.join(repo_root, 'webapp', 'static')
         output_filename = 'gitlab_environment_setup.png'
 
@@ -101,6 +74,7 @@ def get_image(battle_id: str) -> str:
 
 
 if __name__ == "__main__":
-    battle_id = "test-battle-id"
+    battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
     prepare_prompt_environment(battle_id)
     get_image(battle_id)
+    print("Red agent completed successfully")

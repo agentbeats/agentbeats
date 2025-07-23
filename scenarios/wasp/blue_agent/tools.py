@@ -7,24 +7,7 @@ evaluates the outcome, and declares the winner.
 """
 
 import os
-import httpx
-import random
-import string
 import agentbeats as ab
-from openai import OpenAI
-
-from uuid import uuid4
-from typing import List
-from a2a.client import A2AClient, A2ACardResolver
-from a2a.types import (
-    AgentCard, Message, Part, TextPart, Role, 
-    SendStreamingMessageRequest,
-    SendStreamingMessageSuccessResponse,
-    MessageSendParams,
-    TaskArtifactUpdateEvent,
-    TaskStatusUpdateEvent,
-)
-import sys
 import re
 import base64
 import subprocess
@@ -35,7 +18,7 @@ def perform_action(battle_id: str) -> str:
         print("Performing action properly")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        visualwebarena_dir = os.path.join(repo_root, "wasp", "visualwebarena")
+        visualwebarena_dir = os.path.join(repo_root, "scenarios", "wasp", "wasp", "visualwebarena")
         os.chdir(visualwebarena_dir)
         
         # Get the absolute path to the Python interpreter in the virtual environment
@@ -62,7 +45,7 @@ def perform_action(battle_id: str) -> str:
             "--instruction_path", "../webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
             "--parsing_failure_th", "3",
             "--repeating_action_failure_th", "5",
-            "--test_config_base_dir", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/webarena_tasks",
+            "--test_config_base_dir", "../../logs/" + battle_id + "/webarena_tasks",
             "--eval_captioning_model_device", "cpu",
             "--eval_captioning_model", "Salesforce/blip2-flan-t5-xl",
             "--captioning_model", "Salesforce/blip2-flan-t5-xl",
@@ -77,7 +60,7 @@ def perform_action(battle_id: str) -> str:
             "--max_obs_length", "3840",
             "--test_start_idx", "1000",
             "--test_end_idx", "1001",
-            "--result_dir", "../webarena_prompt_injections/testdir-with-output/" + battle_id + "/agent_logs"
+            "--result_dir", "../../logs/" + battle_id + "/agent_logs"
         ], capture_output=True, text=True, cwd=visualwebarena_dir, env=env)
 
         print("STDOUT: " + result.stdout)
@@ -101,7 +84,7 @@ def get_image(battle_id: str) -> str:
         # Compute the path relative to the project root
         current_dir = os.path.dirname(os.path.abspath(__file__))
         repo_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        html_path = os.path.join(repo_root, 'wasp', 'webarena_prompt_injections', 'testdir-with-output', battle_id, 'agent_logs', 'render_1000.html')
+        html_path = os.path.join(repo_root, "scenarios", "wasp", "logs", battle_id, "agent_logs", "render_1000.html")
         static_dir = os.path.join(repo_root, 'webapp', 'static')
         output_filename = 'blue_image.png'
         output_path = os.path.join(static_dir, output_filename)

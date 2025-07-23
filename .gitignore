@@ -134,3 +134,6 @@ src/backend/assets/static/icons/*
 # Images
 webapp/static/blue_image.png
 webapp/static/gitlab_environment_setup.png
+
+# WASP subrepo
+scenarios/wasp/wasp/
