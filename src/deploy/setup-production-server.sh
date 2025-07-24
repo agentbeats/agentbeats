@@ -64,28 +64,28 @@ else
 fi
 
 # Check frontend dependencies
-if [ ! -d "webapp/node_modules" ]; then
+if [ ! -d "frontend/webapp/node_modules" ]; then
     echo "Installing frontend dependencies..."
-    cd webapp && npm install && cd ..
+    cd frontend/webapp && npm install && cd ..
 else
     echo "Frontend dependencies are installed"
 fi
 
 # Build frontend
 echo "Building frontend..."
-cd webapp && npm run build && cd ..
+cd frontend/webapp && npm run build && cd ..
 
 # Start tmux session with backend
 echo "Starting backend server..."
-tmux new-session -d -s $SESSION -n "backend" "cd $PROJECT_DIR && source venv/bin/activate && python -m src.backend.run"
+tmux new-session -d -s $SESSION -n "backend" "cd $PROJECT_DIR && source venv/bin/activate && python -m src.agentbeats_backend.run"
 
 # Add MCP server window
 echo "Starting MCP server..."
-tmux new-window -t $SESSION -n "mcp" "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/mcp/mcp_server.py"
+tmux new-window -t $SESSION -n "mcp" "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/agentbeats_backend/mcp/mcp_server.py"
 
 # Add frontend window
 echo "Starting frontend..."
-tmux new-window -t $SESSION -n "frontend" "cd $PROJECT_DIR/webapp && pm2 start build/index.js --name agentbeats-ssr --no-daemon"
+tmux new-window -t $SESSION -n "frontend" "cd $PROJECT_DIR/frontend/webapp && pm2 start build/index.js --name agentbeats-ssr --no-daemon"
 
 # Add monitoring window
 echo "Creating monitoring window..."

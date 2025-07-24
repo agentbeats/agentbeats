@@ -54,16 +54,32 @@ def check_environment():
         issues.append("❌ npm not found. Please install npm")
     
     # Check OpenAI API key
+    key_set = 0
     openai_key = os.getenv('OPENAI_API_KEY')
     if not openai_key:
-        issues.append("❌ OPENAI_API_KEY environment variable not set")
+        print("⚠️ OPENAI_API_KEY environment variable not set")
     elif not openai_key.startswith('sk-'):
-        issues.append("❌ OPENAI_API_KEY should start with 'sk-'")
+        print("⚠️ OPENAI_API_KEY should start with 'sk-'")
     else:
         print("✅ OPENAI_API_KEY is set")
+        key_set += 1
+
+    # Check OpenRouter API key
+    openrouter_key = os.getenv('OPENROUTER_API_KEY')
+    if not openrouter_key:
+        print("⚠️ OPENROUTER_API_KEY environment variable not set")
+        
+    elif not openrouter_key.startswith('sk-'):
+        print("⚠️ OPENROUTER_API_KEY should start with 'sk-'")
+    else:
+        print("✅ OPENROUTER_API_KEY is set")
+        key_set += 1
+
+    if key_set == 0:
+        issues.append("❌ At least one API key (OPENAI_API_KEY or OPENROUTER_API_KEY) must be set")
     
     # Check required directories
-    required_dirs = ['src/backend', 'src/mcp', 'webapp']
+    required_dirs = ['src/agentbeats_backend', 'src/agentbeats_backend/mcp', 'frontend/webapp']
     for dir_path in required_dirs:
         if not os.path.exists(dir_path):
             issues.append(f"❌ Required directory not found: {dir_path}")
@@ -71,7 +87,7 @@ def check_environment():
             print(f"✅ Directory exists: {dir_path}")
     
     # Check required files
-    required_files = ['src/backend/run.py', 'src/mcp/mcp_server.py', 'webapp/package.json']
+    required_files = ['src/agentbeats_backend/run.py', 'src/agentbeats_backend/mcp/mcp_server.py', 'frontend/webapp/package.json']
     for file_path in required_files:
         if not os.path.exists(file_path):
             issues.append(f"❌ Required file not found: {file_path}")
@@ -79,7 +95,7 @@ def check_environment():
             print(f"✅ File exists: {file_path}")
     
     # Check if webapp dependencies are installed
-    if os.path.exists('webapp/node_modules'):
+    if os.path.exists('frontend/webapp/node_modules'):
         print("✅ Frontend dependencies are installed")
     else:
         issues.append("❌ Frontend dependencies not installed. Run 'cd webapp && npm install'")
@@ -98,7 +114,7 @@ def start_in_current_terminal():
         # Start backend
         print("Starting backend server...")
         backend_process = subprocess.Popen(
-            [sys.executable, '-m', 'src.backend.run'],
+            [sys.executable, '-m', 'src.agentbeats_backend.run'],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -109,7 +125,7 @@ def start_in_current_terminal():
         # Start MCP server
         print("Starting MCP server...")
         mcp_process = subprocess.Popen(
-            [sys.executable, 'src/mcp/mcp_server.py'],
+            [sys.executable, 'src/agentbeats_backend/mcp/mcp_server.py'],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -121,7 +137,7 @@ def start_in_current_terminal():
         print("Starting frontend server...")
         frontend_process = subprocess.Popen(
             ['npm', 'run', 'dev'],
-            cwd='webapp',
+            cwd='frontend/webapp',
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -173,8 +189,8 @@ def start_in_separate_terminals():
     
     # Commands for each service
     commands = [
-        ("Backend", f"{sys.executable} -m src.backend.run"),
-        ("MCP Server", f"{sys.executable} src/mcp/mcp_server.py"),
+        ("Backend", f"{sys.executable} -m src.agentbeats_backend.run"),
+        ("MCP Server", f"{sys.executable} src/agentbeats_backend/mcp/mcp_server.py"),
         ("Frontend", "npm run dev")
     ]
     
@@ -193,7 +209,7 @@ def start_in_separate_terminals():
         elif system == "Darwin":  # macOS TODO: not validated yet
             # macOS command
             if name == "Frontend":
-                full_cmd = f'cd webapp && {cmd}'
+                full_cmd = f'cd frontend/webapp && {cmd}'
             else:
                 full_cmd = cmd
             
@@ -214,7 +230,7 @@ def start_in_separate_terminals():
             ]
             
             if name == "Frontend":
-                full_cmd = f'cd webapp && {cmd}; exec bash'
+                full_cmd = f'cd frontend/webapp && {cmd}; exec bash'
             else:
                 full_cmd = f'{cmd}; exec bash'
             
@@ -249,7 +265,7 @@ def main():
     args = parser.parse_args()
     
     # Check if we're in the right directory
-    if not os.path.exists('src') or not os.path.exists('webapp'):
+    if not os.path.exists('src') or not os.path.exists('frontend'):
         print("Error: Please run this script from the AgentBeats project root directory")
         sys.exit(1)
     
