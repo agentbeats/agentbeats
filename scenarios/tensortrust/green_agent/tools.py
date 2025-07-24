@@ -28,7 +28,7 @@ from a2a.types import (
 )
 
 class TestingAgent:
-    def __init__(self, system_message: str, model: str = "o4-mini") -> None:
+    def __init__(self, system_message: str, model: str = "gpt-4o-mini") -> None:
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
@@ -60,7 +60,7 @@ def generate_password() -> str:
     Generate a random password for the agent.
     """
     length = 6
-    characters = string.ascii_letters + string.digits + string.punctuation
+    characters = string.ascii_letters + string.digits
     password = ''.join(random.choice(characters) for _ in range(length))
     
     return f"Generated password: {password}"
@@ -86,7 +86,7 @@ async def talk_to_agent(query: str, target_url: str) -> str:
             role=Role.user,
             parts=[Part(TextPart(text=query))],
             messageId=uuid4().hex,
-            taskId=uuid4().hex,
+            taskId=None,
         )
     )
     req = SendStreamingMessageRequest(id=str(uuid4()), params=params)
