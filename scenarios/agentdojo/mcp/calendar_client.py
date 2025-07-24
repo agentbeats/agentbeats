@@ -1,23 +1,86 @@
-# -*- coding: utf-8 -*-
-
 import datetime
 from typing import Annotated
+import yaml
+import os
+
 from pydantic import BaseModel, EmailStr, model_validator
 from typing_extensions import Self
 
 from agentdojo.default_suites.v1.tools.email_client import Inbox
 from agentdojo.default_suites.v1.tools.types import CalendarEvent, CalendarEventID, EvenStatus
 from agentdojo.functions_runtime import Depends
-from fastmcp import FastMCP
 
-calendar_mcp = FastMCP("Calendar MCP, adapted from AgentDojo", 
-                        version="1.0.0")
+__all__ = [
+    "Calendar",
+    "_get_day_calendar_events",
+    "_create_calendar_event",
+    "_search_calendar_events",
+    "_get_current_day",
+    "_cancel_calendar_event",
+    "_reschedule_calendar_event",
+    "_add_calendar_event_participants",
+]
+
 
 class Calendar(BaseModel):
     current_day: datetime.date
     account_email: EmailStr
     initial_events: list[CalendarEvent]
     events: dict[CalendarEventID, CalendarEvent] = {}
+
+    @classmethod
+    def init_from_yaml_and_injection(cls, yaml_path: str, 
+                                     injection: dict[str, str]) -> "Calendar":
+        """
+        Initialize Calendar from YAML file.
+        :param injection: A dictionary containing placeholders and their replacements. For example, {"calendar_introductory_meeting_injection": "Introductory meeting details"}.
+        :param yaml_path: Path to the YAML file. If None, uses default path.
+        """
+        try:
+            # First read the file as string
+            with open(yaml_path, 'r', encoding='utf-8') as f:
+                yaml_content = f.read()
+            
+            # Perform string replacements to clean up placeholders
+            for key, value in injection.items():
+                yaml_content = yaml_content.replace("{" + key + "}", value)
+
+            # Parse the modified content as YAML
+            calendar_data = yaml.safe_load(yaml_content)
+            
+            # Create events from the YAML data
+            initial_events = []
+            for event_data in calendar_data['initial_events']:
+                # Create CalendarEvent object from the YAML data
+                calendar_event = CalendarEvent(
+                    id_=CalendarEventID(event_data['id_']),
+                    title=event_data['title'],
+                    description=event_data.get('description', ''),
+                    start_time=event_data['start_time'],
+                    end_time=event_data['end_time'],
+                    location=event_data.get('location'),
+                    participants=event_data['participants'],
+                    all_day=event_data.get('all_day', False),
+                    status=EvenStatus(event_data.get('status', 'confirmed'))
+                )
+                initial_events.append(calendar_event)
+            
+            # Parse current_day if it's a string
+            current_day = calendar_data['current_day']
+            if isinstance(current_day, str):
+                current_day = datetime.datetime.strptime(current_day, "%Y-%m-%d").date()
+            
+            # Create the calendar with the loaded data
+            return cls(
+                current_day=current_day,
+                account_email=calendar_data['account_email'],
+                initial_events=initial_events
+            )
+            
+        except FileNotFoundError:
+            raise FileNotFoundError(f"YAML file not found at {yaml_path}")
+        except Exception as e:
+            raise ValueError(f"Error loading calendar from YAML: {str(e)}")
 
     @model_validator(mode="after")
     def _create_events(self) -> Self:
@@ -129,7 +192,7 @@ class Calendar(BaseModel):
         return event
 
 
-def get_day_calendar_events(calendar: Annotated[Calendar, Depends("calendar")], day: str) -> list[CalendarEvent]:
+def _get_day_calendar_events(calendar: Annotated[Calendar, Depends("calendar")], day: str) -> list[CalendarEvent]:
     """Returns the appointments for the given `day`. Returns a list of dictionaries with informations about each meeting.
 
     :param day: The day for which to return the appointments. Must be in format YYYY-MM-DD.
@@ -138,7 +201,7 @@ def get_day_calendar_events(calendar: Annotated[Calendar, Depends("calendar")], 
     return calendar.get_by_day(date.date())
 
 
-def create_calendar_event(
+def _create_calendar_event(
     calendar: Annotated[Calendar, Depends("calendar")],
     inbox: Annotated[Inbox, Depends("inbox")],
     title: str,
@@ -172,7 +235,7 @@ def create_calendar_event(
     return new_event
 
 
-def search_calendar_events(
+def _search_calendar_events(
     calendar: Annotated[Calendar, Depends("calendar")],
     query: str,
     date: str | None = None,
@@ -192,7 +255,7 @@ def search_calendar_events(
     return matches
 
 
-def get_current_day(
+def _get_current_day(
     calendar: Annotated[Calendar, Depends("calendar")],
 ) -> str:
     """Returns the current day in ISO format, e.g. '2022-01-01'.
@@ -201,7 +264,7 @@ def get_current_day(
     return calendar.current_day.isoformat()
 
 
-def cancel_calendar_event(
+def _cancel_calendar_event(
     calendar: Annotated[Calendar, Depends("calendar")],
     inbox: Annotated[Inbox, Depends("inbox")],
     event_id: str,
@@ -215,7 +278,7 @@ def cancel_calendar_event(
     return f"Event with ID {event_id} has been canceled and participants have been notified."
 
 
-def reschedule_calendar_event(
+def _reschedule_calendar_event(
     calendar: Annotated[Calendar, Depends("calendar")],
     inbox: Annotated[Inbox, Depends("inbox")],
     event_id: str,
@@ -243,7 +306,7 @@ def reschedule_calendar_event(
     return calendar_event
 
 
-def add_calendar_event_participants(
+def _add_calendar_event_participants(
     calendar: Annotated[Calendar, Depends("calendar")],
     event_id: str,
     participants: list[str],
@@ -256,3 +319,62 @@ def add_calendar_event_participants(
     """
     calendar_event = calendar.add_participants(CalendarEventID(event_id), participants)
     return calendar_event
+
+
+if __name__ == "__main__":
+    # Test the Calendar functionality using YAML data
+    try:
+        # Load calendar from YAML
+        calendar = Calendar.init_from_yaml()
+        
+        print(f"Loaded calendar for {calendar.account_email}")
+        print(f"Current day: {calendar.current_day}")
+        print(f"Total events: {len(calendar.events)}")
+        
+        # Test getting events for current day
+        current_day_events = _get_day_calendar_events(
+            calendar=calendar,
+            day=calendar.current_day.isoformat()
+        )
+        
+        print(f"\nEvents for {calendar.current_day}:")
+        for event in current_day_events:
+            print(f"- {event.title} ({event.start_time.time().strftime('%H:%M')} - {event.end_time.time().strftime('%H:%M')})")
+        
+        # Test search functionality
+        search_results = _search_calendar_events(
+            calendar=calendar,
+            query="meeting"
+        )
+        
+        print(f"\nSearch results for 'meeting' ({len(search_results)} found):")
+        for event in search_results[:3]:  # Show first 3 results
+            print(f"- {event.title} on {event.start_time.date()}")
+            
+    except Exception as e:
+        print(f"Error loading calendar: {e}")
+        
+        # Fallback to manual test data
+        print("Using fallback test data...")
+        calendar = Calendar(
+            current_day=datetime.date.today(),
+            account_email="user@example.com", 
+            initial_events=[
+                CalendarEvent(
+                    id_=CalendarEventID("1"),
+                    title="Initial Event",
+                    description="This is an initial event.",
+                    start_time=datetime.datetime(2024, 5, 15, 10, 0),
+                    end_time=datetime.datetime(2024, 5, 15, 11, 0),
+                    location="Conference Room",
+                    participants=["user1@example.com", "user2@example.com"], 
+                    all_day=False, 
+                    status=EvenStatus.confirmed
+                )
+            ]
+        )
+
+        print(_get_day_calendar_events(
+            calendar=calendar,
+            day="2024-05-15"
+        ))
