@@ -9,7 +9,7 @@ venv/
 *.log
 
 # Node.js dependencies
-webapp/node_modules/
+node_modules/
 
 # npm/yarn/pnpm lock files
 webapp/package-lock.json
