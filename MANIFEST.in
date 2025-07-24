@@ -1,0 +1,4 @@
+include README.md
+include LICENSE
+recursive-include src/agentbeats/demos *
+recursive-include docs * 
