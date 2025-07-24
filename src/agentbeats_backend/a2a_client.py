@@ -18,7 +18,7 @@ from a2a.types import (
 )
 
 # Import SDK functions
-from agentbeats.utils.agents import get_agent_card, send_message_to_agent
+from ..agentbeats.utils.agents import get_agent_card, send_message_to_agent
 
 logger = logging.getLogger(__name__)
 
