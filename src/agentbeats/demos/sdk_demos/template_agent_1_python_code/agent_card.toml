@@ -1,0 +1,18 @@
+name                = "Your Agent Name"
+description         = "Your agent description here."
+url                 = "http://localhost:8000"   # Example **EXTERNAL** URL for your agent
+host                = "0.0.0.0"                 # Example **LOCAL** hosting address for your agent
+port                = 8000                      # Example **LOCAL** port for your agent
+version             = "1.0.0"
+defaultInputModes   = ["text"]
+defaultOutputModes  = ["text"]
+
+[capabilities]
+streaming           = true          # Must be true for streaming support
+
+[[skills]]
+id          = "your_skill_id"
+name        = "Your Skill Name"
+description = "Your skill description here."
+tags        = ["your", "tags", "here"]
+examples    = ["Your example usage here."]
