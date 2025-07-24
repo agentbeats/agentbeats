@@ -10,7 +10,7 @@ if __name__ == "__main__":
     print("Press Ctrl+C to stop the server")
     
     uvicorn.run(
-        "src.backend.app:app",
+        "src.agentbeats_backend.app:app",
         host="0.0.0.0",
         port=9000,
         reload=True
