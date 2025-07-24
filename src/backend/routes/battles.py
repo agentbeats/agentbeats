@@ -270,8 +270,8 @@ async def reset_opponents_and_collect_info(battle, opponent_ids):
             op_launcher,
             agent_id=op_id,
             extra_args={
-                "mcp-url": "http://localhost:9001/sse/",  # TODO: make this configurable
-                "docker-mcp-url": "http://localhost:9002/sse/",  # TODO: make this configurable
+                # "mcp-url": "http://localhost:9001/sse/",  # TODO: make this configurable
+                # "docker-mcp-url": "http://localhost:9002/sse/",  # TODO: make this configurable
             },
         )
         if not op_reset:
@@ -328,8 +328,8 @@ async def process_battle(battle_id: str):
             green_launcher,
             agent_id=battle["green_agent_id"],
             extra_args={
-                "mcp-url": "http://localhost:9001/sse/",
-                "docker-mcp-url": "http://localhost:9002/sse/",  # TODO: make this configurable
+                # "mcp-url": "http://localhost:9001/sse/",
+                # "docker-mcp-url": "http://localhost:9002/sse/",  # TODO: make this configurable
             },
         )
         if not green_reset:
@@ -853,6 +853,84 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error updating battle event: {str(e)}"
+        )
+
+
+@router.delete("/battles/{battle_id}")
+def delete_battle(battle_id: str) -> Dict[str, Any]:
+    """Delete a battle by ID."""
+    try:
+        battle = db.read("battles", battle_id)
+        if not battle:
+            raise HTTPException(
+                status_code=404, detail=f"Battle with ID {battle_id} not found"
+            )
+
+        battle_state = battle.get("state", "unknown")
+
+        # Handle different battle states
+        if battle_state in ["pending", "queued"]:
+            # Remove from queue if queued
+            with queue_lock:
+                if battle_id in battle_queue:
+                    battle_queue.remove(battle_id)
+
+        elif battle_state == "running":
+            # For running battles, unlock and unready agents
+            unlock_and_unready_agents(battle)
+
+        elif battle_state == "finished":
+            # Finished battles can be deleted without special handling
+            pass
+
+        elif battle_state == "error":
+            # Error state battles might have locked agents, so unlock them
+            unlock_and_unready_agents(battle)
+
+        # Delete associated system log if it exists
+        system_log_id = battle.get("system_log_id")
+        if system_log_id:
+            try:
+                db.delete("system", system_log_id)
+            except Exception as e:
+                # Log but don't fail the deletion if system log deletion fails
+                logger.warning(
+                    f"Failed to delete system log {system_log_id}: {e}"
+                )
+
+        # Delete the battle from database
+        deleted = db.delete("battles", battle_id)
+        if not deleted:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to delete battle {battle_id}"
+            )
+
+        # Clean up WebSocket subscribers for this battle
+        if battle_id in log_subscribers:
+            # Close all WebSocket connections for this battle's logs
+            for ws in log_subscribers[battle_id]:
+                try:
+                    asyncio.run_coroutine_threadsafe(
+                        ws.close(), MAIN_EVENT_LOOP
+                    )
+                except Exception:
+                    pass
+            del log_subscribers[battle_id]
+
+        # Broadcast update to all battles WebSocket clients
+        broadcast_battles_update()
+
+        return {
+            "message": f"Battle {battle_id} deleted successfully",
+            "battle_id": battle_id,
+            "previous_state": battle_state,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting battle: {str(e)}"
         )
 
 
