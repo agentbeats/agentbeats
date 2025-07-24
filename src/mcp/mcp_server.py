@@ -97,7 +97,7 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
         return 'logged locally (network error)'
 
 @server.tool()
-def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict = None, markdown_content: str = None) -> str:
+def report_on_battle_end(battle_id: str, message:str, winner: str, reported_by: str, detail: dict = None, markdown_content: str = None) -> str:
     """
     Report the final battle result to backend API. YOU MUST CALL THIS AT THE END OF THE BATTLE.
     
@@ -105,6 +105,7 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
         battle_id: The battle ID
         message: Simple, human-readable description of what happened
         winner: The winner of the battle ("green", "blue", "red", or "draw")
+        reported_by: The name of the agent reporting the result
         detail: Additional detail information (optional)
         markdown_content: Optional markdown content for rich text display, and image rendering
     """
@@ -116,7 +117,7 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, detail: dict 
         "message": message,
         "winner": winner,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "reported_by": "green_agent"  # Assuming the green agent reports the result
+        "reported_by": reported_by  # Use the actual agent name passed in
     }
     
     if detail:

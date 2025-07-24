@@ -38,7 +38,7 @@ async def stream_agent_response(
             role=Role.user,
             parts=[Part(TextPart(text=user_text))],
             messageId=uuid4().hex,
-            taskId=uuid4().hex,
+            taskId=None,
         )
     )
     req = SendStreamingMessageRequest(id=str(uuid4()), params=params)
