@@ -94,3 +94,26 @@ export async function analyzeAgentCard(agentCard: any) {
     throw error;
   }
 }
+
+export async function checkLauncherStatus(launcherUrl: string) {
+  try {
+    const res = await fetch('/api/agents/check_launcher', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ launcher_url: launcherUrl })
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || `Failed to check launcher status: ${res.status} ${res.statusText}`);
+    }
+
+    const result = await res.json();
+    return result;
+  } catch (error) {
+    console.error('Failed to check launcher status:', error);
+    throw error;
+  }
+}

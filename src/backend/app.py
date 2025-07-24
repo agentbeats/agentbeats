@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -9,7 +10,7 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
-from .routes import agents, battles, users, assets
+from .routes import agents, battles, websockets
 from .auth.routes import router as auth_router
 from .a2a_client import a2a_client
 
@@ -20,11 +21,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting up Agent Beats Backend")
+    from .routes.battles import start_battle_processor
+    start_battle_processor()
+    yield
+    # Shutdown
+    logger.info("Shutting down Agent Beats Backend")
+    await a2a_client.close()
+
 # Create FastAPI app
 app = FastAPI(
     title="Agent Beats Backend API",
     description="Backend for agent registration, battle scheduling and result retrieval",
-    version="0.1.1"
+    version="0.1.1",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -40,8 +53,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(agents.router)
 app.include_router(battles.router)
-app.include_router(users.router)
-app.include_router(assets.router)
+app.include_router(websockets.router)
 
 # Add request logging middleware
 @app.middleware("http")
@@ -51,31 +63,10 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Response: {response.status_code}")
     return response
 
-# Startup and shutdown events
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Starting up Agent Beats Backend")
-    # Start the battle queue processor
-    from .routes.battles import start_battle_processor
-    start_battle_processor()
-    
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Shutting down Agent Beats Backend")
-    # Close the A2A client session
-    await a2a_client.close()
-    
 # Add a health check endpoint
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "ok"}
-
-# Add a simple WebSocket test endpoint
-@app.websocket("/ws/test")
-async def websocket_test(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_text("WebSocket connection successful!")
-    await websocket.close()
 
 # Run the application if this file is executed directly
 if __name__ == "__main__":
