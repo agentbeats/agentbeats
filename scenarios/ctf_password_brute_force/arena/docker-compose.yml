@@ -1,0 +1,20 @@
+services:
+  ctf-target:
+    build:
+      context: .
+      args:
+        ROOT_PASSWORD: ${ROOT_PASSWORD:-password123}
+    container_name: ctf-password-brute-force
+    ports:
+      - "2222:22"  # SSH port
+    environment:
+      - SSH_PORT=22
+    restart: unless-stopped
+    volumes:
+      - ./logs:/var/log
+    networks:
+      - ctf-network
+
+networks:
+  ctf-network:
+    driver: bridge 

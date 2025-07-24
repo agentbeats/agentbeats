@@ -141,6 +141,14 @@ class BeatsAgentLauncher:
         @app.post("/reset")
         async def _reset(payload: _SignalPayload):
             return await self._reset_endpoint(payload)
+        
+        @app.get("/status")
+        async def _status():
+            if self._agent_proc and self._agent_proc.poll() is None:
+                return {"status":   "server up, with agent running", 
+                        "pid":      self._agent_proc.pid}
+            else:
+                return {"status": "server up, no agents running"}
 
         return app
 
