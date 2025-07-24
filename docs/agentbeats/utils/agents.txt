@@ -1,0 +1,49 @@
+AGENT COMMUNICATION (A2A)
+
+get_agent_card
+Retrieves agent card/metadata from a target URL.
+
+async def get_agent_card(target_url: str) -> Optional[Dict[str, Any]]
+
+- Inputs: target_url (string) - the URL of the target agent
+- Outputs: Optional dictionary containing agent card data or None if failed
+
+create_cached_a2a_client
+Creates a cached A2A client for repeated communication.
+
+async def create_cached_a2a_client(target_url: str) -> Optional[A2AClient]
+
+- Inputs: target_url (string) - the URL of the target agent
+- Outputs: Optional A2AClient instance or None if failed
+
+create_a2a_client
+Creates a new A2A client for communication.
+
+async def create_a2a_client(target_url: str) -> A2AClient
+
+- Inputs: target_url (string) - the URL of the target agent
+- Outputs: A2AClient instance for agent communication
+
+send_message_to_agent
+Sends a message to an A2A agent and returns the response.
+
+async def send_message_to_agent(target_url: str, message: str, timeout: Optional[float] = None) -> str
+
+- Inputs: target_url (string), message (string), optional timeout (float)
+- Outputs: Response string from the agent
+
+send_message_to_agents
+Sends the same message to multiple agents concurrently.
+
+async def send_message_to_agents(target_urls: List[str], message: str, timeout: Optional[float] = None) -> Dict[str, str]
+
+- Inputs: List of target URLs, message string, optional timeout
+- Outputs: Dictionary mapping URLs to response strings
+
+send_messages_to_agents
+Sends different messages to multiple agents concurrently.
+
+async def send_messages_to_agents(target_urls: List[str], messages: List[str], timeout: Optional[float] = None) -> Dict[str, str]
+
+- Inputs: List of target URLs, list of messages, optional timeout
+- Outputs: Dictionary mapping URLs to response strings 
