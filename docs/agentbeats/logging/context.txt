@@ -1,0 +1,10 @@
+CONTEXT MANAGEMENT
+
+BattleContext
+Battle-specific context information for logging operations.
+
+@dataclass
+class BattleContext:
+    battle_id: str
+    backend_url: str
+    agent_name: str

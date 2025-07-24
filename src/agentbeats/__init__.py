@@ -3,7 +3,7 @@
 from .agent_executor import *
 from .agent_launcher import *
 from .utils.agents import (
-    create_a2a_client, send_message_to_agent, send_message_to_agents
+    create_a2a_client, send_message_to_agent, send_message_to_agents, send_messages_to_agents
 )
 from .utils.environment import (
     setup_container, cleanup_container, check_container_health

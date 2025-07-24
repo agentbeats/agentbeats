@@ -30,11 +30,11 @@ def _make_api_request(context: BattleContext, endpoint: str, data: Dict[str, Any
         return False
 
 
-def log_ready(context: BattleContext, agent_name: str, capabilities: Optional[Dict[str, Any]] = None) -> str:
+def log_ready(context: BattleContext, capabilities: Optional[Dict[str, Any]] = None) -> str:
     """Log agent readiness to the backend API and console."""
     ready_data: Dict[str, Any] = {
         "event_type": "agent_ready",
-        "agent_name": agent_name,
+        "agent_name": context.agent_name,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
     if capabilities:
@@ -47,13 +47,13 @@ def log_ready(context: BattleContext, agent_name: str, capabilities: Optional[Di
         return 'readiness logging failed'
 
 
-def log_error(context: BattleContext, error_message: str, error_type: str = "error", reported_by: str = "system") -> str:
+def log_error(context: BattleContext, error_message: str, error_type: str = "error") -> str:
     """Log an error event to the backend API and console."""
     error_data: Dict[str, Any] = {
         "event_type": "error",
         "error_type": error_type,
         "error_message": error_message,
-        "reported_by": reported_by,
+        "reported_by": context.agent_name,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
     
@@ -64,11 +64,11 @@ def log_error(context: BattleContext, error_message: str, error_type: str = "err
         return 'error logging failed'
 
 
-def log_startup(context: BattleContext, agent_name: str, config: Optional[Dict[str, Any]] = None) -> str:
+def log_startup(context: BattleContext, config: Optional[Dict[str, Any]] = None) -> str:
     """Log agent startup to the backend API and console."""
     startup_data: Dict[str, Any] = {
         "event_type": "agent_startup",
-        "agent_name": agent_name,
+        "agent_name": context.agent_name,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
     if config:
@@ -81,11 +81,11 @@ def log_startup(context: BattleContext, agent_name: str, config: Optional[Dict[s
         return 'startup logging failed'
 
 
-def log_shutdown(context: BattleContext, agent_name: str, reason: str = "normal") -> str:
+def log_shutdown(context: BattleContext, reason: str = "normal") -> str:
     """Log agent shutdown to the backend API and console."""
     shutdown_data: Dict[str, Any] = {
         "event_type": "agent_shutdown",
-        "agent_name": agent_name,
+        "agent_name": context.agent_name,
         "reason": reason,
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }

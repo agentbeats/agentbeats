@@ -62,17 +62,14 @@ def create_agent(
         
     # openrouter agents, e.g. "anthropic/claude-3.5-sonnet"
     elif model_type == "openrouter":
-        OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL").strip() # in case of empty \n
         OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY").strip() # in case of empty \n
-        if not OPENROUTER_BASE_URL:
-            raise ValueError("OPENROUTER_BASE_URL is not set")
         if not OPENROUTER_API_KEY:
             raise ValueError("OPENROUTER_API_KEY is not set")
         
         print("[AgentBeats] Using OpenRouter model:", model_name)
         set_tracing_disabled(True)  # Disable tracing for OpenRouter models
         os.environ["OPENAI_TRACING_V2"] = "false"
-        openrouter_client = AsyncOpenAI(base_url=OPENROUTER_BASE_URL, 
+        openrouter_client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1", 
                                         api_key=OPENROUTER_API_KEY)
         openrouter_model_provider = OpenRouterModelProvider()
         return Agent(**agent_args, model=openrouter_model_provider.get_model(model_name, openrouter_client))

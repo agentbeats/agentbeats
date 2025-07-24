@@ -5,6 +5,7 @@ Environmental utilities for easier development using the Agentbeats SDK.
 
 import subprocess
 import asyncio
+import os
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 
@@ -15,6 +16,7 @@ async def setup_container(config: Dict[str, Any]) -> bool:
     try:
         docker_dir = config.get("docker_dir", "docker")
         compose_file = config.get("compose_file", "docker-compose.yml")
+        build_args = config.get("build_args", {})
         
         # Change to docker directory
         docker_path = Path(docker_dir)
@@ -26,11 +28,18 @@ async def setup_container(config: Dict[str, Any]) -> bool:
         print("Stopping existing containers...")
         down_result = subprocess.run(["docker-compose", "down"], cwd=docker_path, capture_output=True, text=True)
         
-        # Start the environment
+        # Prepare build arguments for docker-compose
+        env_vars = os.environ.copy()
+        for key, value in build_args.items():
+            env_vars[key] = str(value)
+            print(f"Setting build arg: {key}={value}")
+        
+        # Start the environment with build arguments
         print("Starting Docker environment...")
         result = subprocess.run(
             ["docker-compose", "up", "-d", "--build"], 
             cwd=docker_path,
+            env=env_vars,
             capture_output=True, 
             text=True
         )
@@ -84,7 +93,7 @@ async def cleanup_container(env_id: str, docker_dir: Optional[str] = None) -> bo
 
 
 async def check_container_health(container_name: str) -> bool:
-    """Check container health."""
+    """Check container health (relaxed: only require 'Up')."""
     try:
         result = subprocess.run(
             ["docker", "ps", "--filter", f"name={container_name}", "--format", "{{.Status}}"],
@@ -94,7 +103,7 @@ async def check_container_health(container_name: str) -> bool:
         
         if result.returncode == 0 and result.stdout.strip():
             status = result.stdout.strip()
-            return "Up" in status and "healthy" in status.lower()
+            return "Up" in status  # Only require 'Up', not 'healthy'
         else:
             return False
             

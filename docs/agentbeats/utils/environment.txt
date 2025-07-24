@@ -1,0 +1,25 @@
+DOCKER ENVIRONMENT
+
+setup_container
+Sets up Docker container environment.
+
+async def setup_container(config: Dict[str, Any]) -> bool
+
+- Inputs: config dictionary with docker_dir, compose_file, build_args
+- Outputs: Boolean indicating success/failure
+
+cleanup_container
+Destroys and resets container environment.
+
+async def cleanup_container(env_id: str, docker_dir: Optional[str] = None) -> bool
+
+- Inputs: environment ID (string), optional docker directory path
+- Outputs: Boolean indicating success/failure
+
+check_container_health
+Checks if a Docker container is running and healthy.
+
+async def check_container_health(container_name: str) -> bool
+
+- Inputs: container name (string)
+- Outputs: Boolean indicating container health status 

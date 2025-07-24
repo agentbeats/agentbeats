@@ -1,0 +1,33 @@
+SYSTEM LOGGING
+
+log_ready
+Logs agent readiness status to the backend API.
+
+def log_ready(context: BattleContext, capabilities: Optional[Dict[str, Any]] = None) -> str
+
+- Inputs: BattleContext, optional capabilities dictionary
+- Outputs: Success/failure status string
+
+log_error
+Logs error events to the backend API.
+
+def log_error(context: BattleContext, error_message: str, error_type: str = "error") -> str
+
+- Inputs: BattleContext, error message string, error type string (default: "error")
+- Outputs: Success/failure status string
+
+log_startup
+Logs agent startup events to the backend API.
+
+def log_startup(context: BattleContext, config: Optional[Dict[str, Any]] = None) -> str
+
+- Inputs: BattleContext, optional config dictionary
+- Outputs: Success/failure status string
+
+log_shutdown
+Logs agent shutdown events to the backend API.
+
+def log_shutdown(context: BattleContext, reason: str = "normal") -> str
+
+- Inputs: BattleContext, reason string (default: "normal")
+- Outputs: Success/failure status string

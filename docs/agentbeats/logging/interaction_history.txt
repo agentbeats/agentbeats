@@ -1,0 +1,39 @@
+INTERACTION HISTORY
+
+record_battle_event
+Logs a battle event to the backend server.
+
+def record_battle_event(
+    context: BattleContext,
+    message: str,
+    detail: Optional[Dict[str, Any]] = None
+) -> str
+
+- Inputs: BattleContext, message string, optional detail dictionary
+- Outputs: Success/failure status string
+
+record_battle_result
+Logs the final battle result with winner information.
+
+def record_battle_result(
+    context: BattleContext,
+    message: str,
+    winner: str,
+    detail: Optional[Dict[str, Any]] = None
+) -> str
+
+- Inputs: BattleContext, message string, winner string, optional detail dictionary
+- Outputs: Success/failure status string with winner information
+
+record_agent_action
+Logs an agent action with optional interaction details.
+
+def record_agent_action(
+    context: BattleContext,
+    action: str,
+    detail: Optional[Dict[str, Any]] = None,
+    interaction_details: Optional[Dict[str, Any]] = None
+) -> str
+
+- Inputs: BattleContext, action string, optional detail and interaction_detail dictionaries
+- Outputs: Success/failure status string 
