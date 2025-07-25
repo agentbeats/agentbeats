@@ -1,4 +1,6 @@
 include README.md
 include LICENSE
-recursive-include src/agentbeats/demos *
+recursive-include src/agentbeats_backend *
+recursive-include src/mcpcp *
+recursive-include scenarios *
 recursive-include docs * 

@@ -73,11 +73,11 @@ fi
 
 # Build frontend
 echo "Building frontend..."
-cd frontend/webapp && npm run build && cd ..
+agentbeats run_frontend --mode build
 
 # Start tmux session with backend
 echo "Starting backend server..."
-tmux new-session -d -s $SESSION -n "backend" "cd $PROJECT_DIR && source venv/bin/activate && python -m src.agentbeats_backend.run"
+tmux new-session -d -s $SESSION -n "backend" "cd $PROJECT_DIR && source venv/bin/activate && agentbeats run_backend"
 
 # Add MCP server window
 echo "Starting MCP server..."

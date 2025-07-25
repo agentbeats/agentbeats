@@ -11,11 +11,17 @@ authors = [{ "name" = "Simon Xie", "email" = "simonxie2004@outlook.com" }]
 dependencies = ["tomli>=2", 
                 "fastmcp", 
                 "fastapi", 
-                "uvicorn", 
+                "uvicorn",
+                "pydantic>=2.0.0",
                 "httpx",
                 "a2a-sdk",
                 "paramiko>=3.0.0",
-                "openai-agents"]
+                "openai-agents",
+                "sqlalchemy",
+                "supabase",
+                "PyJWT",
+                "python-dotenv",
+                "python-multipart"]
 license = { text = "MIT" }
 readme = "README.md"
 classifiers = [
@@ -40,4 +46,6 @@ agentbeats = "agentbeats.cli:main" # Entry point for the CLI, supporting cmd lik
 where = ["src"]
 
 [tool.setuptools.package-data]
-agentbeats = ["demos/**/*"]
+agentbeats_backend = ["**/*"]
+mcpcp = ["**/*"]
+"*" = ["scenarios/**/*"]
