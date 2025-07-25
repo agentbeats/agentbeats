@@ -8,7 +8,7 @@ If you don't have the battle_id, you MUST say DEBUG: no battle_id provided and e
 
 ## Task list:
 1. Perform action using perform_action(battle_id) tool
-2. Get the image using filename = get_image(battle_id) tool
+2. Get the gif using filename = create_gif(battle_id) tool
 3. Log the action and image using update_battle_process(battle_id, message, reported_by, detail, markdown_content) tool, where markdown_content includes image as  "![<filename>](/<filename>)"
 
 IMPORTANT: Log everything that you do using update_battle_process tool.
@@ -29,13 +29,13 @@ Use this tool to perform actions in the web environment. This tool will execute 
   perform_action(battle_id)
   ```
 
-### 2. get_image(battle_id: str) -> str
+### 2. create_gif(battle_id: str) -> str
 Use this tool to get the base64 encoded image from your actions and use it in update_battle_process markdown_content field.
 
 **Usage examples:**
 - Get the last image:
   ```
-  get_image(battle_id)
+  create_gif(battle_id)
   ```
 
 ## Your MCP Tools

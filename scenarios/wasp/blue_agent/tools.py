@@ -5,6 +5,8 @@ import agentbeats as ab
 import re
 import base64
 import subprocess
+from PIL import Image
+import io
 
 @ab.tool
 def perform_action(battle_id: str) -> str:
@@ -112,9 +114,88 @@ def get_image(battle_id: str) -> str:
         print(f"FAILED: The image retrieval failed: {e}")
         return "FAILED: The image retrieval failed"
 
+@ab.tool
+def create_gif(battle_id: str) -> str:
+    """
+    Extract all base64-encoded images from render_1000.html and create a GIF or video.
+    
+    Args:
+        battle_id (str): The battle ID to find the HTML file
+        
+    Returns:
+        str: The filename of the created GIF/video
+    """
+    try:
+        print(f"Extracting images and creating GIF for battle_id: {battle_id}")
+        
+        # Compute paths
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs", "render_1000.html")
+        static_dir = os.path.join(root_folder, 'frontend', 'webapp', 'static')
+        
+        # Ensure static directory exists
+        os.makedirs(static_dir, exist_ok=True)
+        
+        # Check if HTML file exists
+        if not os.path.exists(html_path):
+            return f"FAILED: HTML file not found at {html_path}"
+        
+        # Regex to match base64 image data in <img> tags
+        img_data_re = re.compile(r'data:image/[^;]+;base64,([A-Za-z0-9+/=]+)')
+        
+        images = []
+        print("Reading HTML file and extracting images...")
+        
+        # Read HTML file and extract all base64 images
+        with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line_num, line in enumerate(f, 1):
+                for match in img_data_re.finditer(line):
+                    try:
+                        b64_data = match.group(1)
+                        img_bytes = base64.b64decode(b64_data)
+                        img = Image.open(io.BytesIO(img_bytes))
+                        images.append(img)
+                        print(f"Extracted image {len(images)} from line {line_num}")
+                    except Exception as e:
+                        print(f"Failed to decode image from line {line_num}: {e}")
+                        continue
+        
+        if not images:
+            return "FAILED: No images found in HTML file"
+        
+        print(f"Successfully extracted {len(images)} images")
+        
+
+        print("Creating GIF")
+        output_filename = f'blue_agent_gif_{battle_id}.gif'
+        output_path = os.path.join(static_dir, output_filename)
+        
+        # Save as GIF
+        if len(images) == 1:
+            images[0].save(output_path, 'GIF')
+        else:
+            # Save as animated GIF with 500ms delay between frames
+            images[0].save(
+                output_path,
+                'GIF',
+                save_all=True,
+                append_images=images[1:],
+                duration=500,
+                loop=0
+            )
+        
+        print(f"GIF created successfully: {output_filename}")
+        return output_filename
+            
+    except Exception as e:
+        print(f"FAILED: Image extraction and GIF creation failed: {e}")
+        return f"FAILED: Image extraction and GIF creation failed: {e}"
+
 
 if __name__ == "__main__":
-    battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
-    perform_action(battle_id)
+    battle_id = "b2d68e29-9a94-4538-ac01-7d147da5aa9c"
+    # perform_action(battle_id)
     # get_image(battle_id)
+    print(create_gif(battle_id))
     print("Blue agent completed successfully")

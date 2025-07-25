@@ -64,7 +64,7 @@ def get_image(battle_id: str) -> str:
         root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
         image_path = os.path.join(root_folder, 'scenarios', 'wasp', 'logs', battle_id, 'gitlab_environment_setup.png')
         static_dir = os.path.join(root_folder, 'frontend', 'webapp', 'static')
-        output_filename = 'gitlab_environment_setup.png'
+        output_filename = f'gitlab_environment_setup_{battle_id}.png'
 
         # Ensure the static directory exists
         os.makedirs(static_dir, exist_ok=True)
