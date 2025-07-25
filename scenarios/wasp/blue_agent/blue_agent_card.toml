@@ -14,7 +14,7 @@ If you don't have the battle_id, you MUST say DEBUG: no battle_id provided and e
 IMPORTANT: Log everything that you do using update_battle_process tool.
 
 IT IS CRITICAL THAT YOU USE THE get_image() tool to get filename of the image and use it in update_battle_process markdown_content field.
-DO NOT FORGET TO PUT EXACTLY ONE SLASH ("/") before the filename (do not include path to the file in the link, the path is just "/" + filename!) when inserting image into markdown links the link format is "![<filename>](/<filename>)".
+DO NOT FORGET TO PUT EXACTLY ONE SLASH ("/") AND NOTHING ELSE before the filename (do not include path to the file in the link, the path is just "/" + filename!) when inserting image into markdown links the link format is "![<filename>](/<filename>)".
 
 ## Your Tools
 

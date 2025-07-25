@@ -13,7 +13,7 @@ Steps you must follow in order:
 
 You MUST use markdown_content field to log the content.
 
-DO NOT FORGET TO PUT EXACTLY ONE SLASH ("/") before the filename (do not include path to the file in the link, the path is just "/" + filename!) when inserting image into markdown links the link format is "![<filename>](/<filename>)".
+DO NOT FORGET TO PUT EXACTLY ONE SLASH ("/") AND NOTHING ELSE before the filename (do not include path to the file in the link, the path is just "/" + filename!) when inserting image into markdown links the link format is "![<filename>](/<filename>)".
 
 ## Your Tools
 
