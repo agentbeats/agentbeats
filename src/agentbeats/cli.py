@@ -14,8 +14,9 @@ import os
 
 from .agent_executor import *
 from .agent_launcher import *
-from .scenario_manager import ScenarioManager
+from .utils.deploy.scenario_manager import ScenarioManager
 from . import get_registered_tools, tool
+from .utils.deploy.depoly import _deploy_current_terminal, _deploy_separate_terminals, _deploy_tmux
 
 
 def _check_environment():
@@ -166,11 +167,10 @@ def _check_environment():
     print("\n" + "=" * 50)
     return len(issues) == 0
 
-
-def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int):
+def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str):
     """Deploy AgentBeats with backend, frontend, and MCP server"""
     
-    print(f"Deploying AgentBeats in {mode} mode...")
+    print(f"Deploying AgentBeats in {mode} mode with {launch_mode} launch...")
     print("=" * 50)
     if backend_port != 9000 or mcp_port != 9001:
         print(f"Warning: Backend port is set to {backend_port}, MCP port is set to {mcp_port}.")
@@ -184,169 +184,13 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int)
         print(f"Error: MCP server not found at {mcp_server_path}")
         sys.exit(1)
     
-    # Store process references for cleanup
-    processes = []
-    
-    def cleanup_processes():
-        """Clean up all spawned processes"""
-        print("\nCleaning up processes...")
-        for proc in processes:
-            if proc.poll() is None:  # Process is still running
-                proc.terminate()
-                try:
-                    proc.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-        
-        # Also cleanup PM2 processes if in build mode
-        if mode == "build":
-            try:
-                subprocess.run(["pm2", "delete", "agentbeats-ssr"], shell=True, capture_output=True)
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                pass
-    
-    # Register cleanup function
-    atexit.register(cleanup_processes)
-    
-    def signal_handler(signum, frame):
-        print(f"\nReceived signal {signum}, shutting down...")
-        cleanup_processes()
-        sys.exit(0)
-    
-    # Register signal handlers
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    try:
-        # 1. Start Backend using CLI command
-        print(f"Starting Backend on port {backend_port}...")
-        if mode == "build":
-            backend_cmd = [
-                "agentbeats", "run_backend",
-                "--host", "127.0.0.1",
-                "--port", str(backend_port)
-            ]
-        elif mode == "dev":
-            backend_cmd = [
-                "agentbeats", "run_backend",
-                "--host", "0.0.0.0",
-                "--port", str(backend_port),
-                "--reload"
-            ]
-            
-        backend_proc = subprocess.Popen(backend_cmd)
-        processes.append(backend_proc)
-        time.sleep(3)  # Give backend time to start
-        
-        # 2. Start MCP Server
-        print(f"Starting MCP Server on port {mcp_port}...")
-        mcp_env = os.environ.copy()
-        mcp_env["MCP_PORT"] = str(mcp_port)
-        mcp_proc = subprocess.Popen([
-            sys.executable, str(mcp_server_path)
-        ], env=mcp_env, cwd=current_dir)
-        processes.append(mcp_proc)
-        time.sleep(1)  # Give MCP server time to start
-        
-        # 3. Start Frontend using CLI command
-        print(f"Starting Frontend in {mode} mode on port {frontend_port}...")
-        if mode == "dev":
-            frontend_cmd = [
-                "agentbeats", "run_frontend",
-                "--mode", "dev",
-                "--host", "0.0.0.0", 
-                "--port", str(frontend_port)
-            ]
-            frontend_proc = subprocess.Popen(frontend_cmd)
-            processes.append(frontend_proc)
-        elif mode == "build":
-            # Build first, then start with PM2 or preview
-            build_cmd = [
-                "agentbeats", "run_frontend",
-                "--mode", "build",
-                "--host", "127.0.0.1",
-                "--port", str(frontend_port)
-            ]
-            build_proc = subprocess.Popen(build_cmd)
-            build_proc.wait()  # Wait for build to complete
-            
-            # Check if PM2 is available for production mode
-            try:
-                subprocess.run(["pm2", "--version"], check=True, capture_output=True, shell=True)
-                print(f"[Production] Starting frontend with PM2...")
-                
-                # Use existing production server setup logic
-                frontend_dir = current_dir / "frontend" / "webapp"
-                subprocess.run(["pm2", "delete", "agentbeats-ssr"], shell=True, capture_output=True)
-                subprocess.run([
-                    "pm2", "start", str(frontend_dir / "build" / "index.js"),
-                    "--name", "agentbeats-ssr",
-                    "--", "--port", str(frontend_port)
-                ], cwd=frontend_dir, check=True, shell=True)
-                print("[Success] Frontend started with PM2")
-                
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                print("[Warning] PM2 not found, starting with preview mode...")
-                preview_cmd = [
-                    sys.executable, "-m", "agentbeats", "run_frontend",
-                    "--mode", "preview",
-                    "--host", "0.0.0.0",
-                    "--port", str(frontend_port)
-                ]
-                frontend_proc = subprocess.Popen(preview_cmd)
-                processes.append(frontend_proc)
-        
-        # 4. Display status
-        time.sleep(2)
-        print("\n" + "=" * 50)
-        print("[Status] AgentBeats Deployment Status:")
-        print("=" * 50)
-        print(f"[Backend]  http://localhost:{backend_port}")
-        print(f"[Frontend] http://localhost:{frontend_port}")
-        print(f"[MCP]      http://localhost:{mcp_port}")
-        print("=" * 50)
-        print("Press Ctrl+C to stop all services")
-        
-        # 5. Monitor processes (only for dev mode, build mode uses PM2)
-        if mode == "dev":
-            while True:
-                time.sleep(1)
-                # Check if any critical process died
-                for i, proc in enumerate(processes):
-                    if proc.poll() is not None:
-                        service_names = ["Backend", "MCP", "Frontend"]
-                        if i < len(service_names):
-                            print(f"[Error] {service_names[i]} process died!")
-                        break
-                else:
-                    continue
-                break
-        else:
-            print("[Info] Services started. Use 'pm2 list' to check frontend status.")
-            print("[Info] Use 'pm2 logs agentbeats-ssr' to check frontend logs.")
-            # For build mode, just keep backend and MCP running
-            while True:
-                time.sleep(1)
-                if backend_proc.poll() is not None:
-                    print("[Error] Backend process died!")
-                    break
-                if mcp_proc.poll() is not None:
-                    print("[Error] MCP process died!")
-                    break
-                
-    except subprocess.CalledProcessError as e:
-        print(f"[Error] Error during deployment: {e}")
-        cleanup_processes()
-        sys.exit(1)
-    except FileNotFoundError as e:
-        print(f"[Error] Command not found: {e}")
-        print("Make sure Node.js, npm, and Python are installed.")
-        cleanup_processes()
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n[Stop] Deployment interrupted by user")
-        cleanup_processes()
-        sys.exit(0)
+    # Route to different launch methods
+    if launch_mode == "separate":
+        _deploy_separate_terminals(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+    elif launch_mode == "tmux":
+        _deploy_tmux(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+    else:  # current
+        _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
 
 
 def _run_frontend(mode: str, host: str, port: int):
@@ -524,11 +368,11 @@ def main():
                        help="Python file(s) that define @agentbeats.tool()")
     run_parser.add_argument("--reload", action="store_true")
 
-    # run_scenario command
-    scenario_parser = sub_parser.add_parser("run_scenario", help="Launch a complete scenario from scenario.toml")
+    # load_scenario command
+    scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml")
     scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
-    scenario_parser.add_argument("--mode", choices=["tmux", "terminals", "background"], 
-                                default="tmux", help="Launch mode (default: tmux)")
+    scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
+                                default="", help="Launch mode (default: tmux)")
     scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
     scenario_parser.add_argument("--backend", help="Override backend URL for all agents")
 
@@ -549,6 +393,8 @@ def main():
     deploy_parser = sub_parser.add_parser("deploy", help="Deploy complete AgentBeats stack (backend + frontend + MCP)")
     deploy_parser.add_argument("--mode", choices=["dev", "build"], default="dev",
                               help="Deployment mode: dev (development) or build (production)")
+    deploy_parser.add_argument("--launch-mode", choices=["current", "separate", "tmux"], default="current",
+                              help="Launch mode: current (same terminal), separate (separate terminals), tmux (tmux session)")
     deploy_parser.add_argument("--backend-port", type=int, default=9000, help="Backend port (default: 9000)")
     deploy_parser.add_argument("--frontend-port", type=int, default=5173, help="Frontend port (default: 5173)")
     deploy_parser.add_argument("--mcp-port", type=int, default=9001, help="MCP server port (default: 9001)")
@@ -583,13 +429,14 @@ def main():
     elif args.cmd == "load_scenario":
         scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
         manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.mode, backend_override=args.backend)
+        manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
     elif args.cmd == "run_backend":
         _run_backend(host=args.host, port=args.port, reload=args.reload)
     elif args.cmd == "run_frontend":
         _run_frontend(mode=args.mode, host=args.host, port=args.port)
     elif args.cmd == "deploy":
         _run_deploy(mode=args.mode, backend_port=args.backend_port, 
-                   frontend_port=args.frontend_port, mcp_port=args.mcp_port)
+                   frontend_port=args.frontend_port, mcp_port=args.mcp_port, 
+                   launch_mode=args.launch_mode)
     elif args.cmd == "check":
         _check_environment()

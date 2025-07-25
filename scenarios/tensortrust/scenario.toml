@@ -45,7 +45,7 @@ mcp_servers = ["http://localhost:9001/sse"]
 
 # Launch configuration
 [launch]
-mode = "terminals"  # Options: "tmux", "terminals", "background"
+mode = "separate"  # Options: "tmux", "separate", "current"
 tmux_session_name = "agentbeats-tensortrust"
 startup_interval = 1  # seconds between launching each component
 wait_for_services = true  # wait for services to be healthy before starting agents

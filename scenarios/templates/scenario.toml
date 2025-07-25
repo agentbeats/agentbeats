@@ -53,7 +53,7 @@ mcp_servers = []
 
 # Launch configuration
 [launch]
-mode = "tmux"  # Options: "tmux", "terminals", "background"
+mode = "tmux"  # Options: "tmux", "separate", "current"
 tmux_session_name = "agentbeats-templates"
 startup_interval = 1  # seconds between launching each component
 wait_for_services = true  # launch services and check health before starting agents
