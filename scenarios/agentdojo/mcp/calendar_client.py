@@ -322,59 +322,41 @@ def _add_calendar_event_participants(
 
 
 if __name__ == "__main__":
-    # Test the Calendar functionality using YAML data
-    try:
-        # Load calendar from YAML
-        calendar = Calendar.init_from_yaml()
-        
-        print(f"Loaded calendar for {calendar.account_email}")
-        print(f"Current day: {calendar.current_day}")
-        print(f"Total events: {len(calendar.events)}")
-        
-        # Test getting events for current day
-        current_day_events = _get_day_calendar_events(
-            calendar=calendar,
-            day=calendar.current_day.isoformat()
-        )
-        
-        print(f"\nEvents for {calendar.current_day}:")
-        for event in current_day_events:
-            print(f"- {event.title} ({event.start_time.time().strftime('%H:%M')} - {event.end_time.time().strftime('%H:%M')})")
-        
-        # Test search functionality
-        search_results = _search_calendar_events(
-            calendar=calendar,
-            query="meeting"
-        )
-        
-        print(f"\nSearch results for 'meeting' ({len(search_results)} found):")
-        for event in search_results[:3]:  # Show first 3 results
-            print(f"- {event.title} on {event.start_time.date()}")
-            
-    except Exception as e:
-        print(f"Error loading calendar: {e}")
-        
-        # Fallback to manual test data
-        print("Using fallback test data...")
-        calendar = Calendar(
-            current_day=datetime.date.today(),
-            account_email="user@example.com", 
-            initial_events=[
-                CalendarEvent(
-                    id_=CalendarEventID("1"),
-                    title="Initial Event",
-                    description="This is an initial event.",
-                    start_time=datetime.datetime(2024, 5, 15, 10, 0),
-                    end_time=datetime.datetime(2024, 5, 15, 11, 0),
-                    location="Conference Room",
-                    participants=["user1@example.com", "user2@example.com"], 
-                    all_day=False, 
-                    status=EvenStatus.confirmed
-                )
-            ]
-        )
+    calendar = Calendar.init_from_yaml_and_injection(
+        yaml_path=os.path.join(os.path.dirname(__file__), "suites", "workspace", "include", "calendar.yaml"),
+        injection={}
+    )
 
-        print(_get_day_calendar_events(
-            calendar=calendar,
-            day="2024-05-15"
-        ))
+    print("Calendar initialized with current day:", calendar.current_day)
+    
+    result = _get_day_calendar_events(calendar, "2024-05-15")
+    print("Events on 2024-05-15:", result)
+
+    inbox = Inbox(
+        account_email="user@example.com",
+        initial_emails=[], 
+        emails={}, 
+        contact_list=[], 
+        trash={}
+    )
+
+    _cancel_calendar_event(
+        calendar=calendar,
+        inbox=inbox,
+        event_id="6"
+    )
+    _cancel_calendar_event(
+        calendar=calendar,
+        inbox=inbox,
+        event_id="9"
+    )
+    _cancel_calendar_event(
+        calendar=calendar,
+        inbox=inbox,
+        event_id="24"
+    )
+
+    result = _get_day_calendar_events(calendar, "2024-05-15")
+    for res in result:
+        print("Event:", res, "Status:", res.status)
+
