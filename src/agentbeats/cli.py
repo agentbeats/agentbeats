@@ -208,6 +208,16 @@ def _run_frontend(mode: str, host: str, port: int):
         print("Make sure you're running this from the AgentBeats project root.")
         sys.exit(1)
 
+    if mode == "install":
+        print("Installing frontend dependencies...")
+        try:
+            subprocess.run("npm install", cwd=frontend_dir, check=True, shell=True)
+            print("Frontend dependencies installed successfully!")
+            sys.exit(0)
+        except subprocess.CalledProcessError as e:
+            print(f"Error installing frontend dependencies: {e}")
+            sys.exit(1)
+
     # Check if frontend installed
     if not (frontend_dir / "node_modules").exists():
         print(f"Error: Frontend dependencies not installed. Run `agentbeats run_frontend --mode install` to install them.")
@@ -245,10 +255,6 @@ def _run_frontend(mode: str, host: str, port: int):
                 f"npm run preview -- --host {host} --port {str(port)}", 
                 cwd=frontend_dir, check=True, shell=True
             )
-        elif mode == "install":
-            print("Installing frontend...")
-            subprocess.run("npm install", cwd=frontend_dir, check=True, shell=True)
-            print("Frontend dependencies installed successfully!")
             
     except subprocess.CalledProcessError as e:
         print(f"Error running frontend command: {e}")
