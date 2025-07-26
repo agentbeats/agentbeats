@@ -41,6 +41,7 @@ demos = [
 
 [project.scripts]
 agentbeats = "agentbeats.cli:main" # Entry point for the CLI, supporting cmd like "agentbeats run_agent ..."
+ab = "agentbeats.cli:main" # Short alias version
 
 [tool.setuptools.packages.find]
 where = ["src"]
