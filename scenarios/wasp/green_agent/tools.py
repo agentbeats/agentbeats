@@ -106,12 +106,15 @@ def run_evaluator(battle_id: str) -> str:
 @ab.tool
 def reset_battle(battle_id: str) -> str:
     try:
-        return "Battle reset successfully" # TODO: Remove this
-        print("Resetting battle properly for battle_id: " + battle_id)
+        # return "Battle reset successfully" # TODO: Remove this
+        print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'))
 
         # Reset the server
         import requests
-        response = requests.post("http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:5001/reset-server")
+        response = requests.post(
+            "http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:5001/reset-server",
+            headers={"Authorization": f"Bearer {os.environ.get('RESET_AUTH_TOKEN')}"},
+        )
         print("Reset server response:", response.text)
 
         print("Waiting for 80 seconds for gitlab docker to start up")
@@ -126,4 +129,5 @@ def reset_battle(battle_id: str) -> str:
 
 if __name__ == "__main__":
     battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
-    run_evaluator(battle_id)
+    # run_evaluator(battle_id)
+    reset_battle(battle_id)

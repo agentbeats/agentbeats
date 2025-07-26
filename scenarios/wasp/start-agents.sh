@@ -26,7 +26,7 @@ CMD1="source venv/bin/activate && agentbeats run blue_agent/blue_agent_card.toml
 # Pane 5: Launch Red Agent
 CMD2="source venv/bin/activate && agentbeats run red_agent/red_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9020 --agent_port 9021 --model_type openrouter --model_name openai/gpt-4o-mini --backend http://localhost:9000 --mcp http://localhost:9001/sse --tool red_agent/tools.py; exec $SHELL"
 # Pane 6: Launch Green Agent
-CMD3="source venv/bin/activate && agentbeats run green_agent/green_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9030 --agent_port 9031 --model_type openrouter --model_name openai/gpt-4o-mini --backend http://localhost:9000 --mcp http://localhost:9001/sse --tool green_agent/tools.py; exec $SHELL"
+CMD3="source venv/bin/activate && export RESET_AUTH_TOKEN=$RESET_AUTH_TOKEN && agentbeats run green_agent/green_agent_card.toml --launcher_host 0.0.0.0 --launcher_port 9030 --agent_port 9031 --model_type openrouter --model_name openai/gpt-4o-mini --backend http://localhost:9000 --mcp http://localhost:9001/sse --tool green_agent/tools.py; exec $SHELL"
 
 # Start a new tmux session in detached mode with the first pane, passing environment variables
 tmux new-session -d -s $SESSION -e "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" -e "OPENROUTER_API_BASE=$OPENROUTER_API_BASE" "$CMD1"

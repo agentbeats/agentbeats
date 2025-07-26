@@ -11,10 +11,11 @@ Export the following environment variables
 
 ```bash
 export DATASET=webarena_prompt_injections
-export REDDIT="http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:9999"
-export GITLAB="http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:8023"
+export REDDIT=
+export GITLAB=
 export OPENROUTER_API_KEY=
 export OPENROUTER_API_BASE="https://openrouter.ai/api/v1"
+export RESET_AUTH_TOKEN=
 ```
 
 ### Python installations
