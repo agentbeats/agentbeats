@@ -222,34 +222,32 @@ def _run_frontend(mode: str, host: str, port: int):
             print(f"Development server will be available at http://{host}:{port}")
             print("Press Ctrl+C to stop the server")
             # Run development server
-            subprocess.run([
-                "npm", "run", "dev", "--", 
-                "--host", host, 
-                "--port", str(port)
-            ], cwd=frontend_dir, check=True, shell=True)
+            subprocess.run(
+                f"npm run dev -- --host {host} --port {str(port)}", 
+                cwd=frontend_dir, check=True, shell=True
+            )
             
         elif mode == "build":
             print("Building frontend for production...")
             # Build for production
-            subprocess.run(["npm", "run", "build"], cwd=frontend_dir, check=True, shell=True)
+            subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True)
             print("Build completed successfully!")
             print(f"Built files are in {frontend_dir / 'build'}")
             
         elif mode == "preview":
             print("Building and previewing production build...")
             # First build
-            subprocess.run(["npm", "run", "build"], cwd=frontend_dir, check=True, shell=True)
+            subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True)
             # Then preview
             print(f"Preview server will be available at http://{host}:{port}")
             print("Press Ctrl+C to stop the server")
-            subprocess.run([
-                "npm", "run", "preview", "--",
-                "--host", host,
-                "--port", str(port)
-            ], cwd=frontend_dir, check=True, shell=True)
+            subprocess.run(
+                f"npm run preview -- --host {host} --port {str(port)}", 
+                cwd=frontend_dir, check=True, shell=True
+            )
         elif mode == "install":
             print("Installing frontend...")
-            subprocess.run(["npm", "install"], cwd=frontend_dir, check=True, shell=True)
+            subprocess.run("npm install", cwd=frontend_dir, check=True, shell=True)
             print("Frontend dependencies installed successfully!")
             
     except subprocess.CalledProcessError as e:
