@@ -140,8 +140,22 @@ class ScenarioAgent:
         """Generate the agentbeats run command for this agent"""
         # Use override backend if provided, otherwise use configured backend
         backend = backend_override if backend_override else self.backend
+
+        env_append = ""
+        if self.model_type == "openai":
+            OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+            if not OPENAI_API_KEY:
+                raise ValueError("OPENAI_API_KEY is not set")
+            env_append = f"export OPENAI_API_KEY='{OPENAI_API_KEY}';"
+        elif self.model_type == "openrouter":
+            OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+            if not OPENROUTER_API_KEY:
+                raise ValueError("OPENROUTER_API_KEY is not set")
+            env_append = f"export OPENROUTER_API_KEY='{OPENROUTER_API_KEY}';"
+        
         
         cmd_parts = [
+            env_append,
             "agentbeats", "run", f"'{self.card}'",
             "--launcher_host", self.launcher_host,
             "--launcher_port", str(self.launcher_port),
@@ -149,6 +163,8 @@ class ScenarioAgent:
             "--agent_port", str(self.agent_port),
             "--backend", backend
         ]
+
+        
         
         # Add model configuration only if specified
         if self.model_type:
@@ -277,7 +293,7 @@ class ScenarioManager:
             'tmux', 'new-session', '-d', '-s', session_name,
             '-x', '120', '-y', '30',
             'bash', '-c', cmd
-        ], check=True)
+        ], check=True, env=os.environ.copy())
         
         subprocess.run([
             'tmux', 'rename-window', '-t', f"{session_name}:0", 
@@ -289,12 +305,12 @@ class ScenarioManager:
                 subprocess.run([
                     'tmux', 'split-window', '-t', session_name, '-h',
                     'bash', '-c', cmd
-                ], check=True)
+                ], check=True, env=os.environ.copy())
             else:
                 subprocess.run([
                     'tmux', 'split-window', '-t', session_name, '-v',
                     'bash', '-c', cmd
-                ], check=True)
+                ], check=True, env=os.environ.copy())
             subprocess.run([
                 'tmux', 'select-pane', '-t', session_name, '-T', agent.name
             ], check=True)
