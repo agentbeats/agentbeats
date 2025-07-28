@@ -20,7 +20,7 @@ export RESET_AUTH_TOKEN=
 
 ### Python installations
 
-Verify that you have both python and python3.10 installed (python3.10 must be available through `python3.10` command, if necessary create a symlink).
+Verify that you have both python and python3.10 installed (python3.10 must be available through `python3.10` command, if necessary add to PATH or create a symlink).
 
 ```bash
 python
