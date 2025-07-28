@@ -1,0 +1,59 @@
+[scenario]
+name = "templates"
+description = "Template scenario for demonstration"
+version = "1.0.0"
+
+[[services]]
+name = "template_service_command_line"
+type = "command"
+command = "python 123_server.py --port 8888"
+working_dir = "services"
+health_check = "http://localhost:8888/status"
+
+[[services]]
+name = "Template Leaderboard"
+type = "command"
+command = "npm start"
+working_dir = "test_leaderboard"
+health_check = "http://localhost:4000/api/health"
+
+[[services]]
+name = "docker_template"
+type = "docker_compose"
+compose_file = "docker-compose.yml"
+working_dir = "."
+health_check = "http://localhost:5432"
+
+# Agents to be launched
+[[agents]]
+name = "Template Agent 1"
+card = "template_agent_1_python_code/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 6010
+agent_host = "0.0.0.0"
+agent_port = 6011
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["template_agent_1_python_code/tools.py"]
+mcp_servers = []
+
+[[agents]]
+name = "Template Agent 2"
+card = "template_agent_2_cli_only/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 6020
+agent_host = "0.0.0.0"
+agent_port = 6021
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = []
+mcp_servers = []
+
+# Launch configuration
+[launch]
+mode = "tmux"  # Options: "tmux", "separate", "current"
+tmux_session_name = "agentbeats-templates"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # launch services and check health before starting agents
