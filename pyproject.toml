@@ -9,6 +9,7 @@ description = "AgentBeats SDK for building security-contest AI agents"
 requires-python = ">=3.9"
 authors = [{ "name" = "Simon Xie", "email" = "simonxie2004@outlook.com" }]
 dependencies = ["tomli>=2", 
+                "toml", 
                 "fastmcp", 
                 "fastapi", 
                 "uvicorn",
