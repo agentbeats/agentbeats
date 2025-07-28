@@ -13,6 +13,7 @@ __all__ = [
     "create_a2a_client",
     "send_message_to_agent", 
     "send_message_to_agents",
+    "send_messages_to_agents",
     
     # Environment utilities
     "setup_container",

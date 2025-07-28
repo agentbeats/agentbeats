@@ -106,10 +106,57 @@ async def register_agent(agent_info: Dict[str, Any]):
 
 
 @router.get("/agents")
-def list_agents() -> List[Dict[str, Any]]:
-    """List all agents."""
+async def list_agents(check_liveness: bool = False) -> List[Dict[str, Any]]:
+    """List all agents with optional liveness check."""
     try:
         agents = db.list("agents")
+        
+        if check_liveness:
+            async def check_agent_liveness(agent):
+                """Check liveness for a single agent."""
+                agent_url = agent.get("register_info", {}).get("agent_url")
+                launcher_url = agent.get("register_info", {}).get("launcher_url")
+                
+                async def check_agent_card():
+                    """Check if agent URL is accessible and can return agent card."""
+                    if not agent_url:
+                        return False
+                    try:
+                        agent_card = await a2a_client.get_agent_card(agent_url)
+                        return bool(agent_card)
+                    except Exception:
+                        return False
+                
+                async def check_launcher():
+                    """Check if launcher is alive."""
+                    if not launcher_url:
+                        return False
+                    try:
+                        launcher_status = await check_launcher_status({"launcher_url": launcher_url})
+                        return launcher_status.get("online", False)
+                    except Exception:
+                        return False
+                
+                # Run both checks concurrently for this agent
+                agent_card_accessible, launcher_alive = await asyncio.gather(
+                    check_agent_card(),
+                    check_launcher(),
+                    return_exceptions=False
+                )
+                agent["live"] = agent_card_accessible and launcher_alive
+                return agent
+            
+            # Run all liveness checks concurrently
+            agents = await asyncio.gather(
+                *[check_agent_liveness(agent) for agent in agents],
+                return_exceptions=True
+            )
+            
+            for i, result in enumerate(agents):
+                if isinstance(result, Exception):
+                    # If exception, agent not live
+                    agents[i]["live"] = False
+        
         return agents
     except Exception as e:
         raise HTTPException(
@@ -322,20 +369,25 @@ async def analyze_agent_card(request: Dict[str, Any]):
         )
 
 
-class LauncherCheckRequest(BaseModel):
-    launcher_url: str = Field(..., description="The launcher URL to check")
-
-
 @router.post("/agents/check_launcher")
-async def check_launcher_status(request: LauncherCheckRequest):
+async def check_launcher_status(request: Dict[str, Any]):
     """Check if a launcher URL is accessible and running."""
     try:
+        if "launcher_url" not in request:
+            raise HTTPException(
+                status_code=400, detail="Missing required field: launcher_url"
+            )
+        
+        launcher_url = request["launcher_url"]
+        if not launcher_url:
+            raise HTTPException(status_code=400, detail="launcher_url cannot be empty")
+            
         import httpx
         
-        launcher_url = request.launcher_url.rstrip('/')
+        launcher_url_clean = launcher_url.rstrip('/')
         
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{launcher_url}/status")
+            response = await client.get(f"{launcher_url_clean}/status")
             
             if response.status_code == 200:
                 try:
@@ -349,13 +401,15 @@ async def check_launcher_status(request: LauncherCheckRequest):
         return {
             "online": is_online,
             "status_code": response.status_code,
-            "launcher_url": launcher_url
+            "launcher_url": launcher_url_clean
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error checking launcher status: {str(e)}")
         return {
             "online": False,
             "error": str(e),
-            "launcher_url": request.launcher_url
+            "launcher_url": request.get("launcher_url", "")
         }

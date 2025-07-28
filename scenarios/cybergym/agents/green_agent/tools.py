@@ -28,14 +28,14 @@ from a2a.types import (
 )
 
 # Path constants
-PROJECT_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../..")
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+CYBERGYM_PATH = (
+    PROJECT_ROOT / "scenarios" / "cybergym" / "resources" / "cybergym"
 )
-CYBERGYM_PATH = os.path.join(PROJECT_ROOT, "external", "cybergym")
-POC_SAVE_DIR = os.path.join(CYBERGYM_PATH, "poc_save_dir")
-CYBERGYM_SERVER_DATA_DIR = os.path.join(CYBERGYM_PATH, "oss-fuzz-data")
-CYBERGYM_DATA_DIR = os.path.join(CYBERGYM_PATH, "cybergym_data", "data")
-CYBERGYM_TASK_DIR = os.path.join(CYBERGYM_PATH, "task_folder")
+POC_SAVE_DIR = CYBERGYM_PATH / "poc_save_dir"
+CYBERGYM_SERVER_DATA_DIR = CYBERGYM_PATH / "oss-fuzz-data"
+CYBERGYM_DATA_DIR = CYBERGYM_PATH / "cybergym_data" / "data"
+CYBERGYM_TASK_DIR = CYBERGYM_PATH / "task_folder"
 
 # Docker connection settings
 DOCKER_SOCKET_PATHS = [
@@ -120,7 +120,7 @@ async def talk_to_red_or_blue_agent(
             role=Role.user,
             parts=[Part(TextPart(text=query))],
             messageId=uuid4().hex,
-            taskId=uuid4().hex,
+            taskId=None,  # Let the red agent create a new task
         )
     )
     req = SendStreamingMessageRequest(id=str(uuid4()), params=params)
@@ -130,21 +130,38 @@ async def talk_to_red_or_blue_agent(
 
         async def stream_reply():
             async for chunk in client.send_message_streaming(req):
+                # Log the chunk for debugging
+                logging.debug(f"Received chunk: {chunk}")
+
                 if not isinstance(
                     chunk.root, SendStreamingMessageSuccessResponse
                 ):
                     continue
                 event = chunk.root.result
+
+                # Handle TaskArtifactUpdateEvent (final response)
                 if isinstance(event, TaskArtifactUpdateEvent):
                     for p in event.artifact.parts:
                         if isinstance(p.root, TextPart):
                             chunks.append(p.root.text)
+                # Handle TaskStatusUpdateEvent (status messages)
                 elif isinstance(event, TaskStatusUpdateEvent):
                     msg = event.status.message
                     if msg:
                         for p in msg.parts:
                             if isinstance(p.root, TextPart):
                                 chunks.append(p.root.text)
+                # Handle any other event type that might contain text
+                else:
+                    # Try to extract text from any other event type
+                    if hasattr(event, "message") and event.message:
+                        for p in event.message.parts:
+                            if isinstance(p.root, TextPart):
+                                chunks.append(p.root.text)
+                    elif hasattr(event, "text"):
+                        chunks.append(str(event.text))
+                    elif hasattr(event, "content"):
+                        chunks.append(str(event.content))
 
         await asyncio.wait_for(stream_reply(), timeout=timeout_seconds)
         message_end_time = time.time()
@@ -245,10 +262,11 @@ async def generate_cybergym_task(task_id: str, battle_id: str) -> str:
     """Generate a Cybergym task with the specified task ID."""
     cmd = [
         f"cd {PROJECT_ROOT} &&",
+        "ls venv &&",
         "source venv/bin/activate &&",
         "python -m cybergym.task.gen_task",
         f"--task-id {task_id}",
-        f"--out-dir {CYBERGYM_TASK_DIR + "_" + battle_id}",
+        f"--out-dir {str(CYBERGYM_TASK_DIR)}_{battle_id}",
         f"--data-dir {CYBERGYM_DATA_DIR}",
         f"--server http://host.docker.internal:8666",
         f"--difficulty level1",
@@ -299,7 +317,7 @@ async def setup_docker_env(
             detach=True,
             extra_hosts={"host.docker.internal": "host-gateway"},
             volumes={
-                str(CYBERGYM_TASK_DIR): {
+                f"{str(CYBERGYM_TASK_DIR)}_{battle_id}": {
                     "bind": "/cybergym_task_dir",
                     "mode": "rw",
                 }

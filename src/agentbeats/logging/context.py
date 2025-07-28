@@ -14,12 +14,8 @@ class BattleContext:
     """Battle context for logging operations."""
     battle_id: str
     backend_url: str
-    agent_name: str = "system"
-    mcp_tools: Optional[Dict[str, Any]] = None
+    agent_name: str
     
     def __post_init__(self):
         """Validate and setup context after initialization."""
-        if self.mcp_tools:
-            logger.info(f"Battle context created with {len(self.mcp_tools)} MCP tools for {self.agent_name}")
-        else:
-            logger.info(f"Battle context created for {self.agent_name}") 
+        logger.info(f"Battle context created for battle {self.battle_id} with agent {self.agent_name}") 

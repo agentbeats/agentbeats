@@ -1,0 +1,22 @@
+SSH COMMANDS
+
+SSHClient
+SSH client class for executing commands on remote hosts.
+
+class SSHClient:
+    def __init__(self, host: str, credentials: Dict[str, Any])
+    def connect(self) -> bool
+    def execute(self, command: str) -> str
+    def disconnect(self)
+    def open_sftp(self)
+
+- Inputs: host (string), credentials dictionary with username, password, port
+- Outputs: Connection status, command execution results, SFTP session
+
+create_ssh_connect_tool
+Creates SSH tool for agent integration.
+
+def create_ssh_connect_tool(agent_instance: Any, default_host: str = "localhost", default_port: int = 22, default_username: str = "root", default_password: str = "") -> Any
+
+- Inputs: agent instance, default host, port, username, password
+- Outputs: SSH connection tool function 

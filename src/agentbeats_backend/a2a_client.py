@@ -17,7 +17,6 @@ from a2a.types import (
     TextPart,
 )
 
-# Import SDK functions
 from agentbeats.utils.agents import get_agent_card, send_message_to_agent
 
 logger = logging.getLogger(__name__)

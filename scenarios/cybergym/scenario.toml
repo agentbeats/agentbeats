@@ -1,0 +1,38 @@
+[scenario]
+name = "cybergym"
+description = "Cybergym scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "[CyberGym] arvo:1065 (Updated)"
+card = "agents/green_agent/agent_card_arvo:1065.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8335
+agent_host = "0.0.0.0"
+agent_port = 8336
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse", "http://localhost:9002/sse"]
+
+[[agents]]
+name = "[CyberGym] Red Agent"
+card = "agents/red_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8060
+agent_host = "0.0.0.0"
+agent_port = 8061
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/red_agent/tools.py"]
+mcp_servers = ["http://localhost:9002/sse"]
+
+# Launch configuration
+[launch]
+mode = "tmux"  # Options: "tmux", "current", "separate"
+tmux_session_name = "agentbeats-cybergym"
+startup_interval = 2  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents

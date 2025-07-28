@@ -44,6 +44,7 @@ declare module '$env/static/private' {
 	export const LIBRARY_PATH: string;
 	export const CONDA_SHLVL: string;
 	export const DOCKER_HOST: string;
+	export const CONDA_PROMPT_MODIFIER: string;
 	export const GROQ_API_KEY: string;
 	export const TERM_PROGRAM_VERSION: string;
 	export const ZDOTDIR: string;
@@ -69,6 +70,7 @@ declare module '$env/static/private' {
 	export const VIRTUAL_ENV: string;
 	export const OPENROUTER_MODEL: string;
 	export const TAVILY_API_KEY: string;
+	export const PYDEVD_DISABLE_FILE_VALIDATION: string;
 	export const _CE_CONDA: string;
 	export const PATH: string;
 	export const npm_package_json: string;
@@ -77,6 +79,7 @@ declare module '$env/static/private' {
 	export const LaunchInstanceID: string;
 	export const npm_config_userconfig: string;
 	export const npm_config_init_module: string;
+	export const CONDA_PREFIX: string;
 	export const USER_ZDOTDIR: string;
 	export const __CFBundleIdentifier: string;
 	export const npm_command: string;
@@ -86,6 +89,7 @@ declare module '$env/static/private' {
 	export const EDITOR: string;
 	export const npm_package_name: string;
 	export const LANG: string;
+	export const BUNDLED_DEBUGPY_PATH: string;
 	export const npm_config_npm_version: string;
 	export const LANGCHAIN_TRACING_V2: string;
 	export const VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
@@ -97,6 +101,7 @@ declare module '$env/static/private' {
 	export const CXX: string;
 	export const XPC_SERVICE_NAME: string;
 	export const VSCODE_INJECTION: string;
+	export const VSCODE_DEBUGPY_ADAPTER_ENDPOINTS: string;
 	export const LANGCHAIN_CALLBACKS_BACKGROUND: string;
 	export const SHLVL: string;
 	export const HOME: string;
@@ -109,6 +114,7 @@ declare module '$env/static/private' {
 	export const npm_lifecycle_script: string;
 	export const VSCODE_GIT_IPC_HANDLE: string;
 	export const NVM_BIN: string;
+	export const CONDA_DEFAULT_ENV: string;
 	export const npm_config_user_agent: string;
 	export const INFOPATH: string;
 	export const HOMEBREW_CELLAR: string;
@@ -171,6 +177,7 @@ declare module '$env/dynamic/private' {
 		LIBRARY_PATH: string;
 		CONDA_SHLVL: string;
 		DOCKER_HOST: string;
+		CONDA_PROMPT_MODIFIER: string;
 		GROQ_API_KEY: string;
 		TERM_PROGRAM_VERSION: string;
 		ZDOTDIR: string;
@@ -196,6 +203,7 @@ declare module '$env/dynamic/private' {
 		VIRTUAL_ENV: string;
 		OPENROUTER_MODEL: string;
 		TAVILY_API_KEY: string;
+		PYDEVD_DISABLE_FILE_VALIDATION: string;
 		_CE_CONDA: string;
 		PATH: string;
 		npm_package_json: string;
@@ -204,6 +212,7 @@ declare module '$env/dynamic/private' {
 		LaunchInstanceID: string;
 		npm_config_userconfig: string;
 		npm_config_init_module: string;
+		CONDA_PREFIX: string;
 		USER_ZDOTDIR: string;
 		__CFBundleIdentifier: string;
 		npm_command: string;
@@ -213,6 +222,7 @@ declare module '$env/dynamic/private' {
 		EDITOR: string;
 		npm_package_name: string;
 		LANG: string;
+		BUNDLED_DEBUGPY_PATH: string;
 		npm_config_npm_version: string;
 		LANGCHAIN_TRACING_V2: string;
 		VSCODE_GIT_ASKPASS_EXTRA_ARGS: string;
@@ -224,6 +234,7 @@ declare module '$env/dynamic/private' {
 		CXX: string;
 		XPC_SERVICE_NAME: string;
 		VSCODE_INJECTION: string;
+		VSCODE_DEBUGPY_ADAPTER_ENDPOINTS: string;
 		LANGCHAIN_CALLBACKS_BACKGROUND: string;
 		SHLVL: string;
 		HOME: string;
@@ -236,6 +247,7 @@ declare module '$env/dynamic/private' {
 		npm_lifecycle_script: string;
 		VSCODE_GIT_IPC_HANDLE: string;
 		NVM_BIN: string;
+		CONDA_DEFAULT_ENV: string;
 		npm_config_user_agent: string;
 		INFOPATH: string;
 		HOMEBREW_CELLAR: string;

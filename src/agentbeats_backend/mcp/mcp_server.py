@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import os
 from datetime import datetime
 from fastmcp import FastMCP
 import requests
@@ -260,4 +261,5 @@ def report_on_battle_end(
 #         logger.error("Network error when logging to backend for battle %s: %s", battle_id, str(e))
 
 if __name__ == "__main__":
-    server.run(transport="sse", host="0.0.0.0", port=9001, log_level="ERROR")
+    port = int(os.environ.get("MCP_PORT", 9001))
+    server.run(transport="sse", host="0.0.0.0", port=port, log_level="ERROR")
