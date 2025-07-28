@@ -142,7 +142,7 @@ class ScenarioAgent:
         backend = backend_override if backend_override else self.backend
         
         cmd_parts = [
-            "agentbeats", "run", self.card,
+            "agentbeats", "run", f"'{self.card}'",
             "--launcher_host", self.launcher_host,
             "--launcher_port", str(self.launcher_port),
             "--agent_host", self.agent_host,
@@ -174,7 +174,7 @@ class ScenarioManager:
         if scenarios_root is None:
             # Default to scenarios directory relative to this file
             current_file = Path(__file__).resolve()
-            self.scenarios_root = current_file.parent.parent.parent / "scenarios"
+            self.scenarios_root = current_file.parent.parent.parent.parent.parent / "scenarios"
         else:
             self.scenarios_root = Path(scenarios_root)
         
@@ -240,7 +240,7 @@ class ScenarioManager:
                         else:
                             print(f"⚠️  {service.name} health check failed, continuing anyway...")
 
-        if mode is None:
+        if mode is None or mode == "":
             mode = launch_config.get("mode", "tmux")
 
         if self.agents:
@@ -248,9 +248,9 @@ class ScenarioManager:
             
             if mode == "tmux":
                 self._start_agents_tmux(config, backend_override)
-            elif mode == "terminals":
+            elif mode == "separate":
                 self._start_agents_terminals(backend_override)
-            elif mode == "background":
+            elif mode == "current":
                 self._start_agents_background(backend_override)
             else:
                 raise ValueError(f"Unknown launch mode: {mode}")
