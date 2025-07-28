@@ -51,6 +51,7 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.50.5",
 		"marked": "^16.1.1",
-		"mode-watcher": "^1.1.0"
+		"mode-watcher": "^1.1.0",
+		"pm2": "^6.0.8"
 	}
 }
