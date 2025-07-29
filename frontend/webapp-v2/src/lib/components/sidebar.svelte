@@ -1,40 +1,32 @@
 <script lang="ts">
-	import CalendarIcon from "@lucide/svelte/icons/calendar";
 	import HouseIcon from "@lucide/svelte/icons/house";
-	import InboxIcon from "@lucide/svelte/icons/inbox";
-	import SearchIcon from "@lucide/svelte/icons/search";
-	import SettingsIcon from "@lucide/svelte/icons/settings";
+	import SwordsIcon from "@lucide/svelte/icons/swords";
+	import BotIcon from "@lucide/svelte/icons/bot";
 	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-	
+	import { page } from '$app/stores';
+
 	// Menu items.
 	const items = [
 		{
-			title: "Home",
-			url: "#",
+			title: "Dashboard",
+			url: "/dashboard",
 			icon: HouseIcon,
 		},
 		{
-			title: "Inbox",
-			url: "#",
-			icon: InboxIcon,
+			title: "Battles",
+			url: "/battles",
+			icon: SwordsIcon,
 		},
 		{
-			title: "Calendar",
-			url: "#",
-			icon: CalendarIcon,
-		},
-		{
-			title: "Search",
-			url: "#",
-			icon: SearchIcon,
-		},
-		{
-			title: "Settings",
-			url: "#",
-			icon: SettingsIcon,
+			title: "Agents",
+			url: "/agents",
+			icon: BotIcon,
 		},
 	];
+
+	function isActive(url: string): boolean {
+		return $page.url.pathname === url || $page.url.pathname.startsWith(url + '/');
+	}
 </script>
 
 <style>
@@ -54,29 +46,31 @@
 <Sidebar.Root
     variant="floating" 
     collapsible="none"
-    class="mt-8 ml-10 mb-8 h-[calc(100vh-4rem)] bg-[#323232] rounded-2xl"
+    class="ml-8 h-48 bg-white border rounded-full flex items-center shadow-sm relative"
+    style="width: 60px; z-index: 10; position: fixed; top: 50%; transform: translateY(-50%);"
 >
-	<div class="rounded-2xl h-full">
-		<Sidebar.Content class="p-1">
+	<!-- Active indicator -->
+	<div class="absolute left-0 w-1 h-3 bg-gray-600 rounded-r-full transition-all duration-300 ease-in-out"
+		 style="top: {(() => {
+			 const activeIndex = items.findIndex(item => isActive(item.url));
+			 return activeIndex >= 0 ? `${(activeIndex * 48) + 39}px` : '26px';
+		 })()};">
+	</div>
+	
+	<div class="rounded-full h-full flex items-center justify-center">
+		<Sidebar.Content class="p-0">
 		<Sidebar.Group>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#each items as item (item.title)}
-						<Sidebar.MenuItem class="mb-2">
+						<Sidebar.MenuItem class="mb-1">
 							<Sidebar.MenuButton 
-								class="[&>svg]:size-6 !size-14 !p-3 !justify-center"
+								class="[&>svg]:size-5 !size-10 !p-2 !justify-center"
 							>
 								{#snippet child({ props })}
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											<a href={item.url} {...props}>
-												<item.icon class="text-[#f5f4fb]" />
-											</a>
-										</Tooltip.Trigger>
-										<Tooltip.Content side="right">
-											{item.title}
-										</Tooltip.Content>
-									</Tooltip.Root>
+									<a href={item.url} {...props}>
+										<item.icon class="text-gray-600 hover:text-gray-900" />
+									</a>
 								{/snippet}
 							</Sidebar.MenuButton>
 						</Sidebar.MenuItem>
