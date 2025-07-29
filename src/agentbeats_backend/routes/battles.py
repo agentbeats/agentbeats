@@ -197,6 +197,7 @@ async def process_battle(battle_id: str):
         green_reset = await a2a_client.reset_agent_trigger(
             green_launcher, 
             agent_id=battle["green_agent_id"], 
+            backend_url=default_backend_url,
             extra_args={}
         )
         if not green_reset:
@@ -220,6 +221,7 @@ async def process_battle(battle_id: str):
             op_reset = await a2a_client.reset_agent_trigger(
                 op_launcher, 
                 agent_id=op_id, 
+                backend_url=default_backend_url,
                 extra_args={}
             )    
             if not op_reset:
@@ -293,6 +295,44 @@ async def process_battle(battle_id: str):
                 asyncio.create_task(websocket_manager.broadcast_battle_update(battle))
             return
 
+        agents_info = {}
+        agents_info["green_agent"] = {
+            "agent_id": battle["green_agent_id"],
+            "agent_url": green_agent_url,
+            "agent_name": "green_agent"}
+
+        for idx, op_info in enumerate(opponent_info_send_to_green):
+            op_id = opponent_ids[idx]
+            op_name = battle["opponents"][idx].get("name", "no_name")
+            agents_info[op_info["name"]] = {
+                "agent_id": op_id,
+                "agent_url": op_info["agent_url"],
+                "agent_name": op_name
+            }
+
+        for name, agent_info in agents_info.items():
+            success = await a2a_client.send_battle_info(
+                endpoint=agent_info["agent_url"],
+                battle_id=battle_id,
+                agent_name=agent_info["agent_name"],
+                agent_id=agent_info["agent_id"],
+                backend_url=default_backend_url
+            )
+            if not success:
+                battle = db.read("battles", battle_id)
+                if battle:
+                    battle["state"] = "error"
+                    battle["error"] = f"Agent {name} failed to respond"
+                    db.update("battles", battle_id, battle)
+                    add_system_log(battle_id, f"Failed to notify {name} agent", {
+                        "agent_name": name,
+                        "agent_id": agent_info["agent_id"]
+                    })
+                    update_agent_error_stats(battle)
+                    unlock_and_unready_agents(battle)
+                    asyncio.create_task(websocket_manager.broadcast_battle_update(battle))
+                return
+            
         # Timeout setup
         battle_timeout = green_agent['register_info'].get('battle_timeout', default_battle_timeout)
         timeout_thread = threading.Thread(
@@ -653,6 +693,7 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
             "config": battle_request.get('config', {}),
             "state": "pending",
             "created_at": datetime.utcnow().isoformat() + "Z",
+            "created_by": battle_request.get('created_by', 'N/A'),
             "interact_history": []
         }
 

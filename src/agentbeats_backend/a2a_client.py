@@ -34,7 +34,10 @@ class AgentBeatsA2AClient:
         """Get agent card using SDK function."""
         return await get_agent_card(endpoint)
             
-    async def reset_agent_trigger(self, launcher_url: str, agent_id: str, extra_args: dict = None) -> bool:
+    async def reset_agent_trigger(self, launcher_url: str, 
+                                        agent_id: str, 
+                                        backend_url: str, 
+                                        extra_args: dict = None) -> bool:
         """Reset an agent via its launcher."""
         httpx_client = None
         try:
@@ -44,6 +47,7 @@ class AgentBeatsA2AClient:
             reset_payload = {
                 "signal": "reset",
                 "agent_id": agent_id,
+                "backend_url": backend_url,
                 "extra_args": extra_args
             }
 
@@ -144,6 +148,41 @@ class AgentBeatsA2AClient:
                 except Exception as e2:
                     logger.error(f"Even basic info fails: {e2}")
                 raise json_error
+            
+            # Use SDK function to send message
+            logger.info(f"About to send message to {endpoint}")
+            try:
+                response = await send_message_to_agent(endpoint, json.dumps(battle_info))
+                logger.info(f"Message sent successfully, response: {response}")
+            except Exception as send_error:
+                logger.error(f"Failed to send message to {endpoint}: {send_error}")
+                logger.error(f"Exception type: {type(send_error).__name__}")
+                raise send_error
+            
+            # Return True if we got any response (not an error)
+            success = response and not response.startswith("Error:")
+            logger.info(f"Green agent notification {'succeeded' if success else 'failed'}")
+            return success
+                            
+        except Exception as e:
+            logger.error(f"Error in notify_green_agent for {endpoint}: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            return False
+
+    async def send_battle_info(self, 
+                                endpoint: str,                                 
+                                battle_id: str,
+                                agent_name: str,
+                                agent_id: str,
+                                backend_url: str = "http://localhost:9000"):
+        try:
+            battle_info = {
+                "type": "battle_info",
+                "battle_id": battle_id,
+                "agent_name": agent_name,
+                "agent_id": agent_id,
+                "backend_url": backend_url,
+            }
             
             # Use SDK function to send message
             logger.info(f"About to send message to {endpoint}")

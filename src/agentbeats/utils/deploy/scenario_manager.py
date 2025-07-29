@@ -12,6 +12,8 @@ import threading
 import platform
 import shutil
 import urllib.request
+import requests
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 import toml
@@ -130,41 +132,65 @@ class ScenarioAgent:
         self.agent_port = config["agent_port"]
         
         # Optional fields
-        self.backend = config.get("backend", "http://localhost:9000")
+        self.backend = config.get("backend") # warning: these can be None
         self.model_type = config.get("model_type")
         self.model_name = config.get("model_name")
         self.tools = config.get("tools", [])
         self.mcp_servers = config.get("mcp_servers", [])
+        
+        # New fields for API integration
+        self.is_green = config.get("is_green", False)
+        self.participant_requirements = config.get("participant_requirements", [])
+        
+        # Validate participant_requirements format if this is a green agent
+        if self.is_green and self.participant_requirements:
+            for req in self.participant_requirements:
+                if not isinstance(req, dict):
+                    raise ValueError(f"participant_requirements must be a list of dict for green agent {self.name}")
+                required_fields = ["role", "name", "required", "participant_agent"]
+                for field in required_fields:
+                    if field not in req:
+                        raise ValueError(f"participant_requirements item missing {field} for green agent {self.name}")
+                if req["role"] not in ["blue_agent", "red_agent"]:
+                    raise ValueError(f"role must be 'blue_agent' or 'red_agent' for green agent {self.name}")
+                if not isinstance(req["required"], bool):
+                    raise ValueError(f"required must be boolean for green agent {self.name}")
     
     def get_command(self, backend_override: str = None) -> str:
         """Generate the agentbeats run command for this agent"""
         # Use override backend if provided, otherwise use configured backend
+        system = platform.system()
+        
         backend = backend_override if backend_override else self.backend
 
-        env_append = ""
-        if self.model_type == "openai":
-            OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
-            if not OPENAI_API_KEY:
-                raise ValueError("OPENAI_API_KEY is not set")
-            env_append = f"export OPENAI_API_KEY='{OPENAI_API_KEY}';"
-        elif self.model_type == "openrouter":
-            OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
-            if not OPENROUTER_API_KEY:
-                raise ValueError("OPENROUTER_API_KEY is not set")
-            env_append = f"export OPENROUTER_API_KEY='{OPENROUTER_API_KEY}';"
+        if system == "Linux":
+            env_append = ""
+            if self.model_type == "openai":
+                OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+                if not OPENAI_API_KEY:
+                    raise ValueError("OPENAI_API_KEY is not set")
+                env_append = f"export OPENAI_API_KEY='{OPENAI_API_KEY}';"
+            elif self.model_type == "openrouter":
+                OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+                if not OPENROUTER_API_KEY:
+                    raise ValueError("OPENROUTER_API_KEY is not set")
+                env_append = f"export OPENROUTER_API_KEY='{OPENROUTER_API_KEY}';"
         
         
         cmd_parts = [
-            env_append,
-            "agentbeats", "run", f"'{self.card}'",
+            "agentbeats", "run", self.card,
             "--launcher_host", self.launcher_host,
             "--launcher_port", str(self.launcher_port),
             "--agent_host", self.agent_host,
-            "--agent_port", str(self.agent_port),
-            "--backend", backend
+            "--agent_port", str(self.agent_port)
         ]
 
-        
+        if backend:
+            cmd_parts.extend(["--backend", backend])
+
+        if system == "Linux":
+            # If running on Linux, prepend environment variables
+            cmd_parts.insert(0, env_append)
         
         # Add model configuration only if specified
         if self.model_type:
@@ -226,6 +252,7 @@ class ScenarioManager:
     def load_scenario(self, scenario_name: str, mode: str = None, backend_override: str = None):
         """Start all components of a scenario"""
         print(f"Starting scenario: {scenario_name}")
+        print(f"backend_override: {backend_override}")
         
         if backend_override:
             print(f"Using backend override: {backend_override}")
@@ -436,6 +463,151 @@ class ScenarioManager:
             if item.is_dir() and (item / "scenario.toml").exists():
                 scenarios.append(item.name)
         return scenarios
+    
+    def register_agent_to_backend(self, agent: ScenarioAgent, backend_url: str = "http://localhost:9000") -> Optional[str]:
+        """Register a single agent to the backend and return agent_id"""
+        max_retries = 3
+        retry_delay = 5  # seconds
+        
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"Registering agent {agent.name} (attempt {attempt}/{max_retries})...")
+                
+                # Get agent card
+                agent_url = f"http://{'localhost' if agent.agent_host == '0.0.0.0' else agent.agent_host}:{agent.agent_port}"
+                launcher_url = f"http://{'localhost' if agent.launcher_host == '0.0.0.0' else agent.launcher_host}:{agent.launcher_port}"
+                
+                # Prepare registration data
+                register_data = {
+                    "alias": agent.name,
+                    "agent_url": agent_url,
+                    "launcher_url": launcher_url,
+                    "is_green": agent.is_green
+                }
+                
+                # Add participant_requirements for green agents
+                if agent.is_green and agent.participant_requirements:
+                    register_data["participant_requirements"] = agent.participant_requirements
+                
+                # Register agent
+                response = requests.post(
+                    f"{backend_url}/agents",
+                    json=register_data,
+                    timeout=30
+                )
+                
+                if response.status_code == 201:
+                    result = response.json()
+                    agent_id = result.get("agent_id")
+                    print(f"✅ Registered agent {agent.name} with ID: {agent_id}")
+                    return agent_id
+                else:
+                    print(f"⚠️ Failed to register agent {agent.name} (attempt {attempt}): {response.status_code} {response.text}")
+                    if attempt < max_retries:
+                        print(f"Waiting {retry_delay} seconds before retry...")
+                        time.sleep(retry_delay)
+                    
+            except Exception as e:
+                print(f"⚠️ Error registering agent {agent.name} (attempt {attempt}): {str(e)}")
+                if attempt < max_retries:
+                    print(f"Waiting {retry_delay} seconds before retry...")
+                    time.sleep(retry_delay)
+        
+        print(f"❌ Failed to register agent {agent.name} after {max_retries} attempts")
+        return None
+    
+    def create_battle(self, green_agent_id: str, opponents: List[Dict[str, str]], backend_url: str = "http://localhost:9000") -> Optional[str]:
+        """Create a battle and return battle_id"""
+        try:
+            battle_data = {
+                "green_agent_id": green_agent_id,
+                "opponents": opponents,
+                "config": {}
+            }
+            
+            response = requests.post(
+                f"{backend_url}/battles",
+                json=battle_data,
+                timeout=30
+            )
+            
+            if response.status_code == 201:
+                result = response.json()
+                battle_id = result.get("battle_id")
+                print(f"✅ Created battle with ID: {battle_id}")
+                return battle_id
+            else:
+                print(f"❌ Failed to create battle: {response.status_code} {response.text}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error creating battle: {str(e)}")
+            return None
+    
+    def start_battle(self, scenario_name: str, backend_url: str = "http://localhost:9000", frontend_url: str = "http://localhost:5073") -> Optional[str]:
+        """Load scenario, register agents, create battle, and return frontend URL"""
+        print(f"Starting battle for scenario: {scenario_name}")
+        
+        # Load scenario configuration
+        config = self.load_scenario_toml(scenario_name)
+        
+        # Find green agent
+        green_agent = None
+        for agent in self.agents:
+            if agent.is_green:
+                green_agent = agent
+                break
+        
+        if not green_agent:
+            print("❌ No green agent found in scenario")
+            return None
+        
+        print(f"Found green agent: {green_agent.name}")
+        
+        # Register all agents
+        agent_id_map = {}  # Maps agent name to registered agent_id
+        
+        # Register green agent first
+        green_agent_id = self.register_agent_to_backend(green_agent, backend_url)
+        if not green_agent_id:
+            return None
+        agent_id_map[green_agent.name] = green_agent_id
+        
+        # Register other agents
+        for agent in self.agents:
+            if not agent.is_green:
+                agent_id = self.register_agent_to_backend(agent, backend_url)
+                if not agent_id:
+                    print(f"❌ Failed to register non-green agent {agent.name}")
+                    return None
+                agent_id_map[agent.name] = agent_id
+        
+        # Build opponents list based on participant_requirements
+        opponents = []
+        for req in green_agent.participant_requirements:
+            participant_agent_name = req["participant_agent"]
+            if participant_agent_name not in agent_id_map:
+                print(f"❌ Required participant agent {participant_agent_name} not found in scenario")
+                return None
+            
+            opponents.append({
+                "name": req["name"],
+                "agent_id": agent_id_map[participant_agent_name],
+                "role": req["role"]
+            })
+        
+        print(f"Prepared {len(opponents)} opponents for battle")
+        
+        # Create battle
+        battle_id = self.create_battle(green_agent_id, opponents, backend_url)
+        if not battle_id:
+            return None
+        
+        # Generate frontend URL
+        battle_url = f"{frontend_url}/battles/{battle_id}"
+        print(f"🎯 Battle URL: {battle_url}")
+        
+        return battle_url
 
 
 def main():
@@ -443,12 +615,13 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="AgentBeats Scenario Manager")
-    parser.add_argument("action", choices=["list", "start", "stop", "show"], 
+    parser.add_argument("action", choices=["list", "load", "stop", "show", "run"], 
                        help="Action to perform")
     parser.add_argument("scenario", nargs="?", help="Scenario name")
-    parser.add_argument("--mode", choices=["tmux", "terminals", "background"], 
+    parser.add_argument("--launch-mode", choices=["tmux", "terminals", "background"], 
                        help="Launch mode")
     parser.add_argument("--backend", help="Override backend URL for all agents")
+    parser.add_argument("--frontend", help="Frontend URL (default: http://localhost:5073)")
     
     args = parser.parse_args()
     
@@ -464,7 +637,7 @@ def main():
         if not args.scenario:
             print("Error: scenario name required for load action")
             return
-        manager.load_scenario(args.scenario, args.mode, args.backend)
+        manager.load_scenario(args.scenario, args.launcg_mode, args.backend)
     
     elif args.action == "stop":
         if not args.scenario:
@@ -481,6 +654,21 @@ def main():
         print(f"Description: {config['scenario']['description']}")
         print(f"Services: {len(manager.services)}")
         print(f"Agents: {len(manager.agents)}")
+    
+    elif args.action == "run":
+        if not args.scenario:
+            print("Error: scenario name required for run action")
+            return
+        
+        backend_url = args.backend or "http://localhost:9000"
+        frontend_url = args.frontend or "http://localhost:5173"
+        
+        battle_url = manager.start_battle(args.scenario, backend_url, frontend_url)
+        if battle_url:
+            print(f"✅ Battle started successfully!")
+            print(f"🌐 Open in browser: {battle_url}")
+        else:
+            print("❌ Failed to start battle")
 
 
 if __name__ == "__main__":

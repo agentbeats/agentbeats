@@ -1,18 +1,19 @@
 import asyncio
 from typing import Dict, Any, List
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import Literal
 from agents import Agent, Runner
 
 from ..db.storage import db
 from ..a2a_client import a2a_client
+from ..auth.middleware import get_current_user, get_optional_user
 
 router = APIRouter()
 
 
 @router.post("/agents", status_code=status.HTTP_201_CREATED)
-async def register_agent(agent_info: Dict[str, Any]):
+async def register_agent(agent_info: Dict[str, Any], current_user: Dict[str, Any] = Depends(get_current_user)):
     """Register a new agent."""
     try:
         # Validate required fields
@@ -65,6 +66,10 @@ async def register_agent(agent_info: Dict[str, Any]):
                 status_code=400, detail="Failed to get agent card from agent_url"
             )
 
+        # Use agent card name as alias if no alias provided
+        if not agent_info.get("alias") or agent_info["alias"].strip() == "":
+            agent_info["alias"] = agent_card.get("name", "Unnamed Agent")
+
         # Create agent record
         elo_rating = None if agent_info.get("is_green") else 1000
         agent_record = {
@@ -72,6 +77,8 @@ async def register_agent(agent_info: Dict[str, Any]):
             "agent_card": agent_card,
             "status": "unlocked",
             "ready": False,
+            "user_id": current_user["id"],  # Add user ownership
+            "created_by": current_user.get("user_metadata", {}).get("name", current_user.get("email", "unknown")),  # Use display name or email
             "elo": {
                 "rating": elo_rating,
                 "battle_history": [],
@@ -101,10 +108,20 @@ async def register_agent(agent_info: Dict[str, Any]):
 
 
 @router.get("/agents")
-async def list_agents(check_liveness: bool = False) -> List[Dict[str, Any]]:
+async def list_agents(check_liveness: bool = False, current_user: Dict[str, Any] = Depends(get_optional_user)) -> List[Dict[str, Any]]:
     """List all agents with optional liveness check."""
     try:
         agents = db.list("agents")
+        
+        # Filter agents by ownership if user is authenticated
+        if current_user:
+            # Show user's own agents first, then public agents (no user_id)
+            user_agents = [agent for agent in agents if agent.get("user_id") == current_user["id"]]
+            public_agents = [agent for agent in agents if not agent.get("user_id")]
+            agents = user_agents + public_agents
+        else:
+            # If not authenticated, only show public agents
+            agents = [agent for agent in agents if not agent.get("user_id")]
         
         if check_liveness:
             async def check_agent_liveness(agent):
@@ -157,8 +174,19 @@ async def list_agents(check_liveness: bool = False) -> List[Dict[str, Any]]:
         raise HTTPException(status_code=500, detail=f"Error listing agents: {str(e)}")
 
 
+@router.get("/agents/my")
+async def get_my_agents(current_user: Dict[str, Any] = Depends(get_current_user)) -> List[Dict[str, Any]]:
+    """Get all agents owned by the current user."""
+    try:
+        agents = db.list("agents")
+        user_agents = [agent for agent in agents if agent.get("user_id") == current_user["id"]]
+        return user_agents
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving user agents: {str(e)}")
+
+
 @router.get("/agents/{agent_id}")
-def get_agent(agent_id: str) -> Dict[str, Any]:
+def get_agent(agent_id: str, current_user: Dict[str, Any] = Depends(get_optional_user)) -> Dict[str, Any]:
     """Get a single agent by ID."""
     try:
         agent = db.read("agents", agent_id)
@@ -166,6 +194,17 @@ def get_agent(agent_id: str) -> Dict[str, Any]:
             raise HTTPException(
                 status_code=404, detail=f"Agent with ID {agent_id} not found"
             )
+        
+        # Check ownership - users can only access their own agents or public agents
+        if current_user:
+            agent_user_id = agent.get("user_id")
+            if agent_user_id and agent_user_id != current_user["id"]:
+                raise HTTPException(status_code=403, detail="Access denied - agent belongs to another user")
+        else:
+            # Unauthenticated users can only access public agents
+            if agent.get("user_id"):
+                raise HTTPException(status_code=403, detail="Access denied - authentication required")
+        
         return agent
     except HTTPException:
         raise
@@ -173,8 +212,31 @@ def get_agent(agent_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error retrieving agent: {str(e)}")
 
 
+@router.delete("/agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_agent(agent_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Delete an agent (only by owner)."""
+    try:
+        agent = db.read("agents", agent_id)
+        if not agent:
+            raise HTTPException(
+                status_code=404, detail=f"Agent with ID {agent_id} not found"
+            )
+
+        # Check ownership - only the owner can delete their agent
+        agent_user_id = agent.get("user_id")
+        if agent_user_id and agent_user_id != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Access denied - can only delete your own agents")
+
+        db.delete("agents", agent_id)
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting agent: {str(e)}")
+
+
 @router.put("/agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
-def update_agent(agent_id: str, update: Dict[str, Any]):
+def update_agent(agent_id: str, update: Dict[str, Any], current_user: Dict[str, Any] = Depends(get_optional_user)):
     """
     Update agent status or info.
     Request body can include 'ready': bool to indicate agent is ready after reset.
@@ -185,6 +247,21 @@ def update_agent(agent_id: str, update: Dict[str, Any]):
             raise HTTPException(
                 status_code=404, detail=f"Agent with ID {agent_id} not found"
             )
+
+        # For 'ready' status updates (from agent launcher), allow without authentication
+        if "ready" in update and len(update) == 1:
+            agent["ready"] = bool(update["ready"])
+            db.update("agents", agent_id, agent)
+            return None
+
+        # For other updates, require authentication and ownership check
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Authentication required for agent updates")
+
+        # Check ownership - only the owner can update their agent
+        agent_user_id = agent.get("user_id")
+        if agent_user_id and agent_user_id != current_user["id"]:
+            raise HTTPException(status_code=403, detail="Access denied - can only update your own agents")
 
         # Update agent info based on request body
         if "ready" in update:

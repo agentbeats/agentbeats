@@ -128,6 +128,43 @@ function isBattleInProgress(): boolean {
   return true;
 }
 
+async function cancelBattle() {
+  if (!battle || !battleInProgress) return;
+  
+  const confirmed = confirm('Are you sure you want to cancel this battle? This will end the battle with a draw result.');
+  if (!confirmed) return;
+  
+  try {
+    const cancelEvent = {
+      is_result: true,
+      winner: "draw",
+      message: "Battle cancelled by user",
+      reported_by: "system",
+      timestamp: new Date().toISOString(),
+      detail: {
+        reason: "user_cancelled"
+      }
+    };
+    
+    const response = await fetch(`/api/battles/${battleId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(cancelEvent)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to cancel battle: ${response.status}`);
+    }
+    
+    console.log('Battle cancelled successfully');
+  } catch (err) {
+    console.error('Error cancelling battle:', err);
+    alert('Failed to cancel battle. Please try again.');
+  }
+}
+
 onMount(async () => {
   loading = true;
   error = '';
@@ -241,6 +278,18 @@ onDestroy(() => {
       {/if}
       {#if battle.error && battle.state === 'error'}
         <div class="text-red-700">Error: <span class="font-mono">{battle.error}</span></div>
+      {/if}
+      
+      {#if battleInProgress}
+        <div class="mt-3 pt-3 border-t">
+          <button 
+            on:click={cancelBattle}
+            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-sm font-medium transition-colors"
+            title="Cancel this battle and end it with a draw result"
+          >
+            Cancel Battle
+          </button>
+        </div>
       {/if}
     </div>
     <!-- Interact History -->
