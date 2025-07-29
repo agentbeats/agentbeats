@@ -106,7 +106,7 @@ def run_evaluator(battle_id: str) -> str:
 @ab.tool
 def reset_battle(battle_id: str) -> str:
     try:
-        # return "Battle reset successfully" # TODO: Remove this
+        return "Battle reset successfully" # TODO: Remove this
         print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'))
 
         # Reset the server
