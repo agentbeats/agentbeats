@@ -364,8 +364,6 @@ def main():
                        help="Model type to use, e.g. 'openai', 'openrouter', etc.")
     run_parser.add_argument("--model_name", default="o4-mini",
                        help="Model name to use, e.g. 'o4-mini', etc.")
-    run_parser.add_argument("--backend", required=True,
-                       help="Backend base URL to receive ready signal")
     run_parser.add_argument("--mcp",  action="append", default=[],
                        help="One or more MCP SSE server URLs")
     run_parser.add_argument("--tool", action="append", default=[],
@@ -427,13 +425,13 @@ def main():
             model_name=args.model_name,
             mcp_list=args.mcp,
             tool_list=args.tool,
-            backend_url=args.backend,
         )
         launcher.run(reload=args.reload)
     elif args.cmd == "load_scenario":
         scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
         manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
+        manager.load_scenario(args.scenario_name, 
+                              args.launch_mode)
     elif args.cmd == "run_backend":
         _run_backend(host=args.host, port=args.port, reload=args.reload)
     elif args.cmd == "run_frontend":

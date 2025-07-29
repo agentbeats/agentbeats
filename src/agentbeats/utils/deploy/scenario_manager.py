@@ -130,7 +130,7 @@ class ScenarioAgent:
         self.agent_port = config["agent_port"]
         
         # Optional fields
-        self.backend = config.get("backend", "http://localhost:9000")
+        self.backend = config.get("backend") # warning: these can be None
         self.model_type = config.get("model_type")
         self.model_name = config.get("model_name")
         self.tools = config.get("tools", [])
@@ -139,16 +139,22 @@ class ScenarioAgent:
     def get_command(self, backend_override: str = None) -> str:
         """Generate the agentbeats run command for this agent"""
         # Use override backend if provided, otherwise use configured backend
-        backend = backend_override if backend_override else self.backend
+        if backend_override:
+            backend = backend_override
+        elif self.backend:
+            backend = self.backend
+        else:
+            backend = None
         
         cmd_parts = [
             "agentbeats", "run", f"{self.card}",
             "--launcher_host", self.launcher_host,
             "--launcher_port", str(self.launcher_port),
             "--agent_host", self.agent_host,
-            "--agent_port", str(self.agent_port),
-            "--backend", backend
+            "--agent_port", str(self.agent_port)
         ]
+        if backend:
+            cmd_parts.extend(["--backend", backend])
         
         # Add model configuration only if specified
         if self.model_type:
@@ -210,6 +216,7 @@ class ScenarioManager:
     def load_scenario(self, scenario_name: str, mode: str = None, backend_override: str = None):
         """Start all components of a scenario"""
         print(f"Starting scenario: {scenario_name}")
+        print(f"backend_override: {backend_override}")
         
         if backend_override:
             print(f"Using backend override: {backend_override}")

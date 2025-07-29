@@ -197,6 +197,7 @@ async def process_battle(battle_id: str):
         green_reset = await a2a_client.reset_agent_trigger(
             green_launcher, 
             agent_id=battle["green_agent_id"], 
+            backend_url=default_backend_url,
             extra_args={}
         )
         if not green_reset:
@@ -220,6 +221,7 @@ async def process_battle(battle_id: str):
             op_reset = await a2a_client.reset_agent_trigger(
                 op_launcher, 
                 agent_id=op_id, 
+                backend_url=default_backend_url,
                 extra_args={}
             )    
             if not op_reset:
@@ -320,7 +322,7 @@ async def process_battle(battle_id: str):
                 battle = db.read("battles", battle_id)
                 if battle:
                     battle["state"] = "error"
-                    battle["error"] = f"Failed to send info to {name} agent"
+                    battle["error"] = f"Agent {name} failed to respond"
                     db.update("battles", battle_id, battle)
                     add_system_log(battle_id, f"Failed to notify {name} agent", {
                         "agent_name": name,

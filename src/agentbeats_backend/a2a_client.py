@@ -34,7 +34,10 @@ class AgentBeatsA2AClient:
         """Get agent card using SDK function."""
         return await get_agent_card(endpoint)
             
-    async def reset_agent_trigger(self, launcher_url: str, agent_id: str, extra_args: dict = None) -> bool:
+    async def reset_agent_trigger(self, launcher_url: str, 
+                                        agent_id: str, 
+                                        backend_url: str, 
+                                        extra_args: dict = None) -> bool:
         """Reset an agent via its launcher."""
         httpx_client = None
         try:
@@ -44,6 +47,7 @@ class AgentBeatsA2AClient:
             reset_payload = {
                 "signal": "reset",
                 "agent_id": agent_id,
+                "backend_url": backend_url,
                 "extra_args": extra_args
             }
 

@@ -39,7 +39,7 @@ class AgentBeatsHook(RunHooks):
         super().__init__()
         self.battle_context = battle_context
 
-    def on_tool_start(self, context, agent, tool):
+    def on_tool_start(self, context, agent, tool, tool_input):
         update_battle_process(
             battle_id=self.battle_context["battle_id"],
             backend_url=self.battle_context["backend_url"],
@@ -47,6 +47,7 @@ class AgentBeatsHook(RunHooks):
             detail={
                 "tool_args": tool.args,
                 "tool_kwargs": tool.kwargs,
+                "tool_input": tool_input
             },
             reported_by=agent.name
         )

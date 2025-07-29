@@ -10,13 +10,14 @@ import subprocess
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 __all__ = ["BeatsAgentLauncher"]
 
 
 class _SignalPayload(BaseModel):
+    backend_url: str
     signal: str
     agent_id: str
     extra_args: Optional[dict] = None
@@ -50,14 +51,12 @@ class BeatsAgentLauncher:
         model_type: str,
         model_name: str,
         mcp_list: List[str],
-        tool_list: List[str],
-        backend_url: str,
+        tool_list: List[str]
     ) -> None:
         # agent settings
         self.agent_card = Path(agent_card).expanduser().resolve()
         self.mcp_list = mcp_list
         self.tool_file = tool_list
-        self.backend_url = backend_url.rstrip("/")
 
         # launcher server settings
         self.launcher_host = launcher_host
@@ -113,7 +112,7 @@ class BeatsAgentLauncher:
                 self._agent_proc.wait()
 
     # reset router
-    async def _reset_endpoint(self, payload: _SignalPayload):
+    async def _reset_endpoint(self, payload: _SignalPayload) -> dict:
         if payload.signal != "reset":
             raise HTTPException(400, "unsupported signal")
 
@@ -125,12 +124,12 @@ class BeatsAgentLauncher:
 
             try:
                 requests.put(
-                    f"{self.backend_url}/agents/{payload.agent_id}",
+                    f"{payload.backend_url}/agents/{payload.agent_id}",
                     json={"ready": True},
                     timeout=5,
                 )
             except requests.RequestException as e:
-                print(f"[Launcher] WARN failed to notify backend: {e}")
+                print(f"[Launcher] WARNING: failed to notify backend: {e}")
 
             return {"status": "restarted", "pid": self._agent_proc.pid}
 
@@ -140,8 +139,8 @@ class BeatsAgentLauncher:
 
         @app.post("/reset")
         async def _reset(payload: _SignalPayload):
-            return await self._reset_endpoint(payload)
-        
+            return await self._reset_endpoint(payload=payload)
+
         @app.get("/status")
         async def _status():
             if self._agent_proc and self._agent_proc.poll() is None:
