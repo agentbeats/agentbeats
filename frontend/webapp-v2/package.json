@@ -41,6 +41,7 @@
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.52.1",
+		"@sveltejs/adapter-node": "^5.2.13",
 		"embla-carousel-autoplay": "^8.6.0",
 		"marked": "^16.1.1"
 	}

@@ -23,6 +23,10 @@
 					console.log('User not authenticated, redirecting to login');
 					goto('/login');
 				}
+			} else if (currentPath === '/login' && $user && !$loading) {
+				// If user is authenticated and on login page, redirect to dashboard
+				console.log('User authenticated, redirecting to dashboard');
+				goto('/dashboard');
 			}
 		});
 
