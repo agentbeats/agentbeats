@@ -6,7 +6,7 @@ version = "1.0.0"
 # Agents to be launched
 [[agents]]
 name = "Blue Agent"
-card = "blue(weaker)_agent_card.toml"
+card = "blue_weaker_agent_card.toml"
 launcher_host = "0.0.0.0"
 launcher_port = 6010
 agent_host = "0.0.0.0"
@@ -19,7 +19,7 @@ mcp_servers = []
 
 [[agents]]
 name = "Red Agent"
-card = "red(stronger)_agent_card.toml"
+card = "red_stronger_agent_card.toml"
 launcher_host = "0.0.0.0"
 launcher_port = 6020
 agent_host = "0.0.0.0"
@@ -32,7 +32,7 @@ mcp_servers = []
 
 [[agents]]
 name = "Green Agent"
-card = "green_agent/green(weaker)_agent_card.toml"
+card = "green_agent/green_agent_card.toml"
 launcher_host = "0.0.0.0"
 launcher_port = 9030
 agent_host = "0.0.0.0"
@@ -42,6 +42,19 @@ model_type = "openai"
 model_name = "o4-mini"
 tools = ["green_agent/tools.py"]
 mcp_servers = ["http://localhost:9001/sse"]
+is_green = true
+
+[[agents.participant_requirements]]
+  role = "red_agent"
+  name = "prompt_injector"
+  required = true
+  participant_agent = "Red Agent"
+
+[[agents.participant_requirements]]
+  role = "blue_agent"
+  name = "guardrail_generator"
+  required = true
+  participant_agent = "Blue Agent"
 
 # Launch configuration
 [launch]

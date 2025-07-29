@@ -16,7 +16,7 @@ from .agent_executor import *
 from .agent_launcher import *
 from .utils.deploy.scenario_manager import ScenarioManager
 from . import get_registered_tools, tool
-from .utils.deploy.depoly import _deploy_current_terminal, _deploy_separate_terminals, _deploy_tmux
+from .utils.deploy.deploy import _deploy_current_terminal, _deploy_separate_terminals, _deploy_tmux
 
 
 def _check_environment():
@@ -158,7 +158,6 @@ def _check_environment():
             for i, warning in enumerate(warnings, 1):
                 print(f"  {i}. {warning}")
     
-    # Quick fix suggestions
     if issues or warnings:
         print("\n" + "=" * 50)
         print("Fix Suggestions:")
@@ -373,12 +372,21 @@ def main():
     run_parser.add_argument("--reload", action="store_true")
 
     # load_scenario command
-    scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml")
-    scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
-    scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
+    load_scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml")
+    load_scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
+    load_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
                                 default="", help="Launch mode (default: tmux)")
-    scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
-    scenario_parser.add_argument("--backend", help="Override backend URL for all agents")
+    load_scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
+    load_scenario_parser.add_argument("--backend", help="Override backend URL for all agents")
+
+    # run_scenario command
+    run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml")
+    run_scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
+    run_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"],
+                                default="", help="Launch mode (default: tmux)")
+    run_scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
+    run_scenario_parser.add_argument("--backend", help="Backend URL", default="http://localhost:9000")
+    run_scenario_parser.add_argument("--frontend", help="Frontend URL", default="http://localhost:5173")
 
     # run_backend command
     backend_parser = sub_parser.add_parser("run_backend", help="Start the AgentBeats backend server")
@@ -434,6 +442,12 @@ def main():
         scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
         manager = ScenarioManager(scenarios_root)
         manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
+    elif args.cmd == "run_scenario":
+        scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
+        manager = ScenarioManager(scenarios_root)
+        manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
+        time.sleep(10)
+        manager.start_battle(args.scenario_name, args.backend, args.frontend)
     elif args.cmd == "run_backend":
         _run_backend(host=args.host, port=args.port, reload=args.reload)
     elif args.cmd == "run_frontend":
