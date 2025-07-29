@@ -653,6 +653,7 @@ def create_battle(battle_request: Dict[str, Any]) -> Dict[str, Any]:
             "config": battle_request.get('config', {}),
             "state": "pending",
             "created_at": datetime.utcnow().isoformat() + "Z",
+            "created_by": battle_request.get('created_by', 'N/A'),
             "interact_history": []
         }
 
