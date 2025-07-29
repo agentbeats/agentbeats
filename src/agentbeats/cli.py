@@ -173,7 +173,7 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int,
     print("=" * 50)
     if backend_port != 9000 or mcp_port != 9001:
         print(f"Warning: Backend port is set to {backend_port}, MCP port is set to {mcp_port}.")
-        print("Make sure your [mcp, frontend, agents] are configured to connect to these ports.")
+        print("Make sure your [mcp, frontend] are configured to connect to these ports.")
     
     # Find directories
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
@@ -270,7 +270,7 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str = "webapp
 def _run_backend(host: str, port: int, reload: bool = False):
     """Start the AgentBeats backend server"""
     if port != 9000:
-        print(f"Warning: Backend port is set to {port}, which is not the default 9000. Make sure your [frontend, mcp, agents] are configured to connect to this port.")
+        print(f"Warning: Backend port is set to {port}, which is not the default 9000. Make sure your [frontend, mcp] are configured to connect to this port.")
     try:
         print(f"Starting AgentBeats Backend...")
         print(f"API will be available at http://{host}:{port}")
@@ -376,7 +376,6 @@ def main():
     load_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
                                 default="", help="Launch mode (default: tmux)")
     load_scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
-    load_scenario_parser.add_argument("--backend", help="Override backend URL for all agents")
 
     # run_scenario command
     run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml")
@@ -440,11 +439,11 @@ def main():
     elif args.cmd == "load_scenario":
         scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
         manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
+        manager.load_scenario(args.scenario_name, args.launch_mode)
     elif args.cmd == "run_scenario":
         scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
         manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
+        manager.load_scenario(args.scenario_name, args.launch_mode)
         time.sleep(10)
         manager.start_battle(args.scenario_name, args.backend, args.frontend)
     elif args.cmd == "run_backend":

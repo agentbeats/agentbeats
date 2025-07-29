@@ -104,7 +104,7 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
                 frontend_dir = current_dir / "frontend" / "webapp"
                 subprocess.run("pm2 delete agentbeats-ssr", shell=True, capture_output=True)
                 subprocess.run(
-                    f"pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr -- --port {frontend_port}",  
+                    f"pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon",  
                     cwd=frontend_dir, check=True, shell=True
                 )
                 print("[Success] Frontend started with PM2")
@@ -125,8 +125,12 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
         print("\n" + "=" * 50)
         print("[Status] AgentBeats Deployment Status:")
         print("=" * 50)
+        if mode == "build":
+            print(f"[Frontend] http://localhost:3000")
+        else:
+            print(f"[Frontend] http://localhost:{frontend_port}")
+            
         print(f"[Backend]  http://localhost:{backend_port}")
-        print(f"[Frontend] http://localhost:{frontend_port}")
         print(f"[MCP]      http://localhost:{mcp_port}")
         print("=" * 50)
         print("Press Ctrl+C to stop all services")
@@ -197,9 +201,9 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
             build_cmd = f"{sys.executable} -m agentbeats run_frontend --mode build"
             frontend_dir = current_dir / "frontend" / "webapp"
             if system == "Windows":
-                pm2_cmd = f"pm2 delete agentbeats-ssr 2>nul || echo Cleaned && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr -- --port {frontend_port}"
+                pm2_cmd = f"pm2 delete agentbeats-ssr 2>nul || echo Cleaned && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
             else:
-                pm2_cmd = f"pm2 delete agentbeats-ssr 2>/dev/null || true && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr -- --port {frontend_port}"
+                pm2_cmd = f"pm2 delete agentbeats-ssr 2>/dev/null || true && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
             frontend_cmd = f"{build_cmd} && {pm2_cmd}"
             
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -257,9 +261,11 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
     print("[Status] AgentBeats Services Started in Separate Terminals:")
     print("=" * 50)
     print(f"[Backend]  http://localhost:{backend_port}")
-    print(f"[Frontend] http://localhost:{frontend_port}")
     if mode == "build":
+        print(f"[Frontend] http://localhost:3000")
         print(f"[Frontend] Running with PM2 (use 'pm2 logs agentbeats-ssr' for logs)")
+    else:
+        print(f"[Frontend] http://localhost:{frontend_port}")
     print(f"[MCP]      http://localhost:{mcp_port}")
     print("=" * 50)
     print("Each service is running in its own terminal window.")
@@ -324,7 +330,7 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
                 # Build first, then start with PM2
                 build_cmd = f"{sys.executable} -m agentbeats run_frontend --mode build"
                 frontend_dir = current_dir / "frontend" / "webapp"
-                pm2_cmd = f"npx pm2 delete agentbeats-ssr 2>/dev/null || true && npx pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon -- --port {frontend_port}"
+                pm2_cmd = f"npx pm2 delete agentbeats-ssr 2>/dev/null || true && npx pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
                 frontend_cmd = f"echo 'Building frontend...' && {build_cmd} && echo 'Starting with PM2...' && {pm2_cmd} && echo 'Frontend started with PM2. Use pm2 logs agentbeats-ssr to see logs.'"
                 
             except (subprocess.CalledProcessError, FileNotFoundError):
@@ -365,9 +371,11 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
         print("=" * 50)
         print(f"[Backend]  http://localhost:{backend_port} (Left pane)")
         print(f"[MCP]      http://localhost:{mcp_port} (Top right pane)")
-        print(f"[Frontend] http://localhost:{frontend_port} (Bottom right pane)")
         if mode == "build":
+            print(f"[Frontend] http://localhost:3000 (Bottom right pane)")
             print(f"[Frontend] Running with PM2 (use 'npx pm2 logs agentbeats-ssr' for logs)")
+        else:
+            print(f"[Frontend] http://localhost:{frontend_port} (Bottom right pane)")
         print("=" * 50)
         print(f"To attach to tmux session: tmux attach-session -t {session_name}")
         print(f"To kill tmux session: tmux kill-session -t {session_name}")

@@ -156,12 +156,10 @@ class ScenarioAgent:
                 if not isinstance(req["required"], bool):
                     raise ValueError(f"required must be boolean for green agent {self.name}")
     
-    def get_command(self, backend_override: str = None) -> str:
+    def get_command(self,) -> str:
         """Generate the agentbeats run command for this agent"""
         # Use override backend if provided, otherwise use configured backend
         system = platform.system()
-        
-        backend = backend_override if backend_override else self.backend
 
         if system == "Linux":
             env_append = ""
@@ -184,9 +182,6 @@ class ScenarioAgent:
             "--agent_host", self.agent_host,
             "--agent_port", str(self.agent_port)
         ]
-
-        if backend:
-            cmd_parts.extend(["--backend", backend])
 
         if system == "Linux":
             # If running on Linux, prepend environment variables
@@ -249,13 +244,9 @@ class ScenarioManager:
         
         return config
     
-    def load_scenario(self, scenario_name: str, mode: str = None, backend_override: str = None):
+    def load_scenario(self, scenario_name: str, mode: str = None):
         """Start all components of a scenario"""
         print(f"Starting scenario: {scenario_name}")
-        print(f"backend_override: {backend_override}")
-        
-        if backend_override:
-            print(f"Using backend override: {backend_override}")
         
         config = self.load_scenario_toml(scenario_name)
         launch_config = config.get("launch", {})
@@ -290,19 +281,19 @@ class ScenarioManager:
             print(f"\nStarting {len(self.agents)} agents...")
             
             if mode == "tmux":
-                self._start_agents_tmux(config, backend_override)
+                self._start_agents_tmux(config)
             elif mode == "separate":
-                self._start_agents_terminals(backend_override)
+                self._start_agents_terminals()
             elif mode == "current":
-                self._start_agents_background(backend_override)
+                self._start_agents_background()
             else:
                 raise ValueError(f"Unknown launch mode: {mode}")
     
-    def _start_agents_tmux(self, config: Dict[str, Any], backend_override: str = None):
+    def _start_agents_tmux(self, config: Dict[str, Any]):
         """Start agents in tmux panes"""
         if not shutil.which("tmux"):
             print("❌ tmux is not installed. Falling back to separate terminals.")
-            self._start_agents_terminals(backend_override)
+            self._start_agents_terminals()
             return
         
         launch_config = config.get("launch", {})
@@ -314,7 +305,7 @@ class ScenarioManager:
         
         # Create new session with first agent
         first_agent = self.agents[0]
-        cmd = f"cd '{first_agent.scenario_dir}' && {first_agent.get_command(backend_override)}"
+        cmd = f"cd '{first_agent.scenario_dir}' && {first_agent.get_command()}"
         
         subprocess.run([
             'tmux', 'new-session', '-d', '-s', session_name,
@@ -327,7 +318,7 @@ class ScenarioManager:
             first_agent.name
         ], check=True)
         for i, agent in enumerate(self.agents[1:], 1):
-            cmd = f"cd '{agent.scenario_dir}' && {agent.get_command(backend_override)}"
+            cmd = f"cd '{agent.scenario_dir}' && {agent.get_command()}"
             if i == 1:
                 subprocess.run([
                     'tmux', 'split-window', '-t', session_name, '-h',
@@ -359,13 +350,13 @@ class ScenarioManager:
         print(f"To attach: tmux attach -t {session_name}")
         print(f"To stop: tmux kill-session -t {session_name}")
     
-    def _start_agents_terminals(self, backend_override: str = None):
+    def _start_agents_terminals(self,):
         """Start agents in separate terminal windows"""
         system = platform.system()
         
         for agent in self.agents:
             print(f"Starting {agent.name}...")
-            command = agent.get_command(backend_override)
+            command = agent.get_command()
             
             if system == "Windows":
                 full_cmd = f'start cmd /k "title {agent.name} && cd /d {agent.scenario_dir} && {command}"'
@@ -397,11 +388,11 @@ class ScenarioManager:
         
         print("✅ All agents started in separate terminals!")
     
-    def _start_agents_background(self, backend_override: str = None):
+    def _start_agents_background(self,):
         """Start agents as background processes"""
         for agent in self.agents:
             print(f"Starting {agent.name}...")
-            command = agent.get_command(backend_override)
+            command = agent.get_command()
             
             process = subprocess.Popen(
                 command,
@@ -637,7 +628,7 @@ def main():
         if not args.scenario:
             print("Error: scenario name required for load action")
             return
-        manager.load_scenario(args.scenario, args.launcg_mode, args.backend)
+        manager.load_scenario(args.scenario, args.launch_mode)
     
     elif args.action == "stop":
         if not args.scenario:
