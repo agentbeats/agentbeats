@@ -9,11 +9,43 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 # Configure logging
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # Import context management
 from .context import BattleContext
 
+
+def update_battle_process(battle_id: str, 
+                          backend_url: str,
+                          message: str, 
+                          detail: dict = None, 
+                          markdown_content: str = None, 
+                          reported_by: str = "agentbeats_sdk") -> str:
+    """
+    Log battle process updates to backend API.
+    """
+    event_data = {
+        "is_result": False,
+        "message": message,
+        "reported_by": reported_by,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+    if detail:
+        event_data["detail"] = detail
+
+    if markdown_content:
+        event_data["markdown_content"] = markdown_content
+    
+    requests.post(
+        f"{backend_url}/battles/{battle_id}",
+        json=event_data,
+        headers={"Content-Type": "application/json"},
+        timeout=10
+    )
+
+# Comment: Why do we have so many functions here?
+# I think one unified function for logging events would be better.
+# These are kept for any legacy use.
 
 def _make_api_request(context: BattleContext, endpoint: str, data: Dict[str, Any]) -> bool:
     """Make API request to backend and return success status."""
@@ -26,7 +58,7 @@ def _make_api_request(context: BattleContext, endpoint: str, data: Dict[str, Any
         )
         return response.status_code == 204
     except requests.exceptions.RequestException as e:
-        logger.error("Network error when recording to backend for battle %s: %s", context.battle_id, str(e))
+        _logger.error("Network error when recording to backend for battle %s: %s", context.battle_id, str(e))
         return False
 
 
@@ -41,7 +73,7 @@ def log_ready(context: BattleContext, capabilities: Optional[Dict[str, Any]] = N
         ready_data["capabilities"] = capabilities
     
     if _make_api_request(context, "ready", ready_data):
-        logger.info("Successfully logged agent readiness for battle %s", context.battle_id)
+        _logger.info("Successfully logged agent readiness for battle %s", context.battle_id)
         return 'readiness logged to backend'
     else:
         return 'readiness logging failed'
@@ -58,7 +90,7 @@ def log_error(context: BattleContext, error_message: str, error_type: str = "err
     }
     
     if _make_api_request(context, "errors", error_data):
-        logger.error("Successfully logged error to backend for battle %s", context.battle_id)
+        _logger.error("Successfully logged error to backend for battle %s", context.battle_id)
         return 'error logged to backend'
     else:
         return 'error logging failed'
@@ -75,7 +107,7 @@ def log_startup(context: BattleContext, config: Optional[Dict[str, Any]] = None)
         startup_data["config"] = config
     
     if _make_api_request(context, "startup", startup_data):
-        logger.info("Successfully logged agent startup for battle %s", context.battle_id)
+        _logger.info("Successfully logged agent startup for battle %s", context.battle_id)
         return 'startup logged to backend'
     else:
         return 'startup logging failed'
@@ -91,7 +123,7 @@ def log_shutdown(context: BattleContext, reason: str = "normal") -> str:
     }
     
     if _make_api_request(context, "shutdown", shutdown_data):
-        logger.info("Successfully logged agent shutdown for battle %s", context.battle_id)
+        _logger.info("Successfully logged agent shutdown for battle %s", context.battle_id)
         return 'shutdown logged to backend'
     else:
         return 'shutdown logging failed' 

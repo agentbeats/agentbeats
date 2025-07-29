@@ -4,10 +4,11 @@
 AgentBeats SDK implementation for the AgentBeats platform.
 """
 
+import os
+import json
 import tomllib
 import uvicorn
-import os
-from typing import Dict, List, Any, Optional, Callable
+from typing import *
 
 from agents import (
     Agent, 
@@ -16,7 +17,8 @@ from agents import (
     Model, 
     ModelProvider, 
     OpenAIChatCompletionsModel, 
-    set_tracing_disabled
+    set_tracing_disabled, 
+    RunHooks
 )
 from agents.mcp import MCPServerSse
 from openai import AsyncOpenAI
@@ -28,6 +30,27 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.events import EventQueue
 from a2a.utils import new_task, new_agent_text_message
 from a2a.types import Part, TextPart, TaskState, AgentCard
+
+from .logging import update_battle_process
+
+class AgentBeatsHook(RunHooks):
+    """Custom hooks for AgentBeats to handle agent execution events."""
+    def __init__(self, battle_context: Dict[str, Any]):
+        super().__init__()
+        self.battle_context = battle_context
+
+    def on_tool_start(self, context, agent, tool):
+        update_battle_process(
+            battle_id=self.battle_context["battle_id"],
+            backend_url=self.battle_context["backend_url"],
+            message=f"Agent {agent.name} started using tool {tool.name}.",
+            detail={
+                "tool_args": tool.args,
+                "tool_kwargs": tool.kwargs,
+            },
+            reported_by=agent.name
+        )
+        return super().on_tool_start(context, agent, tool)
 
 __all__ = [
     "BeatsAgent",
@@ -200,12 +223,14 @@ class AgentBeatsExecutor(AgentExecutor):
             self.AGENT_PROMPT += str(agent_card_json["skills"])
 
         self.main_agent = None
+        self.battle_context = None
+        self.battle_context_hook = None
 
     async def _init_agent_and_mcp(self):
         """Initialize the main agent with the provided tools and MCP servers."""
         for mcp_server in self.mcp_list:
             await mcp_server.connect()
-        
+
         self.main_agent = create_agent(
             agent_name=self.agent_card_json["name"],
             model_type=self.model_type,
@@ -236,7 +261,10 @@ class AgentBeatsExecutor(AgentExecutor):
             "role": "user",
         }]
 
-        result = await Runner.run(self.main_agent, query_ctx, max_turns=30)
+        result = await Runner.run(self.main_agent, 
+                                  query_ctx, 
+                                  max_turns=30, 
+                                  hooks=self.battle_context_hook)
         self.chat_history = result.to_input_list()
 
         # print agent output
@@ -249,6 +277,23 @@ class AgentBeatsExecutor(AgentExecutor):
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
+        """Execute the agent with the given context and event queue."""
+
+        # First try to parse battle context from the request
+        try:
+            raw_input_str = context.get_user_input()
+            raw_input_json = json.loads(raw_input_str)
+            self.battle_context = {
+                "frontend_agent_name": raw_input_json["agent_name"],
+                "agent_id": raw_input_json["agent_id"],
+                "battle_id": raw_input_json["battle_id"],
+                "backend_url": raw_input_json["backend_url"],
+            }
+            self.battle_context_hook = AgentBeatsHook(self.battle_context)
+            print("[AgentBeatsExecutor] Battle context parsed:", self.battle_context)
+        except Exception as e:
+            pass
+
         # make / get current task
         task = context.current_task
         if task is None: # first chat

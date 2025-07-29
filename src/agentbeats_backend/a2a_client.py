@@ -165,5 +165,40 @@ class AgentBeatsA2AClient:
             logger.error(f"Exception type: {type(e).__name__}")
             return False
 
+    async def send_battle_info(self, 
+                                endpoint: str,                                 
+                                battle_id: str,
+                                agent_name: str,
+                                agent_id: str,
+                                backend_url: str = "http://localhost:9000"):
+        try:
+            battle_info = {
+                "type": "battle_info",
+                "battle_id": battle_id,
+                "agent_name": agent_name,
+                "agent_id": agent_id,
+                "backend_url": backend_url,
+            }
+            
+            # Use SDK function to send message
+            logger.info(f"About to send message to {endpoint}")
+            try:
+                response = await send_message_to_agent(endpoint, json.dumps(battle_info))
+                logger.info(f"Message sent successfully, response: {response}")
+            except Exception as send_error:
+                logger.error(f"Failed to send message to {endpoint}: {send_error}")
+                logger.error(f"Exception type: {type(send_error).__name__}")
+                raise send_error
+            
+            # Return True if we got any response (not an error)
+            success = response and not response.startswith("Error:")
+            logger.info(f"Green agent notification {'succeeded' if success else 'failed'}")
+            return success
+                            
+        except Exception as e:
+            logger.error(f"Error in notify_green_agent for {endpoint}: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            return False
+
 # Create a client instance
 a2a_client = AgentBeatsA2AClient()

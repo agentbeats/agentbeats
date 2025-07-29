@@ -142,7 +142,7 @@ class ScenarioAgent:
         backend = backend_override if backend_override else self.backend
         
         cmd_parts = [
-            "agentbeats", "run", f"'{self.card}'",
+            "agentbeats", "run", f"{self.card}",
             "--launcher_host", self.launcher_host,
             "--launcher_port", str(self.launcher_port),
             "--agent_host", self.agent_host,
