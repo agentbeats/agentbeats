@@ -80,7 +80,7 @@
 		}
 	}
 
-	$: username = SKIP_AUTH ? 'Test User' : ($user?.user_metadata?.name || $user?.email || 'User');
+	const username = $derived(SKIP_AUTH ? 'Test User' : ($user?.user_metadata?.name || $user?.email || 'User'));
 </script>
 
 <main class="flex-1 p-6">
