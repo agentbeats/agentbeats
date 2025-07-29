@@ -7,11 +7,27 @@
 SESSION="agentbeats"
 PROJECT_DIR="$HOME/agentbeats" # On PRODUCTION SERVER!
 
-echo "Setting up AgentBeats production server..."
+# Webapp version selection (webapp or webapp-v2)
+WEBAPP_VERSION=${1:-webapp-v2}  # Default to webapp-v2 if no argument provided
+
+# Validate webapp version
+if [ "$WEBAPP_VERSION" != "webapp" ] && [ "$WEBAPP_VERSION" != "webapp-v2" ]; then
+    echo "Error: Invalid webapp version. Use 'webapp' or 'webapp-v2'"
+    echo "Usage: $0 [webapp|webapp-v2]"
+    exit 1
+fi
+
+echo "Setting up AgentBeats production server with $WEBAPP_VERSION..."
 
 # Check if we're in the right directory
 if [ ! -f "README.md" ] || [ ! -d "src" ]; then
     echo "Error: Please run this script from the AgentBeats project root directory"
+    exit 1
+fi
+
+# Check if the selected webapp directory exists
+if [ ! -d "frontend/$WEBAPP_VERSION" ]; then
+    echo "Error: Frontend directory 'frontend/$WEBAPP_VERSION' not found"
     exit 1
 fi
 
@@ -64,16 +80,16 @@ else
 fi
 
 # Check frontend dependencies
-if [ ! -d "frontend/webapp-v2/node_modules" ]; then
-    echo "Installing frontend dependencies..."
-    cd frontend/webapp-v2 && npm install && cd ..
+if [ ! -d "frontend/$WEBAPP_VERSION/node_modules" ]; then
+    echo "Installing frontend dependencies for $WEBAPP_VERSION..."
+    cd frontend/$WEBAPP_VERSION && npm install && cd ../..
 else
-    echo "Frontend dependencies are installed"
+    echo "Frontend dependencies are installed for $WEBAPP_VERSION"
 fi
 
 # Build frontend
-echo "Building frontend..."
-agentbeats run_frontend --mode build
+echo "Building frontend for $WEBAPP_VERSION..."
+agentbeats run_frontend --mode build --webapp-version $WEBAPP_VERSION
 
 # Start tmux session with backend
 echo "Starting backend server..."
@@ -84,22 +100,22 @@ echo "Starting MCP server..."
 tmux new-window -t $SESSION -n "mcp" "cd $PROJECT_DIR && source venv/bin/activate && PYTHONPATH=. python src/agentbeats_backend/mcp/mcp_server.py"
 
 # Add frontend window
-echo "Starting frontend..."
-tmux new-window -t $SESSION -n "frontend" "cd $PROJECT_DIR/frontend/webapp-v2 && pm2 start build/index.js --name agentbeats-ssr --no-daemon"
+echo "Starting frontend for $WEBAPP_VERSION..."
+tmux new-window -t $SESSION -n "frontend" "cd $PROJECT_DIR/frontend/$WEBAPP_VERSION && pm2 start build/index.js --name agentbeats-ssr --no-daemon"
 
 # Add monitoring window
 echo "Creating monitoring window..."
-tmux new-window -t $SESSION -n "monitor" "cd $PROJECT_DIR && echo 'Monitoring window - useful commands:' && echo 'pm2 list' && echo 'tail -f scenarios/logs/*.log' && echo 'lsof -i :9000' && bash"
+tmux new-window -t $SESSION -n "monitor" "cd $PROJECT_DIR && echo 'Monitoring window - useful commands:' && echo 'pm2 list' && echo 'tail -f scenarios/logs/*.log' && echo 'lsof -i :9000' && echo 'Using $WEBAPP_VERSION' && bash"
 
 # Select backend window
 tmux select-window -t $SESSION:backend
 
-echo "Setup complete!"
+echo "Setup complete for $WEBAPP_VERSION!"
 echo ""
 echo "Windows created:"
 echo "  backend  - Backend API server"
 echo "  mcp      - MCP server"
-echo "  frontend - Frontend server via pm2"
+echo "  frontend - Frontend server via pm2 ($WEBAPP_VERSION)"
 echo "  monitor  - System monitoring"
 echo ""
 echo "To attach: tmux attach -t $SESSION"
@@ -124,13 +140,13 @@ else
 fi
 
 if pm2 id agentbeats-ssr >/dev/null 2>&1; then
-    echo "Frontend: Running"
+    echo "Frontend ($WEBAPP_VERSION): Running"
 else
-    echo "Frontend: Not running"
+    echo "Frontend ($WEBAPP_VERSION): Not running"
 fi
 
 echo ""
-echo "setup at tmux session: $SESSION"
+echo "setup at tmux session: $SESSION with $WEBAPP_VERSION"
 # read
 
 # # Attach to session

@@ -15,7 +15,7 @@ import shutil
 from pathlib import Path
 
 
-def check_environment():
+def check_environment(webapp_version):
     """Check if the environment is properly set up"""
     print("Checking environment...")
     
@@ -79,7 +79,7 @@ def check_environment():
         issues.append("❌ At least one API key (OPENAI_API_KEY or OPENROUTER_API_KEY) must be set")
     
     # Check required directories
-    required_dirs = ['src/agentbeats_backend', 'src/agentbeats_backend/mcp', 'frontend/webapp-v2']
+    required_dirs = ['src/agentbeats_backend', 'src/agentbeats_backend/mcp', f'frontend/{webapp_version}']
     for dir_path in required_dirs:
         if not os.path.exists(dir_path):
             issues.append(f"❌ Required directory not found: {dir_path}")
@@ -87,25 +87,25 @@ def check_environment():
             print(f"✅ Directory exists: {dir_path}")
     
     # Check required files
-    required_files = ['src/agentbeats_backend/run.py', 'src/agentbeats_backend/mcp/mcp_server.py', 'frontend/webapp-v2/package.json']
+    required_files = ['src/agentbeats_backend/run.py', 'src/agentbeats_backend/mcp/mcp_server.py', f'frontend/{webapp_version}/package.json']
     for file_path in required_files:
         if not os.path.exists(file_path):
             issues.append(f"❌ Required file not found: {file_path}")
         else:
             print(f"✅ File exists: {file_path}")
     
-    # Check if webapp-v2 dependencies are installed
-    if os.path.exists('frontend/webapp-v2/node_modules'):
-        print("✅ Frontend dependencies are installed")
+    # Check if webapp dependencies are installed
+    if os.path.exists(f'frontend/{webapp_version}/node_modules'):
+        print(f"✅ Frontend dependencies are installed for {webapp_version}")
     else:
-        issues.append("❌ Frontend dependencies not installed. Run 'cd webapp-v2 && npm install'")
+        issues.append(f"❌ Frontend dependencies not installed for {webapp_version}. Run 'cd frontend/{webapp_version} && npm install'")
     
     return issues
 
 
-def start_in_current_terminal():
+def start_in_current_terminal(webapp_version):
     """Start all services in the current terminal"""
-    print("Starting services in current terminal...")
+    print(f"Starting services in current terminal with {webapp_version}...")
     
     # Create a list to store processes
     processes = []
@@ -134,10 +134,10 @@ def start_in_current_terminal():
         processes.append(('MCP', mcp_process))
         
         # Start frontend
-        print("Starting frontend server...")
+        print(f"Starting frontend server ({webapp_version})...")
         frontend_process = subprocess.Popen(
             ['npm', 'run', 'dev'],
-            cwd='frontend/webapp-v2',
+            cwd=f'frontend/{webapp_version}',
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -162,7 +162,7 @@ def start_in_current_terminal():
             thread.start()
             threads.append(thread)
         
-        print("\nAll services started! Press Ctrl+C to stop all services.")
+        print(f"\nAll services started with {webapp_version}! Press Ctrl+C to stop all services.")
         print("Services running on:")
         print("- Backend: http://localhost:9000")
         print("- MCP Server: http://localhost:9001")
@@ -181,9 +181,9 @@ def start_in_current_terminal():
         print("All services stopped.")
 
 
-def start_in_separate_terminals():
+def start_in_separate_terminals(webapp_version):
     """Start each service in a separate terminal window"""
-    print("Starting services in separate terminals...")
+    print(f"Starting services in separate terminals with {webapp_version}...")
     
     system = platform.system()
     
@@ -200,8 +200,8 @@ def start_in_separate_terminals():
         if system == "Windows":
             # Windows command
             if name == "Frontend":
-                # For frontend, we need to change to webapp-v2 directory first
-                full_cmd = f'start cmd /k "title {name} && cd webapp-v2 && {cmd}"'
+                # For frontend, we need to change to webapp directory first
+                full_cmd = f'start cmd /k "title {name} && cd frontend/{webapp_version} && {cmd}"'
             else:
                 full_cmd = f'start cmd /k "title {name} && {cmd}"'
             subprocess.Popen(full_cmd, shell=True)
@@ -209,7 +209,7 @@ def start_in_separate_terminals():
         elif system == "Darwin":  # macOS TODO: not validated yet
             # macOS command
             if name == "Frontend":
-                full_cmd = f'cd frontend/webapp-v2 && {cmd}'
+                full_cmd = f'cd frontend/{webapp_version} && {cmd}'
             else:
                 full_cmd = cmd
             
@@ -230,7 +230,7 @@ def start_in_separate_terminals():
             ]
             
             if name == "Frontend":
-                full_cmd = f'cd frontend/webapp-v2 && {cmd}; exec bash'
+                full_cmd = f'cd frontend/{webapp_version} && {cmd}; exec bash'
             else:
                 full_cmd = f'{cmd}; exec bash'
             
@@ -248,7 +248,7 @@ def start_in_separate_terminals():
         
         time.sleep(1)  # Small delay between opening terminals
     
-    print("\nAll services started in separate terminals!")
+    print(f"\nAll services started in separate terminals with {webapp_version}!")
     print("Services should be running on:")
     print("- Backend: http://localhost:9000")
     print("- MCP Server: http://localhost:9001")
@@ -261,6 +261,8 @@ def main():
                        help='Start each service in a separate terminal window')
     parser.add_argument('--check', action='store_true',
                        help='Only check environment configuration')
+    parser.add_argument('--webapp-version', choices=['webapp', 'webapp-v2'], default='webapp-v2',
+                       help='Choose which frontend to use (default: webapp-v2)')
     
     args = parser.parse_args()
     
@@ -269,8 +271,13 @@ def main():
         print("Error: Please run this script from the AgentBeats project root directory")
         sys.exit(1)
     
+    # Validate webapp version directory exists
+    if not os.path.exists(f'frontend/{args.webapp_version}'):
+        print(f"Error: Frontend directory 'frontend/{args.webapp_version}' not found")
+        sys.exit(1)
+    
     # Always check environment first
-    issues = check_environment()
+    issues = check_environment(args.webapp_version)
     
     if issues:
         print("\n⚠️  Environment Issues Found:")
@@ -283,7 +290,7 @@ def main():
         print("\nPlease fix the issues above before starting the services.")
         sys.exit(1)
     
-    print("\n✅ Environment check passed!")
+    print(f"\n✅ Environment check passed for {args.webapp_version}!")
     
     # If only checking, exit here
     if args.check:
@@ -292,9 +299,9 @@ def main():
     
     # Start services
     if args.separate:
-        start_in_separate_terminals()
+        start_in_separate_terminals(args.webapp_version)
     else:
-        start_in_current_terminal()
+        start_in_current_terminal(args.webapp_version)
 
 
 if __name__ == "__main__":
