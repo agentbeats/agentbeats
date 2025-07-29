@@ -39,6 +39,19 @@ model_type = "openai"
 model_name = "o4-mini"
 tools = ["green_agent/tools.py"]
 mcp_servers = ["http://localhost:9001/sse"]
+is_green = true
+
+[[agents.participant_requirements]]
+  role = "red_agent"
+  name = "prompt_injector"
+  required = true
+  participant_agent = "Red Agent"
+
+[[agents.participant_requirements]]
+  role = "blue_agent"
+  name = "guardrail_generator"
+  required = true
+  participant_agent = "Blue Agent"
 
 # Launch configuration
 [launch]
