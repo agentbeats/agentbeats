@@ -132,7 +132,7 @@ class ScenarioAgent:
         self.agent_port = config["agent_port"]
         
         # Optional fields
-        self.backend = config.get("backend", "http://localhost:9000")
+        self.backend = config.get("backend") # warning: these can be None
         self.model_type = config.get("model_type")
         self.model_name = config.get("model_name")
         self.tools = config.get("tools", [])
@@ -182,15 +182,15 @@ class ScenarioAgent:
             "--launcher_host", self.launcher_host,
             "--launcher_port", str(self.launcher_port),
             "--agent_host", self.agent_host,
-            "--agent_port", str(self.agent_port),
-            "--backend", backend
+            "--agent_port", str(self.agent_port)
         ]
+
+        if backend:
+            cmd_parts.extend(["--backend", backend])
 
         if system == "Linux":
             # If running on Linux, prepend environment variables
             cmd_parts.insert(0, env_append)
-
-        
         
         # Add model configuration only if specified
         if self.model_type:
@@ -252,6 +252,7 @@ class ScenarioManager:
     def load_scenario(self, scenario_name: str, mode: str = None, backend_override: str = None):
         """Start all components of a scenario"""
         print(f"Starting scenario: {scenario_name}")
+        print(f"backend_override: {backend_override}")
         
         if backend_override:
             print(f"Using backend override: {backend_override}")
