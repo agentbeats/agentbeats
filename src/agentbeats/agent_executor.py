@@ -39,16 +39,12 @@ class AgentBeatsHook(RunHooks):
         super().__init__()
         self.battle_context = battle_context
 
-    def on_tool_start(self, context, agent, tool, tool_input):
+    def on_tool_start(self, context, agent, tool):
         update_battle_process(
             battle_id=self.battle_context["battle_id"],
             backend_url=self.battle_context["backend_url"],
-            message=f"Agent {agent.name} started using tool {tool.name}.",
-            detail={
-                "tool_args": tool.args,
-                "tool_kwargs": tool.kwargs,
-                "tool_input": tool_input
-            },
+            message=f"Agent {agent.name} finished using tool {tool.name}.",
+            detail=tool.params_json_schema,
             reported_by=agent.name
         )
         return super().on_tool_start(context, agent, tool)
