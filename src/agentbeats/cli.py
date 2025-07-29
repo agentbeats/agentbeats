@@ -192,7 +192,7 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int,
         _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
 
 
-def _run_frontend(mode: str, host: str, port: int):
+def _run_frontend(mode: str, host: str, port: int, webapp_version: str = "webapp"):
     """Start the AgentBeats frontend server"""
     import subprocess
     import os
@@ -200,18 +200,19 @@ def _run_frontend(mode: str, host: str, port: int):
     
     # Find the frontend directory
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    frontend_dir = current_dir / "frontend" / "webapp"
+    frontend_dir = current_dir / "frontend" / webapp_version
     
     if not frontend_dir.exists():
         print(f"Error: Frontend directory not found at {frontend_dir}")
         print("Make sure you're running this from the AgentBeats project root.")
+        print(f"Available frontend directories: {list((current_dir / 'frontend').glob('*'))}")
         sys.exit(1)
 
     if mode == "install":
-        print("Installing frontend dependencies...")
+        print(f"Installing frontend dependencies for {webapp_version}...")
         try:
             subprocess.run("npm install", cwd=frontend_dir, check=True, shell=True)
-            print("Frontend dependencies installed successfully!")
+            print(f"Frontend dependencies installed successfully for {webapp_version}!")
             sys.exit(0)
         except subprocess.CalledProcessError as e:
             print(f"Error installing frontend dependencies: {e}")
@@ -219,12 +220,12 @@ def _run_frontend(mode: str, host: str, port: int):
 
     # Check if frontend installed
     if not (frontend_dir / "node_modules").exists():
-        print(f"Error: Frontend dependencies not installed. Run `agentbeats run_frontend --mode install` to install them.")
+        print(f"Error: Frontend dependencies not installed for {webapp_version}. Run `agentbeats run_frontend --mode install --webapp-version {webapp_version}` to install them.")
         sys.exit(1)
     
-    print(f"Starting AgentBeats Frontend in {mode} mode...")
+    print(f"Starting AgentBeats Frontend ({webapp_version}) in {mode} mode...")
     print(f"Frontend directory: {frontend_dir}")
-    print("Note: Assume backend is running at http://localhost:9000, if not, please go to `frontend/webapp/vite.config.js` to change the backend URL.")
+    print("Note: Assume backend is running at http://localhost:9000, if not, please go to `frontend/{webapp_version}/vite.config.js` to change the backend URL.")
     
     try:
         if mode == "dev":
@@ -237,14 +238,14 @@ def _run_frontend(mode: str, host: str, port: int):
             )
             
         elif mode == "build":
-            print("Building frontend for production...")
+            print(f"Building frontend ({webapp_version}) for production...")
             # Build for production
             subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True)
             print("Build completed successfully!")
             print(f"Built files are in {frontend_dir / 'build'}")
             
         elif mode == "preview":
-            print("Building and previewing production build...")
+            print(f"Building and previewing production build for {webapp_version}...")
             # First build
             subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True)
             # Then preview
@@ -398,6 +399,7 @@ def main():
                                 help="Frontend mode: dev (development), build (production build), preview (build + preview), install (install dependencies)")
     frontend_parser.add_argument("--host", default="localhost", help="Frontend host (default: localhost)")
     frontend_parser.add_argument("--port", type=int, default=5173, help="Frontend port (default: 5173)")
+    frontend_parser.add_argument("--webapp-version", default="webapp", help="Frontend webapp version to run (default: webapp)")
 
     # deploy command
     deploy_parser = sub_parser.add_parser("deploy", help="Deploy complete AgentBeats stack (backend + frontend + MCP)")
@@ -448,7 +450,7 @@ def main():
     elif args.cmd == "run_backend":
         _run_backend(host=args.host, port=args.port, reload=args.reload)
     elif args.cmd == "run_frontend":
-        _run_frontend(mode=args.mode, host=args.host, port=args.port)
+        _run_frontend(mode=args.mode, host=args.host, port=args.port, webapp_version=args.webapp_version)
     elif args.cmd == "deploy":
         _run_deploy(mode=args.mode, backend_port=args.backend_port, 
                    frontend_port=args.frontend_port, mcp_port=args.mcp_port, 
