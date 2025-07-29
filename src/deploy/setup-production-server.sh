@@ -64,9 +64,9 @@ else
 fi
 
 # Check frontend dependencies
-if [ ! -d "frontend/webapp/node_modules" ]; then
+if [ ! -d "frontend/webapp-v2/node_modules" ]; then
     echo "Installing frontend dependencies..."
-    cd frontend/webapp && npm install && cd ..
+    cd frontend/webapp-v2 && npm install && cd ..
 else
     echo "Frontend dependencies are installed"
 fi
@@ -85,7 +85,7 @@ tmux new-window -t $SESSION -n "mcp" "cd $PROJECT_DIR && source venv/bin/activat
 
 # Add frontend window
 echo "Starting frontend..."
-tmux new-window -t $SESSION -n "frontend" "cd $PROJECT_DIR/frontend/webapp && pm2 start build/index.js --name agentbeats-ssr --no-daemon"
+tmux new-window -t $SESSION -n "frontend" "cd $PROJECT_DIR/frontend/webapp-v2 && pm2 start build/index.js --name agentbeats-ssr --no-daemon"
 
 # Add monitoring window
 echo "Creating monitoring window..."

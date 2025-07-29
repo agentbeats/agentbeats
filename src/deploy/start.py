@@ -79,7 +79,7 @@ def check_environment():
         issues.append("❌ At least one API key (OPENAI_API_KEY or OPENROUTER_API_KEY) must be set")
     
     # Check required directories
-    required_dirs = ['src/agentbeats_backend', 'src/agentbeats_backend/mcp', 'frontend/webapp']
+    required_dirs = ['src/agentbeats_backend', 'src/agentbeats_backend/mcp', 'frontend/webapp-v2']
     for dir_path in required_dirs:
         if not os.path.exists(dir_path):
             issues.append(f"❌ Required directory not found: {dir_path}")
@@ -87,18 +87,18 @@ def check_environment():
             print(f"✅ Directory exists: {dir_path}")
     
     # Check required files
-    required_files = ['src/agentbeats_backend/run.py', 'src/agentbeats_backend/mcp/mcp_server.py', 'frontend/webapp/package.json']
+    required_files = ['src/agentbeats_backend/run.py', 'src/agentbeats_backend/mcp/mcp_server.py', 'frontend/webapp-v2/package.json']
     for file_path in required_files:
         if not os.path.exists(file_path):
             issues.append(f"❌ Required file not found: {file_path}")
         else:
             print(f"✅ File exists: {file_path}")
     
-    # Check if webapp dependencies are installed
-    if os.path.exists('frontend/webapp/node_modules'):
+    # Check if webapp-v2 dependencies are installed
+    if os.path.exists('frontend/webapp-v2/node_modules'):
         print("✅ Frontend dependencies are installed")
     else:
-        issues.append("❌ Frontend dependencies not installed. Run 'cd webapp && npm install'")
+        issues.append("❌ Frontend dependencies not installed. Run 'cd webapp-v2 && npm install'")
     
     return issues
 
@@ -137,7 +137,7 @@ def start_in_current_terminal():
         print("Starting frontend server...")
         frontend_process = subprocess.Popen(
             ['npm', 'run', 'dev'],
-            cwd='frontend/webapp',
+            cwd='frontend/webapp-v2',
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -200,8 +200,8 @@ def start_in_separate_terminals():
         if system == "Windows":
             # Windows command
             if name == "Frontend":
-                # For frontend, we need to change to webapp directory first
-                full_cmd = f'start cmd /k "title {name} && cd webapp && {cmd}"'
+                # For frontend, we need to change to webapp-v2 directory first
+                full_cmd = f'start cmd /k "title {name} && cd webapp-v2 && {cmd}"'
             else:
                 full_cmd = f'start cmd /k "title {name} && {cmd}"'
             subprocess.Popen(full_cmd, shell=True)
@@ -209,7 +209,7 @@ def start_in_separate_terminals():
         elif system == "Darwin":  # macOS TODO: not validated yet
             # macOS command
             if name == "Frontend":
-                full_cmd = f'cd frontend/webapp && {cmd}'
+                full_cmd = f'cd frontend/webapp-v2 && {cmd}'
             else:
                 full_cmd = cmd
             
@@ -230,7 +230,7 @@ def start_in_separate_terminals():
             ]
             
             if name == "Frontend":
-                full_cmd = f'cd frontend/webapp && {cmd}; exec bash'
+                full_cmd = f'cd frontend/webapp-v2 && {cmd}; exec bash'
             else:
                 full_cmd = f'{cmd}; exec bash'
             
