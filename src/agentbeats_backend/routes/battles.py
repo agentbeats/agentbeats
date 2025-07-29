@@ -19,7 +19,7 @@ from .websockets import websocket_manager
 router = APIRouter()
 
 # Configuration constants
-default_ready_timeout = 600
+default_ready_timeout = 120
 default_battle_timeout = 300
 default_backend_url = 'http://localhost:9000'
 
