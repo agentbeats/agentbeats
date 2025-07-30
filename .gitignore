@@ -12,22 +12,23 @@ venv/
 node_modules/
 
 # npm/yarn/pnpm lock files
-frontend/webapp/package-lock.json
-frontend/webapp/yarn.lock
-frontend/webapp/pnpm-lock.yaml
+frontend/webapp*/package-lock.json
+frontend/webapp*/yarn.lock
+frontend/webapp*/pnpm-lock.yaml
+frontend/webapp*/node_modules/
 
 # Build output
-frontend/webapp/build/
-frontend/webapp/dist/
-frontend/webapp/.svelte-kit/
+frontend/webapp*/build/
+frontend/webapp*/dist/
+frontend/webapp*/.svelte-kit/
 
 # Frontend specific ignores
-frontend/webapp/.output
-frontend/webapp/.vercel
-frontend/webapp/.netlify
-frontend/webapp/.wrangler
-frontend/webapp/vite.config.js.timestamp-*
-frontend/webapp/vite.config.ts.timestamp-*
+frontend/webapp*/.output
+frontend/webapp*/.vercel
+frontend/webapp*/.netlify
+frontend/webapp*/.wrangler
+frontend/webapp*/vite.config.js.timestamp-*
+frontend/webapp*/vite.config.ts.timestamp-*
 
 # ccache
 ccache/
@@ -49,10 +50,10 @@ Thumbs.db
 
 # --- Additional ignores for SvelteKit, Vite, Node, Python, pm2, and SSL ---
 # SvelteKit output (if not already ignored)
-frontend/webapp/.svelte-kit-output/
-frontend/webapp/.vite/
-frontend/webapp/.vite-temp/
-frontend/webapp/.output/
+frontend/webapp*/.svelte-kit-output/
+frontend/webapp*/.vite/
+frontend/webapp*/.vite-temp/
+frontend/webapp*/.output/
 
 # pm2 logs and dump
 ~/.pm2/
@@ -120,13 +121,20 @@ logs/
 
 # --- Assets and Uploads ---
 # Auto-generated assets folder structure (ignore all uploaded files)
-src/agentbeats_backend/assets/uploads/avatars/users/*
-src/agentbeats_backend/assets/uploads/avatars/agents/*
-src/agentbeats_backend/assets/uploads/battles/*
+src/backend/assets/uploads/avatars/users/*
+src/backend/assets/uploads/avatars/agents/*
+src/backend/assets/uploads/battles/*
 
 # Static assets (ignore session files)
-src/agentbeats_backend/assets/static/images/*
-src/agentbeats_backend/assets/static/css/*
-src/agentbeats_backend/assets/static/js/*
-src/agentbeats_backend/assets/static/fonts/*
-src/agentbeats_backend/assets/static/icons/*
+src/backend/assets/static/images/*
+src/backend/assets/static/css/*
+src/backend/assets/static/js/*
+src/backend/assets/static/fonts/*
+src/backend/assets/static/icons/*
+
+# python build artifacts
+dist/
+
+# --- CyberGym ---
+scenarios/cybergym/resources/cybergym/
+scenarios/cybergym/scripts/

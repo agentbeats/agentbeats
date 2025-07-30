@@ -4,6 +4,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
+	assetsInclude: ['**/*.yaml', '**/*.yml'],
 	optimizeDeps: {
 		exclude: ['@lucide/svelte']
 	},

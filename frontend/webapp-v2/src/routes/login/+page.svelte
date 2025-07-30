@@ -1,67 +1,42 @@
 <script lang="ts">
-	import { signInWithGitHub, signInWithSlack } from "$lib/auth/supabase";
+	import { signInWithGitHub } from "$lib/auth/supabase";
 	import { 
 		error as authError,
-		loading as authLoading,
-		setUser
+		loading as authLoading
 	} from "$lib/stores/auth";
 	import { goto } from "$app/navigation";
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
+	import { Github, MoveLeft } from "@lucide/svelte";
 
 	let localError = "";
 
 	async function handleGitHubLogin() {
 		localError = "";
+		console.log("Starting GitHub OAuth flow...");
 		try {
-			await signInWithGitHub();
+			const result = await signInWithGitHub();
+			console.log("GitHub OAuth initiated:", result);
+			// The OAuth flow will redirect to GitHub, then back to /auth/callback
 		} catch (err) {
 			localError = "Failed to sign in with GitHub. Please try again.";
 			console.error("GitHub login error:", err);
 		}
 	}
-
-	async function handleSlackLogin() {
-		localError = "";
-		try {
-			await signInWithSlack();
-		} catch (err) {
-			localError = "Failed to sign in with Slack. Please try again.";
-			console.error("Slack login error:", err);
-		}
-	}
-
-	function handleDevLogin() {
-		setUser({
-			id: 'dev-user-id',
-			email: 'dev@example.com',
-			user_metadata: { name: 'Dev User' },
-			app_metadata: { provider: 'dev' },
-			aud: 'authenticated',
-			created_at: new Date().toISOString(),
-			role: 'authenticated',
-			confirmed_at: new Date().toISOString(),
-			email_confirmed_at: new Date().toISOString(),
-			phone: null,
-			phone_confirmed_at: null,
-			last_sign_in_at: new Date().toISOString(),
-			invited_at: null,
-			action_link: null,
-			recovery_sent_at: null,
-			new_email: null,
-			new_phone: null,
-			is_anonymous: false,
-			identities: [],
-			factor_ids: [],
-			factors: [],
-			...({} as any) // fallback for any extra fields
-		});
-		goto('/dashboard');
-	}
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
 	<div class="w-full max-w-md">
+		<div class="flex items-center gap-4 mb-6">
+			<Button 
+				onclick={() => goto('/')}
+				class="btn-primary flex items-center gap-2"
+			>
+				<MoveLeft class="h-4 w-4" />
+				Back to Home
+			</Button>
+		</div>
+		
 		<Card class="shadow-lg">
 			<CardHeader class="text-center">
 				<CardTitle class="text-2xl font-bold">Welcome to AgentBeats</CardTitle>
@@ -71,32 +46,18 @@
 			</CardHeader>
 			<CardContent>
 				<div class="space-y-4">
-					<!-- OAuth Buttons -->
-					<div class="space-y-3">
-						<Button 
-							onclick={handleGitHubLogin}
-							disabled={$authLoading}
-							class="w-full btn-primary"
-						>
-							{#if $authLoading}
-								<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-							{:else}
-								Continue with GitHub
-							{/if}
-						</Button>
-						
-						<Button 
-							onclick={handleSlackLogin}
-							disabled={$authLoading}
-							class="w-full btn-primary"
-						>
-							{#if $authLoading}
-								<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-							{:else}
-								Continue with Slack
-							{/if}
-						</Button>
-					</div>
+					<!-- GitHub OAuth Button -->
+					<Button 
+						onclick={handleGitHubLogin}
+						disabled={$authLoading}
+						class="w-full btn-primary"
+					>
+						{#if $authLoading}
+							<div class="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+						{:else}
+							<span class="flex items-center"><Github class="h-4 w-4 mr-2 relative top-[1px]" />Continue with GitHub</span>
+						{/if}
+					</Button>
 					
 					{#if localError || $authError}
 						<div class="text-red-600 text-sm text-center mt-4">
@@ -106,11 +67,5 @@
 				</div>
 			</CardContent>
 		</Card>
-		<div class="mt-8 flex flex-col items-center">
-			<Button onclick={handleDevLogin} class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-				🚀 Automatic Login (Dev Only)
-			</Button>
-			<span class="text-xs text-gray-500 mt-2">For development/testing only. Bypasses real authentication.</span>
-		</div>
 	</div>
 </div> 

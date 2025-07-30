@@ -9,6 +9,7 @@
   import { getMyAgents, deleteAgent } from "$lib/api/agents";
   import { toast } from 'svelte-sonner';
   import PlusIcon from "@lucide/svelte/icons/plus";
+  import { Spinner } from "$lib/components/ui/spinner";
 
   let agents = $state<any[]>([]);
   let loading = $state(true);
@@ -88,7 +89,7 @@
 
   {#if loading}
     <div class="flex items-center justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <Spinner size="lg" />
       <span class="ml-2">Loading agents...</span>
     </div>
   {:else if error}
@@ -127,9 +128,9 @@
         <p class="text-sm text-muted-foreground">Agents that coordinate battles and judge outcomes</p>
       </div>
       <Carousel class="w-full">
-        <CarouselContent class="-ml-6 gap-4">
+        <CarouselContent class="gap-4">
           {#each greenAgents as agent}
-            <CarouselItem class="basis-80 pl-6">
+            <CarouselItem class="basis-80">
               <GreenAgentCard {agent} onDelete={handleDeleteAgent} />
             </CarouselItem>
           {/each}
@@ -146,9 +147,9 @@
           <p class="text-sm text-muted-foreground">Agents that participate in battles as attackers or defenders</p>
         </div>
         <Carousel class="w-full">
-          <CarouselContent class="-ml-6 gap-4">
-            {#each opponentAgents as agent}
-              <CarouselItem class="basis-80 pl-6">
+                  <CarouselContent class="gap-4">
+          {#each opponentAgents as agent}
+            <CarouselItem class="basis-80">
                 <OpponentAgentCard {agent} onDelete={handleDeleteAgent} />
               </CarouselItem>
             {/each}

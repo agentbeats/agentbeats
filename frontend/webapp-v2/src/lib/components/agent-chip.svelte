@@ -62,7 +62,7 @@
 >
   <HoverCard.Root openDelay={300} closeDelay={1000}>
     <HoverCard.Trigger 
-      class="inline-flex items-center space-x-1.5 w-32 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing"
+      class="inline-flex items-center space-x-1.5 w-40 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing"
       onclick={handleClick}
     >
       <Avatar.Root class="h-5 w-5">
@@ -75,6 +75,9 @@
         <p class="text-xs font-medium truncate">
           @{agent.identifier}
         </p>
+      </div>
+      <div class="flex items-center justify-center w-4 h-4 mr-1">
+        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-gray-400'}"></div>
       </div>
     </HoverCard.Trigger>
 
@@ -99,13 +102,9 @@
                     </div>
                   </div>
                 </div>
-                <Card class="w-full">
-                  <CardContent class="p-2">
-                    <div class="h-20 overflow-y-auto text-sm text-muted-foreground">
-                      {agent.description || 'No description available'}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div class="w-full h-20 overflow-y-auto text-sm text-muted-foreground p-2">
+                  {agent.description || 'No description available'}
+                </div>
               </div>
             </div>
           {/if}

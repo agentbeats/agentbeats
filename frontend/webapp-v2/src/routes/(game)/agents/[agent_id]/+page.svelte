@@ -66,7 +66,7 @@
               </div>
               <div>
                 <span class="font-medium">Description:</span>
-                <div class="mt-1 max-h-32 overflow-y-auto border rounded p-2 bg-gray-50">
+                <div class="mt-1 max-h-32 overflow-y-auto p-2">
                   <p class="text-muted-foreground text-sm">{agent.agent_card?.description || 'No description available'}</p>
                 </div>
               </div>

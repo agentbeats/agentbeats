@@ -156,12 +156,10 @@ class ScenarioAgent:
                 if not isinstance(req["required"], bool):
                     raise ValueError(f"required must be boolean for green agent {self.name}")
     
-    def get_command(self, backend_override: str = None) -> str:
+    def get_command(self,) -> str:
         """Generate the agentbeats run command for this agent"""
         # Use override backend if provided, otherwise use configured backend
         system = platform.system()
-        
-        backend = backend_override if backend_override else self.backend
 
         if system == "Linux":
             env_append = ""
@@ -184,9 +182,6 @@ class ScenarioAgent:
             "--agent_host", self.agent_host,
             "--agent_port", str(self.agent_port)
         ]
-
-        if backend:
-            cmd_parts.extend(["--backend", backend])
 
         if system == "Linux":
             # If running on Linux, prepend environment variables
@@ -212,53 +207,48 @@ class ScenarioAgent:
 class ScenarioManager:
     """Manages scenario loading and execution"""
     
-    def __init__(self, scenarios_root: Path = None):
-        if scenarios_root is None:
-            # Default to scenarios directory relative to this file
-            current_file = Path(__file__).resolve()
-            self.scenarios_root = current_file.parent.parent.parent.parent.parent / "scenarios"
-        else:
-            self.scenarios_root = Path(scenarios_root)
+    def __init__(self, scenario_root: Path):
+        # Scenario root, e.g. "scenarios/tensortrust"
+        self.scenario_root = Path(scenario_root)
         
+        # These will be loaded by `load_scenario_toml()`
+        self.config: Dict[str, Any] = {}  
         self.services: List[ScenarioService] = []
         self.agents: List[ScenarioAgent] = []
+        self.load_scenario_toml()
+
+        # List to hold background processes
         self.processes: List[subprocess.Popen] = []
-    
-    def load_scenario_toml(self, scenario_name: str) -> Dict[str, Any]:
+        
+    def load_scenario_toml(self) -> None:
         """Load scenario configuration from scenario.toml"""
-        scenario_dir = self.scenarios_root / scenario_name
-        scenario_file = scenario_dir / "scenario.toml"
+        scenario_file = self.scenario_root / "scenario.toml"
         
         if not scenario_file.exists():
             raise FileNotFoundError(f"Scenario file not found: {scenario_file}")
         
         with open(scenario_file, 'r', encoding='utf-8') as f:
             config = toml.load(f)
+        self.config = config
         
         # Load services
         self.services = []
         for service_config in config.get("services", []):
-            service = ScenarioService(service_config, scenario_dir)
+            service = ScenarioService(service_config, self.scenario_root)
             self.services.append(service)
         
         # Load agents
         self.agents = []
         for agent_config in config.get("agents", []):
-            agent = ScenarioAgent(agent_config, scenario_dir)
+            agent = ScenarioAgent(agent_config, self.scenario_root)
             self.agents.append(agent)
-        
-        return config
     
-    def load_scenario(self, scenario_name: str, mode: str = None, backend_override: str = None):
+    def load_scenario(self, mode: str = None):
         """Start all components of a scenario"""
+        scenario_name = self.config["scenario"]["name"] # Must provide a name in scenario.toml
+        launch_config = self.config.get("launch", {})   # Optional launch configuration
+
         print(f"Starting scenario: {scenario_name}")
-        print(f"backend_override: {backend_override}")
-        
-        if backend_override:
-            print(f"Using backend override: {backend_override}")
-        
-        config = self.load_scenario_toml(scenario_name)
-        launch_config = config.get("launch", {})
         
         startup_interval = launch_config.get("startup_interval", 1)
         wait_for_services = launch_config.get("wait_for_services", True)
@@ -290,23 +280,23 @@ class ScenarioManager:
             print(f"\nStarting {len(self.agents)} agents...")
             
             if mode == "tmux":
-                self._start_agents_tmux(config, backend_override)
+                self._start_agents_tmux(self.config)
             elif mode == "separate":
-                self._start_agents_terminals(backend_override)
+                self._start_agents_terminals()
             elif mode == "current":
-                self._start_agents_background(backend_override)
+                self._start_agents_background()
             else:
                 raise ValueError(f"Unknown launch mode: {mode}")
     
-    def _start_agents_tmux(self, config: Dict[str, Any], backend_override: str = None):
+    def _start_agents_tmux(self, config: Dict[str, Any]):
         """Start agents in tmux panes"""
         if not shutil.which("tmux"):
             print("❌ tmux is not installed. Falling back to separate terminals.")
-            self._start_agents_terminals(backend_override)
+            self._start_agents_terminals()
             return
-        
-        launch_config = config.get("launch", {})
-        session_name = launch_config.get("tmux_session_name", f"agentbeats-{config['scenario']['name']}")
+
+        launch_config = self.config.get("launch", {})
+        session_name = launch_config.get("tmux_session_name", f"agentbeats-{self.config['scenario']['name']}")
         
         # Kill existing session if it exists
         subprocess.run(['tmux', 'kill-session', '-t', session_name], 
@@ -314,7 +304,7 @@ class ScenarioManager:
         
         # Create new session with first agent
         first_agent = self.agents[0]
-        cmd = f"cd '{first_agent.scenario_dir}' && {first_agent.get_command(backend_override)}"
+        cmd = f"cd '{first_agent.scenario_dir}' && {first_agent.get_command()}"
         
         subprocess.run([
             'tmux', 'new-session', '-d', '-s', session_name,
@@ -327,7 +317,7 @@ class ScenarioManager:
             first_agent.name
         ], check=True)
         for i, agent in enumerate(self.agents[1:], 1):
-            cmd = f"cd '{agent.scenario_dir}' && {agent.get_command(backend_override)}"
+            cmd = f"cd '{agent.scenario_dir}' && {agent.get_command()}"
             if i == 1:
                 subprocess.run([
                     'tmux', 'split-window', '-t', session_name, '-h',
@@ -359,13 +349,13 @@ class ScenarioManager:
         print(f"To attach: tmux attach -t {session_name}")
         print(f"To stop: tmux kill-session -t {session_name}")
     
-    def _start_agents_terminals(self, backend_override: str = None):
+    def _start_agents_terminals(self,):
         """Start agents in separate terminal windows"""
         system = platform.system()
         
         for agent in self.agents:
             print(f"Starting {agent.name}...")
-            command = agent.get_command(backend_override)
+            command = agent.get_command()
             
             if system == "Windows":
                 full_cmd = f'start cmd /k "title {agent.name} && cd /d {agent.scenario_dir} && {command}"'
@@ -397,11 +387,11 @@ class ScenarioManager:
         
         print("✅ All agents started in separate terminals!")
     
-    def _start_agents_background(self, backend_override: str = None):
+    def _start_agents_background(self,):
         """Start agents as background processes"""
         for agent in self.agents:
             print(f"Starting {agent.name}...")
-            command = agent.get_command(backend_override)
+            command = agent.get_command()
             
             process = subprocess.Popen(
                 command,
@@ -459,7 +449,7 @@ class ScenarioManager:
     def list_scenarios(self) -> List[str]:
         """List all available scenarios"""
         scenarios = []
-        for item in self.scenarios_root.iterdir():
+        for item in self.scenario_root.iterdir():
             if item.is_dir() and (item / "scenario.toml").exists():
                 scenarios.append(item.name)
         return scenarios
@@ -544,12 +534,9 @@ class ScenarioManager:
             print(f"❌ Error creating battle: {str(e)}")
             return None
     
-    def start_battle(self, scenario_name: str, backend_url: str = "http://localhost:9000", frontend_url: str = "http://localhost:5073") -> Optional[str]:
+    def start_battle(self, backend_url: str, frontend_url: str) -> Optional[str]:
         """Load scenario, register agents, create battle, and return frontend URL"""
-        print(f"Starting battle for scenario: {scenario_name}")
-        
-        # Load scenario configuration
-        config = self.load_scenario_toml(scenario_name)
+        print(f"Starting battle for scenario: {self.config['scenario']['name']}")
         
         # Find green agent
         green_agent = None
@@ -608,68 +595,3 @@ class ScenarioManager:
         print(f"🎯 Battle URL: {battle_url}")
         
         return battle_url
-
-
-def main():
-    """CLI entry point for scenario management"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="AgentBeats Scenario Manager")
-    parser.add_argument("action", choices=["list", "load", "stop", "show", "run"], 
-                       help="Action to perform")
-    parser.add_argument("scenario", nargs="?", help="Scenario name")
-    parser.add_argument("--launch-mode", choices=["tmux", "terminals", "background"], 
-                       help="Launch mode")
-    parser.add_argument("--backend", help="Override backend URL for all agents")
-    parser.add_argument("--frontend", help="Frontend URL (default: http://localhost:5073)")
-    
-    args = parser.parse_args()
-    
-    manager = ScenarioManager()
-    
-    if args.action == "list":
-        scenarios = manager.list_scenarios()
-        print("Available scenarios:")
-        for scenario in scenarios:
-            print(f"  - {scenario}")
-    
-    elif args.action == "load":
-        if not args.scenario:
-            print("Error: scenario name required for load action")
-            return
-        manager.load_scenario(args.scenario, args.launcg_mode, args.backend)
-    
-    elif args.action == "stop":
-        if not args.scenario:
-            print("Error: scenario name required for stop action")
-            return
-        manager.stop_scenario(args.scenario)
-    
-    elif args.action == "show":
-        if not args.scenario:
-            print("Error: scenario name required for show action")
-            return
-        config = manager.load_scenario_toml(args.scenario)
-        print(f"Scenario: {config['scenario']['name']}")
-        print(f"Description: {config['scenario']['description']}")
-        print(f"Services: {len(manager.services)}")
-        print(f"Agents: {len(manager.agents)}")
-    
-    elif args.action == "run":
-        if not args.scenario:
-            print("Error: scenario name required for run action")
-            return
-        
-        backend_url = args.backend or "http://localhost:9000"
-        frontend_url = args.frontend or "http://localhost:5173"
-        
-        battle_url = manager.start_battle(args.scenario, backend_url, frontend_url)
-        if battle_url:
-            print(f"✅ Battle started successfully!")
-            print(f"🌐 Open in browser: {battle_url}")
-        else:
-            print("❌ Failed to start battle")
-
-
-if __name__ == "__main__":
-    main()

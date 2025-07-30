@@ -51,13 +51,15 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
             backend_cmd = [
                 sys.executable, "-m", "agentbeats", "run_backend",
                 "--host", "127.0.0.1",
-                "--port", str(backend_port)
+                "--backend_port", str(backend_port),
+                "--mcp_port", str(mcp_port)
             ]
         elif mode == "dev":
             backend_cmd = [
                 sys.executable, "-m", "agentbeats", "run_backend",
-                "--host", "0.0.0.0",
-                "--port", str(backend_port),
+                "--host", "localhost",
+                "--backend_port", str(backend_port),
+                "--mcp_port", str(mcp_port),
                 "--reload"
             ]
             
@@ -65,24 +67,16 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
         processes.append(backend_proc)
         time.sleep(3)  # Give backend time to start
         
-        # 2. Start MCP Server
-        print(f"Starting MCP Server on port {mcp_port}...")
-        mcp_env = os.environ.copy()
-        mcp_env["MCP_PORT"] = str(mcp_port)
-        mcp_proc = subprocess.Popen([
-            sys.executable, str(mcp_server_path)
-        ], env=mcp_env, cwd=current_dir)
-        processes.append(mcp_proc)
-        time.sleep(1)  # Give MCP server time to start
         
-        # 3. Start Frontend using CLI command
+        # 2. Start Frontend using CLI command
         print(f"Starting Frontend in {mode} mode on port {frontend_port}...")
         if mode == "dev":
             frontend_cmd = [
                 sys.executable, "-m", "agentbeats", "run_frontend",
                 "--mode", "dev",
-                "--host", "0.0.0.0", 
-                "--port", str(frontend_port)
+                "--host", "localhost", 
+                "--frontend_port", str(frontend_port),
+                "--backend_url", f"http://localhost:{backend_port}"
             ]
             frontend_proc = subprocess.Popen(frontend_cmd)
             processes.append(frontend_proc)
@@ -104,7 +98,7 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
                 frontend_dir = current_dir / "frontend" / "webapp"
                 subprocess.run("pm2 delete agentbeats-ssr", shell=True, capture_output=True)
                 subprocess.run(
-                    f"pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr -- --port {frontend_port}",  
+                    f"pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon",  
                     cwd=frontend_dir, check=True, shell=True
                 )
                 print("[Success] Frontend started with PM2")
@@ -114,8 +108,9 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
                 preview_cmd = [
                     "agentbeats", "run_frontend",
                     "--mode", "preview",
-                    "--host", "0.0.0.0",
-                    "--port", str(frontend_port)
+                    "--host", "localhost",
+                    "--frontend_port", str(frontend_port),
+                    "--backend_url", f"http://localhost:{backend_port}"
                 ]
                 frontend_proc = subprocess.Popen(preview_cmd)
                 processes.append(frontend_proc)
@@ -125,8 +120,12 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
         print("\n" + "=" * 50)
         print("[Status] AgentBeats Deployment Status:")
         print("=" * 50)
+        if mode == "build":
+            print(f"[Frontend] http://localhost:3000")
+        else:
+            print(f"[Frontend] http://localhost:{frontend_port}")
+            
         print(f"[Backend]  http://localhost:{backend_port}")
-        print(f"[Frontend] http://localhost:{frontend_port}")
         print(f"[MCP]      http://localhost:{mcp_port}")
         print("=" * 50)
         print("Press Ctrl+C to stop all services")
@@ -154,9 +153,6 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
                 if backend_proc.poll() is not None:
                     print("[Error] Backend process died!")
                     break
-                if mcp_proc.poll() is not None:
-                    print("[Error] MCP process died!")
-                    break
                 
     except subprocess.CalledProcessError as e:
         print(f"[Error] Error during deployment: {e}")
@@ -181,12 +177,10 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
     system = platform.system()
     
     # Commands for each service
-    backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else '0.0.0.0'} --port {backend_port}" + (" --reload" if mode == "dev" else "")
-    mcp_cmd = f"set MCP_PORT={mcp_port} && {sys.executable} \"{mcp_server_path}\"" if system == "Windows" else f"MCP_PORT={mcp_port} {sys.executable} \"{mcp_server_path}\""
-    
+    backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" + (" --reload" if mode == "dev" else "")
     # Frontend command depends on mode
     if mode == "dev":
-        frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode dev --host 0.0.0.0 --port {frontend_port}"
+        frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode dev --host localhost --frontend_port {frontend_port} --backend_url http://localhost:{backend_port}"
     else:  # build mode
         # Check if PM2 is available for production mode
         try:
@@ -197,18 +191,17 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
             build_cmd = f"{sys.executable} -m agentbeats run_frontend --mode build"
             frontend_dir = current_dir / "frontend" / "webapp"
             if system == "Windows":
-                pm2_cmd = f"pm2 delete agentbeats-ssr 2>nul || echo Cleaned && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr -- --port {frontend_port}"
+                pm2_cmd = f"pm2 delete agentbeats-ssr 2>nul || echo Cleaned && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
             else:
-                pm2_cmd = f"pm2 delete agentbeats-ssr 2>/dev/null || true && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr -- --port {frontend_port}"
+                pm2_cmd = f"pm2 delete agentbeats-ssr 2>/dev/null || true && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
             frontend_cmd = f"{build_cmd} && {pm2_cmd}"
             
         except (subprocess.CalledProcessError, FileNotFoundError):
             print("[Warning] PM2 not found, using preview mode...")
-            frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode preview --host 0.0.0.0 --port {frontend_port}"
+            frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode preview --host localhost --frontend_port {frontend_port}"
     
     services = [
         ("Backend", backend_cmd),
-        ("MCP Server", mcp_cmd),
         ("Frontend", frontend_cmd)
     ]
     
@@ -257,9 +250,11 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
     print("[Status] AgentBeats Services Started in Separate Terminals:")
     print("=" * 50)
     print(f"[Backend]  http://localhost:{backend_port}")
-    print(f"[Frontend] http://localhost:{frontend_port}")
     if mode == "build":
+        print(f"[Frontend] http://localhost:3000")
         print(f"[Frontend] Running with PM2 (use 'pm2 logs agentbeats-ssr' for logs)")
+    else:
+        print(f"[Frontend] http://localhost:{frontend_port}")
     print(f"[MCP]      http://localhost:{mcp_port}")
     print("=" * 50)
     print("Each service is running in its own terminal window.")
@@ -309,12 +304,11 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
         ], check=True)
         
         # Commands for each pane
-        backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else '0.0.0.0'} --port {backend_port}" + (" --reload" if mode == "dev" else "")
-        mcp_cmd = f"MCP_PORT={mcp_port} {sys.executable} \"{mcp_server_path}\""
+        backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" + (" --reload" if mode == "dev" else "")
         
         # Frontend command depends on mode
         if mode == "dev":
-            frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode dev --host 0.0.0.0 --port {frontend_port}"
+            frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode dev --host localhost --frontend_port {frontend_port} --backend_url http://localhost:{backend_port}"
         else:  # build mode
             # Check if PM2 is available for production mode
             try:
@@ -324,22 +318,17 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
                 # Build first, then start with PM2
                 build_cmd = f"{sys.executable} -m agentbeats run_frontend --mode build"
                 frontend_dir = current_dir / "frontend" / "webapp"
-                pm2_cmd = f"npx pm2 delete agentbeats-ssr 2>/dev/null || true && npx pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon -- --port {frontend_port}"
+                pm2_cmd = f"npx pm2 delete agentbeats-ssr 2>/dev/null || true && npx pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
                 frontend_cmd = f"echo 'Building frontend...' && {build_cmd} && echo 'Starting with PM2...' && {pm2_cmd} && echo 'Frontend started with PM2. Use pm2 logs agentbeats-ssr to see logs.'"
                 
             except (subprocess.CalledProcessError, FileNotFoundError):
                 print("[Warning] PM2 not found in tmux mode, using preview mode...")
-                frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode preview --host 0.0.0.0 --port {frontend_port}"
+                frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode preview --host localhost --frontend_port {frontend_port} --backend_url http://localhost:{backend_port}"
         
         # Start services in each pane
         subprocess.run([
             "tmux", "send-keys", "-t", f"{session_name}:0.0",
             f"echo 'Starting Backend...' && {backend_cmd}", "Enter"
-        ], check=True)
-        
-        subprocess.run([
-            "tmux", "send-keys", "-t", f"{session_name}:0.1", 
-            f"echo 'Starting MCP Server...' && {mcp_cmd}", "Enter"
         ], check=True)
         
         subprocess.run([
@@ -365,9 +354,11 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
         print("=" * 50)
         print(f"[Backend]  http://localhost:{backend_port} (Left pane)")
         print(f"[MCP]      http://localhost:{mcp_port} (Top right pane)")
-        print(f"[Frontend] http://localhost:{frontend_port} (Bottom right pane)")
         if mode == "build":
+            print(f"[Frontend] http://localhost:3000 (Bottom right pane)")
             print(f"[Frontend] Running with PM2 (use 'npx pm2 logs agentbeats-ssr' for logs)")
+        else:
+            print(f"[Frontend] http://localhost:{frontend_port} (Bottom right pane)")
         print("=" * 50)
         print(f"To attach to tmux session: tmux attach-session -t {session_name}")
         print(f"To kill tmux session: tmux kill-session -t {session_name}")
