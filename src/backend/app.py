@@ -1,14 +1,14 @@
+# Load environment variables from .env file FIRST, before ANY other imports
+from dotenv import load_dotenv
+load_dotenv()
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from dotenv import load_dotenv
 import os
-
-# Load environment variables from .env file
-load_dotenv()
 
 from .routes import agents, battles, websockets
 from .auth.routes import router as auth_router
