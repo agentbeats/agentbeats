@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
+	  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { Spinner } from "$lib/components/ui/spinner";
 	import { supabase } from '$lib/auth/supabase';
 
 	let loading = true;
@@ -60,7 +61,9 @@
 <div class="min-h-screen flex items-center justify-center bg-gray-50">
 	<div class="text-center">
 		{#if loading}
-			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+			      <div class="mx-auto mb-4">
+			        <Spinner size="lg" />
+			      </div>
 			<p class="text-gray-600">Completing authentication...</p>
 		{:else if error}
 			<div class="text-red-600 mb-4">{error}</div>

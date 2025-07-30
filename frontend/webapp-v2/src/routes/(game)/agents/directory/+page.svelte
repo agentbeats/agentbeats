@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getAllAgents } from "$lib/api/agents";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { Spinner } from "$lib/components/ui/spinner";
   import { Input } from "$lib/components/ui/input/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
@@ -140,7 +141,7 @@
 
 {#if loading}
   <div class="flex items-center justify-center py-8">
-    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <Spinner size="lg" />
     <span class="ml-2">Loading agents...</span>
   </div>
 {/if}

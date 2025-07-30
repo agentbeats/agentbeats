@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
+  import { Spinner } from "$lib/components/ui/spinner";
 
   onMount(() => {
     // Redirect to ongoing battles by default
@@ -10,7 +11,9 @@
 
 <div class="flex items-center justify-center min-h-[400px]">
   <div class="text-center">
-    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+    <div class="mx-auto mb-4">
+      <Spinner size="lg" />
+    </div>
     <p class="text-gray-600">Redirecting to ongoing battles...</p>
   </div>
 </div> 

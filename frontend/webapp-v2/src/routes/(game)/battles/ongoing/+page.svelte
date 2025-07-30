@@ -2,6 +2,7 @@
   import FeaturedBattleCard from "./ongoing-battle-card.svelte";
   import { getAllBattles } from "$lib/api/battles";
   import { onMount, onDestroy } from 'svelte';
+  import { Spinner } from "$lib/components/ui/spinner";
 
   let battles = $state<any[]>([]);
   let ongoingBattles = $state<any[]>([]);
@@ -81,7 +82,7 @@
 
   {#if loading}
     <div class="flex items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <Spinner size="lg" />
       <span class="ml-3 text-lg">Loading battles...</span>
     </div>
   {:else if ongoingBattles.length > 0}

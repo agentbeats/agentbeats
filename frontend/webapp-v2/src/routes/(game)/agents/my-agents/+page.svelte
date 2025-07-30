@@ -9,6 +9,7 @@
   import { getMyAgents, deleteAgent } from "$lib/api/agents";
   import { toast } from 'svelte-sonner';
   import PlusIcon from "@lucide/svelte/icons/plus";
+  import { Spinner } from "$lib/components/ui/spinner";
 
   let agents = $state<any[]>([]);
   let loading = $state(true);
@@ -88,7 +89,7 @@
 
   {#if loading}
     <div class="flex items-center justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <Spinner size="lg" />
       <span class="ml-2">Loading agents...</span>
     </div>
   {:else if error}

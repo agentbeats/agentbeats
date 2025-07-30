@@ -7,6 +7,7 @@
   import AgentChip from "$lib/components/agent-chip.svelte";
   import * as ScrollArea from "$lib/components/ui/scroll-area";
   import { onMount, onDestroy } from 'svelte';
+  import { Spinner } from "$lib/components/ui/spinner";
 
   let { battle } = $props<{
     battle: {
@@ -245,10 +246,10 @@
       <Card.Content>
         <div class="space-y-4">
           {#if loading}
-            <div class="flex items-center justify-center py-8">
-              <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <span class="ml-2 text-sm">Loading agents...</span>
-            </div>
+                          <div class="flex items-center justify-center py-8">
+                <Spinner size="md" />
+                <span class="ml-2 text-sm">Loading agents...</span>
+              </div>
           {:else if opponentAgents.length > 0}
             <!-- Opponent Agents - one per row -->
             <ScrollArea.Root class="h-[300px]">

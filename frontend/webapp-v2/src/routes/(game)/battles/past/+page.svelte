@@ -4,6 +4,7 @@
   import { getAllAgents } from "$lib/api/agents";
   import { onMount, onDestroy } from 'svelte';
   import { fade } from 'svelte/transition';
+  import { Spinner } from "$lib/components/ui/spinner";
 
   // Define the Battle type
   type Battle = {
@@ -20,7 +21,7 @@
   let battles = $state<Battle[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
-  let loadingProgress = $state(0);
+
   let totalBattles = $state(0);
   let loadedCount = $state(0);
   let loadingMore = $state(false);
@@ -102,7 +103,6 @@
     try {
       loading = true;
       error = null;
-      loadingProgress = 0;
       console.log('Loading battles from client...');
       
       // First, load all agents once
@@ -119,38 +119,20 @@
       );
       console.log('Finished battles found:', finishedBattles.length);
       
-      // Only take the first BATTLES_PER_PAGE battles for performance
-      const battlesToLoad = finishedBattles.slice(0, BATTLES_PER_PAGE);
+      // Load all finished battles since we have efficient agent loading
+      const battlesToLoad = finishedBattles;
       totalBattles = finishedBattles.length;
-      loadedCount = Math.min(BATTLES_PER_PAGE, totalBattles);
+      loadedCount = totalBattles;
       
-      console.log(`Loading first ${battlesToLoad.length} battles out of ${totalBattles} total`);
+      console.log(`Loading all ${battlesToLoad.length} battles`);
       
-      // Calculate total agent loads for accurate progress
-      let totalAgentLoads = 0;
-      let completedAgentLoads = 0;
-      
-      // Count total agent loads needed
-      for (const battle of battlesToLoad) {
-        totalAgentLoads++; // Green agent
-        if (battle.opponents) {
-          totalAgentLoads += battle.opponents.length; // Opponent agents
-        }
-      }
-      
-      console.log(`Total agent loads needed: ${totalAgentLoads}`);
-      
-      // Load agent data sequentially with accurate progress updates
+      // Load agent data for all battles
       const battlesWithAgents = [];
       for (let i = 0; i < battlesToLoad.length; i++) {
         const battle = battlesToLoad[i];
         console.log(`Loading battle ${i + 1}/${battlesToLoad.length}: ${battle.battle_id}`);
         
-        const battleWithAgents = await loadAgentDataWithProgress(battle, () => {
-          completedAgentLoads++;
-          loadingProgress = Math.round((completedAgentLoads / totalAgentLoads) * 100);
-        });
-        
+        const battleWithAgents = await loadAgentData(battle);
         battlesWithAgents.push(battleWithAgents);
       }
       
@@ -160,74 +142,12 @@
       console.error('Failed to load battles:', err);
       error = err instanceof Error ? err.message : 'Failed to load battles';
       battles = [];
-    } finally {
-      loading = false;
-      loadingProgress = 0;
-    }
+          } finally {
+        loading = false;
+      }
   }
 
-  async function loadAgentDataWithProgress(battle: any, onAgentLoaded: () => void): Promise<Battle> {
-    try {
-      // Load green agent
-      let greenAgent = null;
-      if (battle.green_agent_id) {
-        greenAgent = findAgentById(battle.green_agent_id);
-        if (!greenAgent) {
-          // Create placeholder green agent if not found
-          greenAgent = {
-            agent_id: battle.green_agent_id,
-            register_info: { alias: `Unknown Agent (${battle.green_agent_id.slice(0, 8)})` },
-            agent_card: { name: `Unknown Agent`, description: 'Agent data unavailable' }
-          };
-        }
-        onAgentLoaded(); // Update progress after green agent loads
-      }
 
-      // Load opponent agents from cache
-      let opponentAgents = [];
-      if (battle.opponents && battle.opponents.length > 0) {
-        for (const opponent of battle.opponents) {
-          const agent = findAgentById(opponent.agent_id);
-          if (agent) {
-            opponentAgents.push({
-              ...agent,
-              role: opponent.name
-            });
-          } else {
-            // Add placeholder for missing agent
-            opponentAgents.push({
-              agent_id: opponent.agent_id,
-              register_info: { alias: `Unknown ${opponent.name}` },
-              agent_card: { name: `Unknown ${opponent.name}`, description: 'Agent data unavailable' },
-              role: opponent.name
-            });
-          }
-          onAgentLoaded(); // Update progress after each opponent loads
-        }
-      }
-
-      return {
-        battle_id: battle.battle_id,
-        green_agent_id: battle.green_agent_id,
-        opponents: battle.opponents || [],
-        created_by: battle.created_by || 'N/A',
-        created_at: battle.created_at,
-        state: battle.state,
-        green_agent: greenAgent,
-        opponent_agents: opponentAgents
-      };
-    } catch (error) {
-      console.error('Error loading agent data for battle:', error);
-      return {
-        battle_id: battle.battle_id,
-        green_agent_id: battle.green_agent_id,
-        opponents: battle.opponents || [],
-        created_by: battle.created_by || 'N/A',
-        created_at: battle.created_at,
-        state: battle.state
-      };
-    }
-  }
 
   onMount(() => {
     loadBattles();
@@ -239,23 +159,17 @@
   <div class="text-center">
     <h1 class="text-3xl font-bold mb-2">Past Battles</h1>
     <p class="text-gray-600">Browse and search completed battles</p>
-    {#if totalBattles > BATTLES_PER_PAGE}
+    {#if totalBattles > 0}
       <p class="text-sm text-muted-foreground mt-2">
-        Showing first {BATTLES_PER_PAGE} of {totalBattles} battles
+        Showing {totalBattles} battles
       </p>
     {/if}
   </div>
   
   {#if loading}
     <div class="flex flex-col items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
+      <Spinner size="lg" class="mb-4" />
       <span class="text-lg mb-2">Loading battles...</span>
-      {#if loadingProgress > 0}
-        <div class="w-64 bg-gray-200 rounded-full h-2">
-          <div class="bg-gray-900 h-2 rounded-full transition-all duration-300" style="width: {loadingProgress}%"></div>
-        </div>
-        <span class="text-sm text-muted-foreground mt-2">{loadingProgress}% complete</span>
-      {/if}
     </div>
   {:else if error}
     <div class="text-center py-12">
