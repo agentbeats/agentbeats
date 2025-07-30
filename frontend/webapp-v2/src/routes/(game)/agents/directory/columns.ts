@@ -46,7 +46,10 @@ export const columns: ColumnDef<Agent>[] = [
     accessorKey: "elo_rating",
     header: ({ column }) =>
       renderComponent(AgentTableEloButton, {
-        onclick: column.getToggleSortingHandler(),
+        onclick: () => {
+          const handler = column.getToggleSortingHandler();
+          if (handler) handler({} as any);
+        },
       }),
     cell: ({ row }) => {
       const eloSnippet = createRawSnippet<[string]>((getElo) => {
