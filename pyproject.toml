@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentbeats"
-version = "0.1.0"
+version = "0.1.4"
 description = "AgentBeats SDK for building security-contest AI agents"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 authors = [{ "name" = "Simon Xie", "email" = "simonxie2004@outlook.com" }]
 dependencies = ["tomli>=2", 
+                "toml", 
                 "fastmcp", 
                 "fastapi", 
                 "uvicorn",
@@ -41,6 +42,7 @@ demos = [
 
 [project.scripts]
 agentbeats = "agentbeats.cli:main" # Entry point for the CLI, supporting cmd like "agentbeats run_agent ..."
+ab = "agentbeats.cli:main" # Short alias version
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,125 +1,85 @@
 # CLI Reference
 
-Command-line interface reference for the AgentBeats SDK.
+The command-line interface provides access to all of Agentbeats' fucntionality for agent-launching, game-hosting and web-service. 
 
-## Overview
+## Help
 
-The AgentBeats CLI provides commands for running agents and managing agent processes.
+The available commands can be listed using the command:
 
 ```bash
-agentbeats <command> [options]
+usage: agentbeats [-h]
+                  {run_agent,run,run_scenario,run_backend,run_frontend,deploy,check}
+                  ...
+
+positional arguments:
+  {run_agent,run,run_scenario,run_backend,run_frontend,deploy,check}
+    run_agent           Start an Agent from card
+    run                 Launch an Agent with controller layer
+    run_scenario        Launch a complete scenario from scenario.toml
+    run_backend         Start the AgentBeats backend server
+    run_frontend        Start the AgentBeats frontend server
+    deploy              Deploy complete AgentBeats stack (backend + frontend
+                        + MCP)
+    check               Check AgentBeats environment setup
+
+options:
+  -h, --help            show this help message and exit
+```
+
+And each command has a `-h, --help` command-line argument to show the usage and teh available options.
+
+```bash
+usage: agentbeats run [-h] [--agent_host AGENT_HOST]
+                      [--agent_port AGENT_PORT]
+                      [--launcher_host LAUNCHER_HOST]
+                      [--launcher_port LAUNCHER_PORT]
+                      [--model_type MODEL_TYPE] [--model_name MODEL_NAME]
+                      --backend BACKEND [--mcp MCP] [--tool TOOL] [--reload]
+                      card
+
+positional arguments:
+  card                  path/to/agent_card.toml
+
+options:
+  -h, --help            show this help message and exit
+  --agent_host AGENT_HOST
+  --agent_port AGENT_PORT
+  --launcher_host LAUNCHER_HOST
+  --launcher_port LAUNCHER_PORT
+  --model_type MODEL_TYPE
+                        Model type to use, e.g. 'openai', 'openrouter', etc.   
+  --model_name MODEL_NAME
+                        Model name to use, e.g. 'o4-mini', etc.
+  --backend BACKEND     Backend base URL to receive ready signal
+  --mcp MCP             One or more MCP SSE server URLs
+  --tool TOOL           Python file(s) that define @agentbeats.tool()
+  --reload
 ```
 
 ## Commands
 
-### run_agent
+The following list briefly documents the functionality of each command, that is available as `agentbeats [command]` or `ab [command]`.
 
-Start an agent from an agent card file.
+### Web-Service
 
-```bash
-agentbeats run_agent <card> [options]
-```
++ `run_frontend`: host the gaming website GUI, exactly the same as [agentbeats_official_website](https://agentbeats.org)
++ `run_backend`: host the gaming backend that processes agent/battle logic, exactly the same as [agentbeats_official_website](https://agentbeats.org)
++ `deploy`: equivilant to `run_frontend` + `run_backend`
 
-#### Arguments
+### Agent-Launching
 
-- `card` - Path to the agent card TOML file
++ `run`: run a agentbeats-standard launcher + agent
++ `run_agent`: run a agentbeats-standard agent only
 
-#### Options
+### Game-Hosting
 
-- `--tool <file>` - Python file(s) that define `@agentbeats.tool()` decorators (can be specified multiple times)
-- `--mcp <url>` - MCP SSE server URL(s) (can be specified multiple times)
++ `load_scenario`: load a game scenario (e.g. tensortrust), including hosting agents, launchers and environment. Requires a folder with `scenario.toml`.
++ `run_scenario`: run a game scenario (e.g. tensortrust) in browser; equivilant to `load_scenario` first and automatic api posting to trigger battle + open browser with battle id; Requires `deploy` first.
++ `run_e2e`: run a game scenario (e.g. tensortrust) without gui, returning the result json.
 
-#### Example
+### Misc
 
-```bash
-# Basic agent startup
-agentbeats run_agent agent_card.toml
-
-# With tools and MCP servers
-agentbeats run_agent agent_card.toml \
-  --tool tools.py \
-  --tool custom_tools.py \
-  --mcp http://localhost:8001 \
-  --mcp http://localhost:8002
-```
-
-### run
-
-Launch an agent with controller layer for process management.
-
-```bash
-agentbeats run <card> --backend <url> [options]
-```
-
-#### Arguments
-
-- `card` - Path to the agent card TOML file
-
-#### Required Options
-
-- `--backend <url>` - Backend base URL to receive ready signal
-
-#### Optional Options
-
-- `--launcher_host <host>` - Launcher server host (default: 0.0.0.0)
-- `--launcher_port <port>` - Launcher server port (default: 8000)
-- `--tool <file>` - Python file(s) that define `@agentbeats.tool()` decorators
-- `--mcp <url>` - MCP SSE server URL(s)
-- `--reload` - Enable auto-reload for development
-
-#### Example
-
-```bash
-# Basic launcher startup
-agentbeats run agent_card.toml --backend http://localhost:8000
-
-# With development options
-agentbeats run agent_card.toml \
-  --backend http://localhost:8000 \
-  --tool tools.py \
-  --mcp http://localhost:8001 \
-  --reload
-```
-
-## Agent Card Format
-
-Agent cards are TOML files that define agent configuration:
-
-```toml
-name = "my_agent"
-description = "A security contest agent that can perform SSH operations"
-host = "localhost"
-port = 8001
-skills = "Can connect to SSH hosts and execute commands"
-```
-
-### Required Fields
-
-- `name` - Agent name
-- `description` - Agent description
-- `host` - Host to bind the agent server to
-- `port` - Port to bind the agent server to
-
-### Optional Fields
-
-- `skills` - Description of agent capabilities
-
-## Tool Files
-
-Tool files are Python files that define functions decorated with `@agentbeats.tool()`:
-
-```python
-from agentbeats import tool
-
-@tool()
-def my_tool(param: str) -> str:
-    """Execute some operation."""
-    return f"Processed: {param}"
-```
-
-## MCP Servers
-
-MCP (Model Context Protocol) servers provide additional capabilities to agents. Specify their URLs with the `--mcp` option.
++ `check`: checks agentbeats environment, for necessary envronment vars, etc.
 
 ## Examples
 
@@ -163,19 +123,3 @@ agentbeats run agent.toml \
   --tool production_tools.py \
   --mcp http://mcp.example.com:8001
 ```
-
-## Error Handling
-
-The CLI provides clear error messages for common issues:
-
-- **File not found**: Agent card or tool files don't exist
-- **Port already in use**: Another process is using the specified port
-- **Invalid configuration**: Malformed agent card TOML
-- **Connection errors**: MCP server or backend connection issues
-
-## Development Tips
-
-- Use `--reload` flag during development for automatic restarts
-- Test tools individually before adding to agents
-- Use different ports for multiple agents
-- Check logs for detailed error information 
