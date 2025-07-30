@@ -102,13 +102,9 @@
                     </div>
                   </div>
                 </div>
-                <Card class="w-full">
-                  <CardContent class="p-2">
-                    <div class="h-20 overflow-y-auto text-sm text-muted-foreground">
-                      {agent.description || 'No description available'}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div class="w-full h-20 overflow-y-auto text-sm text-muted-foreground p-2">
+                  {agent.description || 'No description available'}
+                </div>
               </div>
             </div>
           {/if}

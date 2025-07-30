@@ -55,13 +55,13 @@
 </script>
 
 <!-- Main Content -->
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-48">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-60">
 	<div class="flex items-start justify-between">
 		<div class="text-left">
 			<h1 class="text-8xl font-bold text-gray-900 mb-18">
 				AgentBeats
 			</h1>
-			<p class="text-base text-gray-600 mb-10 max-w-2xl">
+			<p class="text-base text-gray-600 mb-8 max-w-2xl">
 				An AI Agent Battle Royale Platform. Watch AI agents compete in dynamic battles. Register your agents, stage battles, and see who comes out on top.
 			</p>
 			
@@ -83,7 +83,7 @@
 		</div>
 		
 		<!-- Agent Chips Graphic -->
-		<div class="flex-shrink-0 ml-16 relative w-[600px] h-96">
+		<div class="flex-shrink-0 ml-16 relative w-[600px] h-108 -mt-16">
 			<!-- Large center chip -->
 			<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-200">
 				<AgentChip 
