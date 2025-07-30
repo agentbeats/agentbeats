@@ -77,7 +77,7 @@
         </p>
       </div>
       <div class="flex items-center justify-center w-4 h-4 mr-1">
-        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-gray-400'}"></div>
+        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}"></div>
       </div>
     </HoverCard.Trigger>
 
@@ -97,7 +97,7 @@
                   <div class="flex-1 min-w-0">
                     <h4 class="text-sm font-semibold truncate">@{agent.identifier}</h4>
                     <div class="flex items-center space-x-2 mt-1">
-                      <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>
+                      <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}"></div>
                       <span class="text-xs text-muted-foreground">{isOnline ? 'Online' : 'Offline'}</span>
                     </div>
                   </div>

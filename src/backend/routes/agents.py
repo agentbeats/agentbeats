@@ -8,8 +8,88 @@ from agents import Agent, Runner
 from ..db.storage import db
 from ..a2a_client import a2a_client
 from ..auth.middleware import get_current_user, get_optional_user
+from ..services.match_storage import MatchStorage
+from ..services.role_matcher import RoleMatcher
 
 router = APIRouter()
+
+# Initialize services
+match_storage = MatchStorage()
+role_matcher = RoleMatcher()
+
+async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any]):
+    """Asynchronously analyze and store role matches for a newly registered agent."""
+    try:
+        # Get the agent
+        agent = db.read("agents", agent_id)
+        if not agent:
+            return
+        
+        is_green = agent["register_info"]["is_green"]
+        
+        if is_green:
+            # Green agent: analyze against all non-green agents
+            other_agents = [
+                a for a in db.list("agents") 
+                if not a["register_info"]["is_green"] and a["agent_id"] != agent_id
+            ]
+        else:
+            # Non-green agent: analyze against all green agents
+            other_agents = [
+                a for a in db.list("agents") 
+                if a["register_info"]["is_green"] and a["agent_id"] != agent_id
+            ]
+        
+        matches_created = []
+        
+        for other_agent in other_agents:
+            if is_green:
+                # Green agent's requirements vs other agent
+                requirements = agent["register_info"].get("participant_requirements", [])
+                result = await role_matcher.analyze_agent_for_roles(
+                    agent["agent_card"],
+                    requirements,
+                    other_agent["agent_card"]
+                )
+                
+                if result.get("matched_roles"):
+                    match_record = {
+                        "green_agent_id": agent_id,
+                        "other_agent_id": other_agent["agent_id"],
+                        "matched_roles": result["matched_roles"],
+                        "reasons": result["reasons"],
+                        "confidence_score": result.get("confidence_score", 0.0),
+                        "created_by": current_user["id"]
+                    }
+                    
+                    created_match = match_storage.create_match(match_record)
+                    matches_created.append(created_match)
+            else:
+                # Other agent vs green agent's requirements
+                requirements = other_agent["register_info"].get("participant_requirements", [])
+                result = await role_matcher.analyze_agent_for_roles(
+                    other_agent["agent_card"],
+                    requirements,
+                    agent["agent_card"]
+                )
+                
+                if result.get("matched_roles"):
+                    match_record = {
+                        "green_agent_id": other_agent["agent_id"],
+                        "other_agent_id": agent_id,
+                        "matched_roles": result["matched_roles"],
+                        "reasons": result["reasons"],
+                        "confidence_score": result.get("confidence_score", 0.0),
+                        "created_by": current_user["id"]
+                    }
+                    
+                    created_match = match_storage.create_match(match_record)
+                    matches_created.append(created_match)
+        
+        print(f"Created {len(matches_created)} matches for agent {agent_id}")
+        
+    except Exception as e:
+        print(f"Error analyzing matches for agent {agent_id}: {e}")
 
 
 @router.post("/agents", status_code=status.HTTP_201_CREATED)
@@ -98,6 +178,14 @@ async def register_agent(agent_info: Dict[str, Any], current_user: Dict[str, Any
 
         # Save to database
         created_agent = db.create("agents", agent_record)
+        
+        # Trigger role matching analysis asynchronously
+        try:
+            asyncio.create_task(analyze_agent_matches_async(created_agent["agent_id"], current_user))
+        except Exception as e:
+            # Log error but don't fail registration
+            print(f"Warning: Failed to trigger role analysis: {e}")
+        
         return created_agent
     except HTTPException:
         raise
