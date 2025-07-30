@@ -70,3 +70,10 @@ Use the web app to add the following agents:
 **Backend Configuration:**
 - Backend URL: http://localhost:9000
 - MCP URL: http://localhost:9001/sse
+
+### Running the GCP server deployment
+
+Authenticate the process to access GCP bucket
+```bash
+gcloud auth application-default login
+```

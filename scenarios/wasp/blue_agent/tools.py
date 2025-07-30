@@ -7,6 +7,7 @@ import base64
 import subprocess
 from PIL import Image
 import io
+from agentbeats.utils import static_expose
 
 @ab.tool
 def perform_action(battle_id: str) -> str:
@@ -69,52 +70,6 @@ def perform_action(battle_id: str) -> str:
         return f"FAILED: The action failed: {e}"
 
 @ab.tool
-def get_image(battle_id: str) -> str:
-    """
-    Get the last image from the HTML file and save it to the output path.
-    """
-    
-    print("Getting the last image... (BLUE AGENT)")
-
-    try:
-        # Compute the path relative to the project root
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        # TODO: change this to use static_expose once it's implemented
-        root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs", "render_1000.html")
-        static_dir = os.path.join(root_folder, 'frontend', 'webapp', 'static')
-        output_filename = 'blue_image.png'
-        output_path = os.path.join(static_dir, output_filename)
-
-        # Regex to match base64 image data in <img> tags
-        img_data_re = re.compile(r'data:image/[^;]+;base64,([A-Za-z0-9+/=]+)')
-
-        last_b64 = None
-
-        # Efficiently scan for the last base64 image
-        with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
-            for line in f:
-                for match in img_data_re.finditer(line):
-                    last_b64 = match.group(1)
-        
-        if last_b64 is None:
-            print("No base64 image found.")
-            return None
-        else:
-            # Ensure the static directory exists
-            os.makedirs(static_dir, exist_ok=True)
-            # Decode and save the image
-            img_bytes = base64.b64decode(last_b64)
-            with open(output_path, 'wb') as out:
-                out.write(img_bytes)
-            print(f'Last image extracted and saved to {output_path}')
-            return output_filename
-        
-    except Exception as e:
-        print(f"FAILED: The image retrieval failed: {e}")
-        return "FAILED: The image retrieval failed"
-
-@ab.tool
 def create_gif(battle_id: str) -> str:
     """
     Extract all base64-encoded images from render_1000.html and create a GIF or video.
@@ -132,10 +87,6 @@ def create_gif(battle_id: str) -> str:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
         html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs", "render_1000.html")
-        static_dir = os.path.join(root_folder, 'frontend', 'webapp', 'static')
-        
-        # Ensure static directory exists
-        os.makedirs(static_dir, exist_ok=True)
         
         # Check if HTML file exists
         if not os.path.exists(html_path):
@@ -168,16 +119,24 @@ def create_gif(battle_id: str) -> str:
         
 
         print("Creating GIF")
-        output_filename = f'blue_agent_gif_{battle_id}.gif'
-        output_path = os.path.join(static_dir, output_filename)
+        
+        # Create battle logs directory path
+        battle_logs_dir = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs")
+        
+        # Ensure battle logs directory exists
+        os.makedirs(battle_logs_dir, exist_ok=True)
+        
+        # Save GIF in battle logs
+        local_filename = f'blue_agent_gif_{battle_id}.gif'
+        local_path = os.path.join(battle_logs_dir, local_filename)
         
         # Save as GIF
         if len(images) == 1:
-            images[0].save(output_path, 'GIF')
+            images[0].save(local_path, 'GIF')
         else:
             # Save as animated GIF with 500ms delay between frames
             images[0].save(
-                output_path,
+                local_path,
                 'GIF',
                 save_all=True,
                 append_images=images[1:],
@@ -185,8 +144,18 @@ def create_gif(battle_id: str) -> str:
                 loop=0
             )
         
-        print(f"GIF created successfully: {output_filename}")
-        return output_filename
+        print(f"GIF saved locally in battle logs: {local_path}")
+        
+        # Upload to GCP using static_expose
+        try:
+            gcp_url = static_expose(local_path, f"blue_agent_gif_{battle_id}.gif")
+            print(f"GIF uploaded to GCP: {gcp_url}")
+            
+            return gcp_url
+            
+        except Exception as upload_error:
+            print(f"Failed to upload GIF to GCP: {upload_error}")
+            return f"FAILED: GCP upload failed: {upload_error}"
             
     except Exception as e:
         print(f"FAILED: Image extraction and GIF creation failed: {e}")
@@ -194,8 +163,8 @@ def create_gif(battle_id: str) -> str:
 
 
 if __name__ == "__main__":
-    battle_id = "b2d68e29-9a94-4538-ac01-7d147da5aa9c"
-    # perform_action(battle_id)
+    battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
+    perform_action(battle_id)
     # get_image(battle_id)
     print(create_gif(battle_id))
     print("Blue agent completed successfully")

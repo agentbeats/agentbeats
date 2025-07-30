@@ -2,10 +2,13 @@
 
 import os
 import agentbeats as ab
+
+from agentbeats.utils import static_expose
 import re
 import base64
 import subprocess
 import shutil
+from datetime import datetime, timedelta
 
 
 
@@ -53,26 +56,25 @@ def prepare_prompt_environment(battle_id: str) -> str:
 @ab.tool
 def get_image(battle_id: str) -> str:
     """
-    Get the last image from the HTML file and save it to the output path.
+    Get the last image from the HTML file and expose it using GCP bucket.
     """
     
     print("Getting the last image... (RED AGENT)")
 
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        # TODO: change this to use static_expose once it's implemented
         root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
         image_path = os.path.join(root_folder, 'scenarios', 'wasp', 'logs', battle_id, 'gitlab_environment_setup.png')
-        static_dir = os.path.join(root_folder, 'frontend', 'webapp', 'static')
-        output_filename = f'gitlab_environment_setup_{battle_id}.png'
-
-        # Ensure the static directory exists
-        os.makedirs(static_dir, exist_ok=True)
-        # Copy the image from image_path to static_dir/output_filename
-        dest_path = os.path.join(static_dir, output_filename)
-        shutil.copyfile(image_path, dest_path)
-        print(f"Image copied to {dest_path}")
-        return output_filename
+        
+        # Use static_expose to upload to GCP bucket
+        public_url = static_expose(image_path, f"gitlab_environment_setup_{battle_id}.png", battle_id)
+        
+        if public_url.startswith("ERROR") or public_url.startswith("GCP Error"):
+            print(f"FAILED: The image upload failed: {public_url}")
+            return None
+        
+        print(f"Image uploaded successfully: {public_url}")
+        return public_url
     
     except Exception as e:
         print(f"FAILED: The image retrieval failed: {e}")
@@ -82,6 +84,6 @@ def get_image(battle_id: str) -> str:
 
 if __name__ == "__main__":
     battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
-    # prepare_prompt_environment(battle_id)
+    prepare_prompt_environment(battle_id)
     get_image(battle_id)
     print("Red agent completed successfully")
