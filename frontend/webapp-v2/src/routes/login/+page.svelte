@@ -8,6 +8,7 @@
 		loading as authLoading,
 		setUser
 	} from "$lib/stores/auth";
+	import { getCurrentUser } from "$lib/auth/supabase";
 	import { goto } from "$app/navigation";
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
@@ -25,8 +26,11 @@
 
 	async function handleGitHubLogin() {
 		localError = "";
+		console.log("Starting GitHub OAuth flow...");
 		try {
-			await signInWithGitHub();
+			const result = await signInWithGitHub();
+			console.log("GitHub OAuth initiated:", result);
+			// The OAuth flow will redirect to GitHub, then back to /auth/callback
 		} catch (err) {
 			localError = "Failed to sign in with GitHub. Please try again.";
 			console.error("GitHub login error:", err);
@@ -68,7 +72,14 @@
 				success = await signUpWithEmail(email, password);
 				console.log("Sign up result:", success);
 				if (success) {
-					localError = "Check your email to confirm your account!";
+					// Check if user was created and signed in automatically
+					const currentUser = getCurrentUser();
+					if (currentUser) {
+						console.log("Sign up successful and user signed in, redirecting to dashboard");
+						goto('/dashboard');
+					} else {
+						localError = "Check your email to confirm your account!";
+					}
 				}
 			} else {
 				console.log("Signing in with email...");
@@ -119,7 +130,33 @@
 		magicLinkSent = false;
 	}
 
-
+	function handleDevLogin() {
+		setUser({
+			id: 'dev-user-id',
+			email: 'dev@example.com',
+			user_metadata: { name: 'Dev User' },
+			app_metadata: { provider: 'dev' },
+			aud: 'authenticated',
+			created_at: new Date().toISOString(),
+			role: 'authenticated',
+			confirmed_at: new Date().toISOString(),
+			email_confirmed_at: new Date().toISOString(),
+			phone: null,
+			phone_confirmed_at: null,
+			last_sign_in_at: new Date().toISOString(),
+			invited_at: null,
+			action_link: null,
+			recovery_sent_at: null,
+			new_email: null,
+			new_phone: null,
+			is_anonymous: false,
+			identities: [],
+			factor_ids: [],
+			factors: [],
+			...({} as any) // fallback for any extra fields
+		});
+		goto('/dashboard');
+	}
 </script>
 
 <div class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -278,5 +315,11 @@
 				{/if}
 			</CardContent>
 		</Card>
+		<div class="mt-8 flex flex-col items-center">
+			<Button onclick={handleDevLogin} class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+				🚀 Automatic Login (Dev Only)
+			</Button>
+			<span class="text-xs text-gray-500 mt-2">For development/testing only. Bypasses real authentication.</span>
+		</div>
 	</div>
 </div> 
