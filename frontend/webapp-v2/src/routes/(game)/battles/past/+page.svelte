@@ -168,7 +168,7 @@
   
   {#if loading}
     <div class="flex flex-col items-center justify-center py-12">
-      <Spinner size="lg" class="mb-4" />
+      <Spinner size="lg" centered />
       <span class="text-lg mb-2">Loading battles...</span>
     </div>
   {:else if error}

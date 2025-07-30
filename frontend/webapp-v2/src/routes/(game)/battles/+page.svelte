@@ -11,9 +11,7 @@
 
 <div class="flex items-center justify-center min-h-[400px]">
   <div class="text-center">
-    <div class="mx-auto mb-4">
-      <Spinner size="lg" />
-    </div>
+    <Spinner size="lg" centered />
     <p class="text-gray-600">Redirecting to ongoing battles...</p>
   </div>
 </div> 

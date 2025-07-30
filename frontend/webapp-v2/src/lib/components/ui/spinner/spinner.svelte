@@ -2,9 +2,10 @@
   interface $$Props {
     size?: 'sm' | 'md' | 'lg';
     color?: 'gray' | 'blue' | 'purple' | 'primary';
+    centered?: boolean;
   }
 
-  let { size = 'md', color = 'gray' } = $props();
+  let { size = 'md', color = 'gray', centered = false } = $props();
 
   const sizeClasses = {
     sm: 'h-4 w-4',
@@ -18,6 +19,8 @@
     purple: 'border-purple-600',
     primary: 'border-primary'
   };
+
+  const containerClasses = centered ? 'mx-auto mb-4' : '';
 </script>
 
-<div class="animate-spin rounded-full border-b-2 {sizeClasses[size as keyof typeof sizeClasses]} {colorClasses[color as keyof typeof colorClasses]}"></div> 
+<div class="animate-spin rounded-full border-b-2 {sizeClasses[size as keyof typeof sizeClasses]} {colorClasses[color as keyof typeof colorClasses]} {containerClasses}"></div> 

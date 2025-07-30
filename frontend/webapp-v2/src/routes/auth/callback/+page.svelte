@@ -61,9 +61,7 @@
 <div class="min-h-screen flex items-center justify-center bg-gray-50">
 	<div class="text-center">
 		{#if loading}
-			      <div class="mx-auto mb-4">
-			        <Spinner size="lg" />
-			      </div>
+			      <Spinner size="lg" centered />
 			<p class="text-gray-600">Completing authentication...</p>
 		{:else if error}
 			<div class="text-red-600 mb-4">{error}</div>

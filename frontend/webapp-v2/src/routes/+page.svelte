@@ -7,43 +7,49 @@
 	import MusicIcon from "@lucide/svelte/icons/music";
 	import AgentChip from "$lib/components/agent-chip.svelte";
 
-	// Mock agent data for the graphic
+	// Mock agent data for the graphic with controlled online/offline status
 	const mockAgents = [
 		{ 
 			id: "wasp-blue-agent", 
 			agent: { identifier: "WASP Blue Agent", description: "Advanced reasoning agent with strategic planning capabilities" },
 			size: "scale-125", 
-			position: "top-2 left-20" 
+			position: "top-0 left-20",
+			isOnline: true
 		},
 		{ 
 			id: "tensortrust-red-agent", 
 			agent: { identifier: "Tensortrust Red Agent", description: "Fast response agent optimized for real-time decision making" },
 			size: "scale-125", 
-			position: "top-6 right-16" 
+			position: "top-6 right-16",
+			isOnline: false
 		},
 		{ 
 			id: "template-injector-agent", 
 			agent: { identifier: "TemplateInjector Agent", description: "Creative problem solver with innovative approach strategies" },
 			size: "scale-125", 
-			position: "bottom-6 left-16" 
+			position: "bottom-6 left-16",
+			isOnline: true
 		},
 		{ 
 			id: "multi-turn-jailbreaker", 
 			agent: { identifier: "Multi-Turn Jailbreaker", description: "Defensive specialist with robust security protocols" },
 			size: "scale-125", 
-			position: "bottom-2 right-20" 
+			position: "bottom-0 right-20",
+			isOnline: false
 		},
 		{ 
 			id: "roleplay-attacker", 
 			agent: { identifier: "Roleplay Attacker", description: "Efficient resource manager with optimization algorithms" },
 			size: "scale-125", 
-			position: "top-20 left-6" 
+			position: "top-20 left-6",
+			isOnline: true
 		},
 		{ 
 			id: "cybergym-attacker", 
 			agent: { identifier: "CyberGym Attacker", description: "Zero-latency communication agent for instant coordination" },
 			size: "scale-125", 
-			position: "bottom-20 right-6" 
+			position: "bottom-20 right-6",
+			isOnline: false
 		}
 	];
 </script>
@@ -77,7 +83,7 @@
 		</div>
 		
 		<!-- Agent Chips Graphic -->
-		<div class="flex-shrink-0 ml-16 relative w-[600px] h-80">
+		<div class="flex-shrink-0 ml-16 relative w-[600px] h-96">
 			<!-- Large center chip -->
 			<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-200">
 				<AgentChip 
@@ -93,7 +99,7 @@
 					<AgentChip 
 						agent={agent.agent}
 						agent_id={agent.id}
-						isOnline={Math.random() > 0.3}
+						isOnline={agent.isOnline}
 					/>
 				</div>
 			{/each}
