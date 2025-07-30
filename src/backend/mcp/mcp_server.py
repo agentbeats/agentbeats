@@ -227,9 +227,9 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, reported_by: 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MCP Server for AgentBeast Battle Arena")
-    parser.add_argument("--mcp-port", type=int, default=9001, 
+    parser.add_argument("--mcp_port", type=int, default=9001, 
                        help="Port for MCP server (default: 9001)")
-    parser.add_argument("--backend-url", type=str, default="http://localhost:9000",
+    parser.add_argument("--backend_url", type=str, default="http://localhost:9000",
                        help="Backend URL (default: http://localhost:9000)")
     parser.add_argument("--host", type=str, nargs='?', default="localhost",
                        help="Host for MCP server (default: localhost)")

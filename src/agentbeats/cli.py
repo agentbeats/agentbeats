@@ -217,7 +217,7 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_
 
     # Check if frontend installed
     if not (frontend_dir / "node_modules").exists():
-        print(f"Error: Frontend dependencies not installed for {webapp_version}. Run `agentbeats run_frontend --mode install --webapp-version {webapp_version}` to install them.")
+        print(f"Error: Frontend dependencies not installed for {webapp_version}. Run `agentbeats run_frontend --mode install --webapp_version {webapp_version}` to install them.")
         sys.exit(1)
     
     print(f"Starting AgentBeats Frontend ({webapp_version}) in {mode} mode...")
@@ -305,8 +305,8 @@ def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool):
             mcp_process = subprocess.Popen(
                 [sys.executable, str(mcp_server_path),
                  "--host", str(host),
-                 "--mcp-port", str(mcp_port),
-                 "--backend-url", f"http://{host}:{backend_port}"],
+                 "--mcp_port", str(mcp_port),
+                 "--backend_url", f"http://{host}:{backend_port}"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True
@@ -441,7 +441,7 @@ def main():
     # run_scenario command
     run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml (requires frontend and backend to be running; eqivalant to `ab load_scenario` + register agent + start battle)")
     run_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
-    run_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"],
+    run_scenario_parser.add_argument("--launch_mode", choices=["tmux", "separate", "current"],
                                 default="", help="Launching terminal; Will override scenario.toml's settings!")
     run_scenario_parser.add_argument("--backend", help="Backend URL", default="http://localhost:9000")
     run_scenario_parser.add_argument("--frontend", help="Frontend URL", default="http://localhost:5173")
@@ -449,8 +449,8 @@ def main():
     # run_backend command
     backend_parser = sub_parser.add_parser("run_backend", help="Start the AgentBeats backend server")
     backend_parser.add_argument("--host", default="localhost", help="Backend host")
-    backend_parser.add_argument("--backend-port", type=int, default=9000, help="Backend port (default: 9000)")
-    backend_parser.add_argument("--mcp-port", type=int, default=9001, help=f"MCP port (default: 9001)")
+    backend_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
+    backend_parser.add_argument("--mcp_port", type=int, default=9001, help=f"MCP port (default: 9001)")
     backend_parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
 
     # run_frontend command
@@ -458,19 +458,19 @@ def main():
     frontend_parser.add_argument("--mode", choices=["dev", "build", "preview", "install"], default="dev", 
                                 help="Frontend mode: dev (development), build (production build), preview (build + preview), install (install dependencies)")
     frontend_parser.add_argument("--host", default="localhost", help="Frontend host (default: localhost)")
-    frontend_parser.add_argument("--frontend-port", type=int, default=5173, help="Frontend port (default: 5173)")
-    frontend_parser.add_argument("--webapp-version", default="webapp", help="Frontend webapp version to run (default: webapp)")
-    frontend_parser.add_argument("--backend-url", required=True, help="Backend URL for API proxy (default: http://localhost:9000)")
+    frontend_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
+    frontend_parser.add_argument("--webapp_version", default="webapp", help="Frontend webapp version to run (default: webapp)")
+    frontend_parser.add_argument("--backend_url", required=True, help="Backend URL for API proxy (default: http://localhost:9000)")
 
     # deploy command
     deploy_parser = sub_parser.add_parser("deploy", help="Deploy complete AgentBeats stack (backend + frontend + MCP)")
     deploy_parser.add_argument("--mode", choices=["dev", "build"], default="dev",
                               help="Deployment mode: dev (development) or build (production)")
-    deploy_parser.add_argument("--launch-mode", choices=["current", "separate", "tmux"], default="current",
+    deploy_parser.add_argument("--launch_mode", choices=["current", "separate", "tmux"], default="current",
                               help="Launch mode: current (same terminal), separate (separate terminals), tmux (tmux session)")
-    deploy_parser.add_argument("--backend-port", type=int, default=9000, help="Backend port (default: 9000)")
-    deploy_parser.add_argument("--frontend-port", type=int, default=5173, help="Frontend port (default: 5173)")
-    deploy_parser.add_argument("--mcp-port", type=int, default=9001, help="MCP server port (default: 9001)")
+    deploy_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
+    deploy_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
+    deploy_parser.add_argument("--mcp_port", type=int, default=9001, help="MCP server port (default: 9001)")
 
     # check command
     check_parser = sub_parser.add_parser("check", help="Check AgentBeats environment setup")
