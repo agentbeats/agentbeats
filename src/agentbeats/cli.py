@@ -272,7 +272,7 @@ def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool):
     """Start the AgentBeats backend server and MCP server in the same terminal"""
     
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    mcp_server_path = current_dir / "src" / "agentbeats_backend" / "mcp" / "mcp_server.py"
+    mcp_server_path = current_dir / "src" / "backend" / "mcp" / "mcp_server.py"
     
     if not mcp_server_path.exists():
         print(f"Error: MCP server not found at {mcp_server_path}")
@@ -288,7 +288,7 @@ def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool):
         try:
             print(f"Starting AgentBeats Backend on http://{host}:{backend_port}")
             uvicorn.run(
-                "agentbeats_backend.app:app",
+                "backend.app:app",
                 host=host,
                 port=backend_port,
                 reload=reload
@@ -435,7 +435,7 @@ def main():
     # load_scenario command
     load_scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml (agents, environment, etc.)")
     load_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
-    load_scenario_parser.add_argument("--launch_mode", choices=["tmux", "separate", "current"], 
+    load_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
                                 default="", help="Launching terminal; Will override scenario.toml's settings!")
 
     # run_scenario command
