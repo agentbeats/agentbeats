@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import argparse
 import logging
 import os
 from datetime import datetime
@@ -16,7 +17,8 @@ server = FastMCP("Open MCP for AgentBeast Battle Arena")
 
 SESSIONS: dict[str, dict[str, str]] = {}
 
-BACKEND_URL = "http://localhost:9000"
+# Global variable to store backend URL
+BACKEND_URL = ""
 
 @server.tool()
 def echo(message: str) -> str:
@@ -223,9 +225,25 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, reported_by: 
 #     except requests.exceptions.RequestException as e:
 #         logger.error("Network error when logging to backend for battle %s: %s", battle_id, str(e))
 
-if __name__ == "__main__":  
-    port = int(os.environ.get("MCP_PORT", 9001))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="MCP Server for AgentBeast Battle Arena")
+    parser.add_argument("--mcp-port", type=int, default=9001, 
+                       help="Port for MCP server (default: 9001)")
+    parser.add_argument("--backend-url", type=str, default="http://localhost:9000",
+                       help="Backend URL (default: http://localhost:9000)")
+    parser.add_argument("--host", type=str, nargs='?', default="localhost",
+                       help="Host for MCP server (default: localhost)")
+    
+    args = parser.parse_args()
+    
+    # Update global BACKEND_URL with command line argument
+    BACKEND_URL = args.backend_url
+    
+    logger.info(f"Starting MCP server on port {args.mcp_port}")
+    logger.info(f"Using host: {args.host}")
+    logger.info(f"Using backend URL: {BACKEND_URL}")
+    
     server.run(transport="sse", 
-               host="0.0.0.0",
-               port=port,
+               host=args.host,
+               port=args.mcp_port,
                log_level="ERROR")
