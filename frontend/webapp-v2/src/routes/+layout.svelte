@@ -85,11 +85,11 @@
 				<div class="flex justify-end items-center h-16">
 					<!-- Simple Navigation with Line Separators -->
 					<nav class="flex items-center">
-						<a href="/" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-200">Home</a>
+						<a href="/" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Home</a>
 						<div class="w-px h-4 bg-gray-300 mx-2"></div>
-						<a href="/docs" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-200">Docs</a>
+						<a href="/docs" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Docs</a>
 						<div class="w-px h-4 bg-gray-300 mx-2"></div>
-						<a href="/login" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors duration-200">Login</a>
+						<a href="/login" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Login</a>
 					</nav>
 				</div>
 			</div>
