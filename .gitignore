@@ -131,4 +131,5 @@ src/agentbeats_backend/assets/static/js/*
 src/agentbeats_backend/assets/static/fonts/*
 src/agentbeats_backend/assets/static/icons/*
 
-dist
+# python build artifacts
+dist/
