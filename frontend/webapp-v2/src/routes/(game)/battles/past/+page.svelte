@@ -1,8 +1,9 @@
 <script lang="ts">
   import BattleTable from './battle-table.svelte';
   import { getAllBattles } from "$lib/api/battles";
-  import { getAgentById } from "$lib/api/agents";
+  import { getAllAgents } from "$lib/api/agents";
   import { onMount, onDestroy } from 'svelte';
+  import { fade } from 'svelte/transition';
 
   // Define the Battle type
   type Battle = {
@@ -21,23 +22,29 @@
   let error = $state<string | null>(null);
   let loadingProgress = $state(0);
   let totalBattles = $state(0);
+  let loadedCount = $state(0);
+  let loadingMore = $state(false);
+  let allAgents = $state<any[]>([]);
 
   // Pagination settings
-  const BATTLES_PER_PAGE = 10; // Only load 10 battles at a time
+  const BATTLES_PER_PAGE = 10; // Only load 10 battles at a time for performance
 
   // Debug logging
   console.log('🎯 PAST BATTLES PAGE LOADED! 🎯');
+
+  // Helper function to find agent by ID from the cached agents
+  function findAgentById(agentId: string): any | null {
+    return allAgents.find(agent => agent.agent_id === agentId || agent.id === agentId) || null;
+  }
 
   async function loadAgentData(battle: any): Promise<Battle> {
     try {
       // Load green agent
       let greenAgent = null;
       if (battle.green_agent_id) {
-        try {
-          greenAgent = await getAgentById(battle.green_agent_id);
-        } catch (error) {
-          console.error('Failed to load green agent:', error);
-          // Create placeholder green agent
+        greenAgent = findAgentById(battle.green_agent_id);
+        if (!greenAgent) {
+          // Create placeholder green agent if not found
           greenAgent = {
             agent_id: battle.green_agent_id,
             register_info: { alias: `Unknown Agent (${battle.green_agent_id.slice(0, 8)})` },
@@ -46,19 +53,18 @@
         }
       }
 
-      // Load opponent agents sequentially (not in parallel)
+      // Load opponent agents from cache
       let opponentAgents = [];
       if (battle.opponents && battle.opponents.length > 0) {
         for (const opponent of battle.opponents) {
-          try {
-            const agent = await getAgentById(opponent.agent_id);
+          const agent = findAgentById(opponent.agent_id);
+          if (agent) {
             opponentAgents.push({
               ...agent,
               role: opponent.name
             });
-          } catch (error) {
-            console.error(`Failed to load opponent agent ${opponent.agent_id}:`, error);
-            // Add placeholder for failed agent
+          } else {
+            // Add placeholder for missing agent
             opponentAgents.push({
               agent_id: opponent.agent_id,
               register_info: { alias: `Unknown ${opponent.name}` },
@@ -99,6 +105,11 @@
       loadingProgress = 0;
       console.log('Loading battles from client...');
       
+      // First, load all agents once
+      console.log('Loading all agents...');
+      allAgents = await getAllAgents();
+      console.log('All agents loaded:', allAgents.length);
+      
       const allBattles = await getAllBattles();
       console.log('All battles loaded:', allBattles.length);
       
@@ -108,9 +119,10 @@
       );
       console.log('Finished battles found:', finishedBattles.length);
       
-      // Only take the first BATTLES_PER_PAGE battles
+      // Only take the first BATTLES_PER_PAGE battles for performance
       const battlesToLoad = finishedBattles.slice(0, BATTLES_PER_PAGE);
       totalBattles = finishedBattles.length;
+      loadedCount = Math.min(BATTLES_PER_PAGE, totalBattles);
       
       console.log(`Loading first ${battlesToLoad.length} battles out of ${totalBattles} total`);
       
@@ -159,43 +171,38 @@
       // Load green agent
       let greenAgent = null;
       if (battle.green_agent_id) {
-        try {
-          greenAgent = await getAgentById(battle.green_agent_id);
-          onAgentLoaded(); // Update progress after green agent loads
-        } catch (error) {
-          console.error('Failed to load green agent:', error);
-          // Create placeholder green agent
+        greenAgent = findAgentById(battle.green_agent_id);
+        if (!greenAgent) {
+          // Create placeholder green agent if not found
           greenAgent = {
             agent_id: battle.green_agent_id,
             register_info: { alias: `Unknown Agent (${battle.green_agent_id.slice(0, 8)})` },
             agent_card: { name: `Unknown Agent`, description: 'Agent data unavailable' }
           };
-          onAgentLoaded(); // Still count as loaded even if it's a placeholder
         }
+        onAgentLoaded(); // Update progress after green agent loads
       }
 
-      // Load opponent agents sequentially
+      // Load opponent agents from cache
       let opponentAgents = [];
       if (battle.opponents && battle.opponents.length > 0) {
         for (const opponent of battle.opponents) {
-          try {
-            const agent = await getAgentById(opponent.agent_id);
+          const agent = findAgentById(opponent.agent_id);
+          if (agent) {
             opponentAgents.push({
               ...agent,
               role: opponent.name
             });
-            onAgentLoaded(); // Update progress after each opponent loads
-          } catch (error) {
-            console.error(`Failed to load opponent agent ${opponent.agent_id}:`, error);
-            // Add placeholder for failed agent
+          } else {
+            // Add placeholder for missing agent
             opponentAgents.push({
               agent_id: opponent.agent_id,
               register_info: { alias: `Unknown ${opponent.name}` },
               agent_card: { name: `Unknown ${opponent.name}`, description: 'Agent data unavailable' },
               role: opponent.name
             });
-            onAgentLoaded(); // Still count as loaded even if it's a placeholder
           }
+          onAgentLoaded(); // Update progress after each opponent loads
         }
       }
 
@@ -241,11 +248,11 @@
   
   {#if loading}
     <div class="flex flex-col items-center justify-center py-12">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
       <span class="text-lg mb-2">Loading battles...</span>
       {#if loadingProgress > 0}
         <div class="w-64 bg-gray-200 rounded-full h-2">
-          <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {loadingProgress}%"></div>
+          <div class="bg-gray-900 h-2 rounded-full transition-all duration-300" style="width: {loadingProgress}%"></div>
         </div>
         <span class="text-sm text-muted-foreground mt-2">{loadingProgress}% complete</span>
       {/if}
@@ -256,7 +263,9 @@
       <button onclick={loadBattles} class="btn-primary">Retry</button>
     </div>
   {:else if battles && battles.length > 0}
-    <BattleTable battles={battles} />
+    <div in:fade={{ duration: 300 }} out:fade={{ duration: 200 }}>
+      <BattleTable battles={battles} />
+    </div>
   {:else}
     <div class="text-center py-12">
       <p class="text-gray-600 mb-4">No past battles found.</p>
