@@ -2,6 +2,7 @@
   import { getAllBattles } from "$lib/api/battles";
   import { getMyAgents } from "$lib/api/agents";
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
+  import { Spinner } from "$lib/components/ui/spinner";
   import { Button } from "$lib/components/ui/button";
   import { ScrollArea } from "$lib/components/ui/scroll-area";
   import { goto } from "$app/navigation";
@@ -132,7 +133,7 @@
                   <CardContent>
                     {#if agentsLoading}
                       <div class="flex items-center justify-center py-4">
-                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <Spinner size="md" />
                         <span class="ml-2 text-sm">Loading agents...</span>
                       </div>
                     {:else if topAgents.length === 0}
@@ -160,9 +161,9 @@
                           }),
                         ]}
                       >
-                        <Carousel.Content class="-ml-1">
+                        <Carousel.Content class="gap-1">
                           {#each topAgents as agent}
-                            <Carousel.Item class="pl-1 basis-1/4 md:basis-1/5">
+                            <Carousel.Item class="basis-1/4 md:basis-1/5">
                               <div class="p-0.5">
                                 <AgentChip 
                                   agent={{
@@ -206,7 +207,7 @@
           <CardContent class="h-full">
             {#if battlesLoading}
               <div class="flex items-center justify-center py-4">
-                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <Spinner size="md" />
                 <span class="ml-2 text-sm">Loading...</span>
               </div>
             {:else if battles.length === 0}
@@ -266,7 +267,7 @@
       <CardContent>
         {#if battlesLoading}
           <div class="flex items-center justify-center py-8">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <Spinner size="md" />
             <span class="ml-2 text-sm">Loading ongoing battles...</span>
           </div>
         {:else if ongoingBattles.length === 0}
@@ -293,9 +294,9 @@
               }),
             ]}
           >
-            <Carousel.Content class="-ml-2 md:-ml-4">
+            <Carousel.Content class="gap-2 md:gap-4">
               {#each ongoingBattles as battle}
-                <Carousel.Item class="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <Carousel.Item class="basis-1/2 md:basis-1/3 lg:basis-1/4">
                   <div class="p-1">
                     <BattleCard battle={battle} />
                   </div>

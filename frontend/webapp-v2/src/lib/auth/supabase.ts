@@ -83,6 +83,7 @@ const initializeAuth = async () => {
 // Listen for auth changes with proper error handling
 supabase.auth.onAuthStateChange(async (event, session) => {
   console.log('Auth state changed:', event, session?.user?.email)
+  console.log('Full session data:', session)
   
   try {
     error.set(null)

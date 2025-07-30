@@ -195,16 +195,7 @@ def get_agent(agent_id: str, current_user: Dict[str, Any] = Depends(get_optional
                 status_code=404, detail=f"Agent with ID {agent_id} not found"
             )
         
-        # Check ownership - users can only access their own agents or public agents
-        if current_user:
-            agent_user_id = agent.get("user_id")
-            if agent_user_id and agent_user_id != current_user["id"]:
-                raise HTTPException(status_code=403, detail="Access denied - agent belongs to another user")
-        else:
-            # Unauthenticated users can only access public agents
-            if agent.get("user_id"):
-                raise HTTPException(status_code=403, detail="Access denied - authentication required")
-        
+        # Allow all users to view all agents - no ownership restrictions for viewing
         return agent
     except HTTPException:
         raise

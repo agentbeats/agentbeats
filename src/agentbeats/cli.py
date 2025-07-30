@@ -27,7 +27,7 @@ def _check_environment():
     
     # Find directories
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    backend_dir = current_dir / "src" / "agentbeats_backend"
+    backend_dir = current_dir / "src" / "backend"
     frontend_dir = current_dir / "frontend" / "webapp"
     
     issues = []
@@ -174,7 +174,7 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int,
     
     # Find directories
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    mcp_server_path = current_dir / "src" / "agentbeats_backend" / "mcp" / "mcp_server.py"
+    mcp_server_path = current_dir / "src" / "backend" / "mcp" / "mcp_server.py"
     
     if not mcp_server_path.exists():
         print(f"Error: MCP server not found at {mcp_server_path}")
@@ -381,7 +381,7 @@ def _run_agent(card_path: str,
         _import_tool_file(file)
 
     # 2. Instantiate agent and register tools
-    agent = BeatsAgent(__name__, 
+    agent = BeatsAgent(name=__name__, 
                        agent_host=agent_host, 
                        agent_port=agent_port, 
                        model_type=model_type,
@@ -433,18 +433,16 @@ def main():
     run_parser.add_argument("--reload", action="store_true")
 
     # load_scenario command
-    load_scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml")
-    load_scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
-    load_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
-                                default="", help="Launch mode (default: tmux)")
-    load_scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
+    load_scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml (agents, environment, etc.)")
+    load_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
+    load_scenario_parser.add_argument("--launch_mode", choices=["tmux", "separate", "current"], 
+                                default="", help="Launching terminal; Will override scenario.toml's settings!")
 
     # run_scenario command
-    run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml")
-    run_scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
+    run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml (requires frontend and backend to be running; eqivalant to `ab load_scenario` + register agent + start battle)")
+    run_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
     run_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"],
-                                default="", help="Launch mode (default: tmux)")
-    run_scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
+                                default="", help="Launching terminal; Will override scenario.toml's settings!")
     run_scenario_parser.add_argument("--backend", help="Backend URL", default="http://localhost:9000")
     run_scenario_parser.add_argument("--frontend", help="Frontend URL", default="http://localhost:5173")
 
@@ -487,29 +485,30 @@ def main():
                    model_type=args.model_type,
                    tool_files=args.tool, 
                    mcp_urls=args.mcp)
+    
     elif args.cmd == "run":
-        launcher = BeatsAgentLauncher(
-            agent_card=args.card,
-            launcher_host=args.launcher_host,
-            launcher_port=args.launcher_port,
-            agent_host=args.agent_host,
-            agent_port=args.agent_port,
-            model_type=args.model_type,
-            model_name=args.model_name,
-            mcp_list=args.mcp,
-            tool_list=args.tool,
-        )
+        launcher = BeatsAgentLauncher(agent_card=args.card,
+                                      launcher_host=args.launcher_host,
+                                      launcher_port=args.launcher_port,
+                                      agent_host=args.agent_host,
+                                      agent_port=args.agent_port,
+                                      model_type=args.model_type,
+                                      model_name=args.model_name,
+                                      mcp_list=args.mcp,
+                                      tool_list=args.tool)
         launcher.run(reload=args.reload)
+    
     elif args.cmd == "load_scenario":
-        scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
-        manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.launch_mode)
+        manager = ScenarioManager(scenario_root=pathlib.Path(args.scenario_root))
+        manager.load_scenario(mode=args.launch_mode)
+    
     elif args.cmd == "run_scenario":
-        scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
-        manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.launch_mode)
-        time.sleep(10)
-        manager.start_battle(args.scenario_name, args.backend, args.frontend)
+        manager = ScenarioManager(scenario_root=pathlib.Path(args.scenario_root))
+        manager.load_scenario(mode=args.launch_mode)
+        time.sleep(10) # TODO: should check aliveness here; can implement later
+        manager.start_battle(backend_url=args.backend, 
+                             frontend_url=args.frontend)
+
     elif args.cmd == "run_backend":
         _run_backend(host=args.host, backend_port=args.backend_port, mcp_port=args.mcp_port, reload=args.reload)
     elif args.cmd == "run_frontend":
@@ -518,5 +517,6 @@ def main():
         _run_deploy(mode=args.mode, backend_port=args.backend_port, 
                    frontend_port=args.frontend_port, mcp_port=args.mcp_port, 
                    launch_mode=args.launch_mode)
+    
     elif args.cmd == "check":
         _check_environment()
