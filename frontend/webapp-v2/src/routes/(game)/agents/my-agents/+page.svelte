@@ -127,9 +127,9 @@
         <p class="text-sm text-muted-foreground">Agents that coordinate battles and judge outcomes</p>
       </div>
       <Carousel class="w-full">
-        <CarouselContent class="-ml-6 gap-4">
+        <CarouselContent class="gap-4">
           {#each greenAgents as agent}
-            <CarouselItem class="basis-80 pl-6">
+            <CarouselItem class="basis-80">
               <GreenAgentCard {agent} onDelete={handleDeleteAgent} />
             </CarouselItem>
           {/each}
@@ -146,9 +146,9 @@
           <p class="text-sm text-muted-foreground">Agents that participate in battles as attackers or defenders</p>
         </div>
         <Carousel class="w-full">
-          <CarouselContent class="-ml-6 gap-4">
-            {#each opponentAgents as agent}
-              <CarouselItem class="basis-80 pl-6">
+                  <CarouselContent class="gap-4">
+          {#each opponentAgents as agent}
+            <CarouselItem class="basis-80">
                 <OpponentAgentCard {agent} onDelete={handleDeleteAgent} />
               </CarouselItem>
             {/each}

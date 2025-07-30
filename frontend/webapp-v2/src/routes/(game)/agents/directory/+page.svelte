@@ -176,9 +176,9 @@
                     }),
                   ]}
                 >
-                  <Carousel.Content class="-ml-6 gap-4">
+                  <Carousel.Content class="gap-4">
                     {#each rawAgents.filter(agent => agent.register_info?.is_green === true).slice(0, 8) as agent}
-                      <Carousel.Item class="basis-80 pl-6">
+                      <Carousel.Item class="basis-80">
                         <GreenAgentCard
                           agent={agent}
                           onDelete={() => {}}
@@ -213,9 +213,9 @@
                     }),
                   ]}
                 >
-                  <Carousel.Content class="-ml-6 gap-4">
+                  <Carousel.Content class="gap-4">
                     {#each rawAgents.filter(agent => agent.register_info?.is_green === false).slice(0, 8) as agent}
-                      <Carousel.Item class="basis-80 pl-6">
+                      <Carousel.Item class="basis-80">
                         <OpponentAgentCard
                           agent={agent}
                           onDelete={() => {}}

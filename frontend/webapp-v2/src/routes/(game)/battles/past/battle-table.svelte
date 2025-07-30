@@ -191,9 +191,9 @@
                         loop: battle.opponent_agents.length > 3,
                       }}
                     >
-                      <Carousel.Content class="-ml-1">
+                      <Carousel.Content class="gap-1">
                         {#each battle.opponent_agents as agent}
-                          <Carousel.Item class="pl-1 basis-35/100">
+                          <Carousel.Item class="basis-35/100">
                             <div class="p-1">
                               <AgentChip 
                                 agent={{

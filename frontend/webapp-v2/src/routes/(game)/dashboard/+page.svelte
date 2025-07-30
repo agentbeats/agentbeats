@@ -160,9 +160,9 @@
                           }),
                         ]}
                       >
-                        <Carousel.Content class="-ml-1">
+                        <Carousel.Content class="gap-1">
                           {#each topAgents as agent}
-                            <Carousel.Item class="pl-1 basis-1/4 md:basis-1/5">
+                            <Carousel.Item class="basis-1/4 md:basis-1/5">
                               <div class="p-0.5">
                                 <AgentChip 
                                   agent={{
@@ -293,9 +293,9 @@
               }),
             ]}
           >
-            <Carousel.Content class="-ml-2 md:-ml-4">
+            <Carousel.Content class="gap-2 md:gap-4">
               {#each ongoingBattles as battle}
-                <Carousel.Item class="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                <Carousel.Item class="basis-1/2 md:basis-1/3 lg:basis-1/4">
                   <div class="p-1">
                     <BattleCard battle={battle} />
                   </div>
