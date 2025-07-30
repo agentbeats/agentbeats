@@ -10,7 +10,7 @@ def main():
     print("Press Ctrl+C to stop the server")
     
     uvicorn.run(
-        "agentbeats_backend.app:app",
+        "backend.app:app",
         host="0.0.0.0",
         port=9000,
         reload=True
