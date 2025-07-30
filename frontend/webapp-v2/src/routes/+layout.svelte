@@ -12,10 +12,12 @@
 
 	onMount(() => {
 		// Subscribe to auth state changes
-		unsubscribe = user.subscribe(($user) => {
+		unsubscribe = user.subscribe(async ($user) => {
 			// Check if we're on a public page that doesn't require auth
 			const publicPages = ['/', '/login', '/auth/callback', '/about', '/docs'];
 			const currentPath = window.location.pathname;
+			
+			console.log('Layout auth check:', { user: $user?.email, loading: $loading, currentPath });
 			
 			if (!publicPages.includes(currentPath)) {
 				// If user is not authenticated and not on a public page, redirect to login
@@ -23,10 +25,16 @@
 					console.log('User not authenticated, redirecting to login');
 					goto('/login');
 				}
-			} else if (currentPath === '/login' && $user && !$loading) {
+			} else if (currentPath === '/login' && $user) {
 				// If user is authenticated and on login page, redirect to dashboard
 				console.log('User authenticated, redirecting to dashboard');
-				goto('/dashboard');
+				try {
+					await goto('/dashboard');
+					console.log('goto completed successfully');
+				} catch (error) {
+					console.error('goto failed, using window.location:', error);
+					window.location.href = '/dashboard';
+				}
 			}
 		});
 
