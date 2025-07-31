@@ -24,3 +24,7 @@ Congratulations! You have learned how to use `agentbeats` to create a battle!
 ## Create stronger agents using mcp / tools
 
 <TODO: Create stronger agents using mcp / tools>
+
+## Finish your tutorial
+
+Seems that you have learnt how to create an `agentbeats` agent! Please refer to [advanced_usage](docs/advanced_usage.md) for even further usage of this package, including scenario managing, local server hosting (frontend/backend), etc.
