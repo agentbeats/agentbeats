@@ -6,7 +6,7 @@ AgentBeats SDK utilities organized by domain.
 from .agents import *
 from .environment import *
 from .commands import *
-from .assets import *
+from .static import *
 
 __all__ = [
     # Agent utilities
@@ -24,6 +24,6 @@ __all__ = [
     "SSHClient",
     "create_ssh_connect_tool",
     
-    # Asset utilities
+    # Static utilities
     "static_expose",
 ] 
