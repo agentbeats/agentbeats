@@ -1,0 +1,47 @@
+[scenario]
+name = "web_service_battle_royale"
+description = "Web Service Battle Royale scenario with Docker arena"
+version = "1.0.0"
+
+# Docker services that need to be started
+[[services]]
+name = "battle_arena"
+type = "docker_compose"
+working_dir = "arena"
+compose_file = "docker-compose.yml"
+startup_delay = 5
+health_check = "http://localhost:8080/health"
+
+# Agents to be launched
+[[agents]]
+name = "Green Agent (Monitor)"
+card = "agents/green_agent/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9010
+agent_host = "0.0.0.0"
+agent_port = 9011
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+[[agents]]
+name = "Red Agent (Competitor)"
+card = "agents/red_agent/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9020
+agent_host = "0.0.0.0"
+agent_port = 9021
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/red_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+# Launch configuration
+[launch]
+mode = "tmux"  # Options: "tmux", "current", "separate"
+tmux_session_name = "agentbeats-battle-royale"
+startup_interval = 2  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents

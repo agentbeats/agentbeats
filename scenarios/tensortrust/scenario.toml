@@ -1,0 +1,51 @@
+[scenario]
+name = "tensortrust"
+description = "TensorTrust AI security challenge scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "Blue Agent"
+card = "blue(weaker)_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 6010
+agent_host = "0.0.0.0"
+agent_port = 6011
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "o4-mini"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "Red Agent"
+card = "red(stronger)_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 6020
+agent_host = "0.0.0.0"
+agent_port = 6021
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "Green Agent"
+card = "green_agent/green(weaker)_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9030
+agent_host = "0.0.0.0"
+agent_port = 9031
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "o4-mini"
+tools = ["green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+# Launch configuration
+[launch]
+mode = "separate"  # Options: "tmux", "separate", "current"
+tmux_session_name = "agentbeats-tensortrust"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents
