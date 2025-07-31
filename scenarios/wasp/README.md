@@ -45,10 +45,14 @@ bash setup.sh
 
 ### Run agents
 
+```bash
+pip install google-cloud-storage
+```
+
 Run Green, Red and Blue agent.
 
 ```bash
-bash start-agents.sh
+agentbeats load_scenario scenarios/wasp && tmux attach -t agentbeats-wasp
 ```
 
 ### Add agents to the AgentBeats app

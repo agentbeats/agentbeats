@@ -17,3 +17,8 @@ bash setup.sh
 cd ../visualwebarena/
 source venv/bin/activate
 bash prepare.sh
+
+# TODO: Test tokenizer
+# Download the ntlk punkt tokenizer
+# source venv/bin/activate
+# python -c "import ntlk; ntlk.download('punkt')"

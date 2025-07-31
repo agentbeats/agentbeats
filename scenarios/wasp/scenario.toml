@@ -1,0 +1,61 @@
+[scenario]
+name = "wasp"
+description = "WASP AI security challenge scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "Blue Agent"
+card = "blue_agent/blue_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9052
+agent_host = "0.0.0.0"
+agent_port = 9053
+model_type = "openai"
+model_name = "o4-mini"
+tools = ["blue_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+[[agents]]
+name = "Red Agent"
+card = "red_agent/red_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9054
+agent_host = "0.0.0.0"
+agent_port = 9055
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["red_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+[[agents]]
+name = "Green Agent"
+card = "green_agent/green_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9056
+agent_host = "0.0.0.0"
+agent_port = 9057
+model_type = "openai"
+model_name = "o4-mini"
+tools = ["green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+is_green = true
+
+[[agents.participant_requirements]]
+  role = "red_agent"
+  name = "WASP Red Agent"
+  required = true
+  participant_agent = "Red Agent"
+
+[[agents.participant_requirements]]
+  role = "blue_agent"
+  name = "WASP Blue Agent"
+  required = true
+  participant_agent = "Blue Agent"
+
+# Launch configuration
+[launch]
+mode = "tmux"  # Options: "tmux", "separate", "current"
+tmux_session_name = "agentbeats-wasp"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents
