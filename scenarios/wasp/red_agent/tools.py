@@ -68,6 +68,8 @@ def get_image(battle_id: str) -> str:
         
         # Use static_expose to upload to GCP bucket
         public_url = static_expose(image_path, f"gitlab_environment_setup_{battle_id}.png", battle_id)
+
+        print("Public URL: " + public_url)
         
         if public_url.startswith("ERROR") or public_url.startswith("GCP Error"):
             print(f"FAILED: The image upload failed: {public_url}")
@@ -84,6 +86,6 @@ def get_image(battle_id: str) -> str:
 
 if __name__ == "__main__":
     battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
-    prepare_prompt_environment(battle_id)
+    # prepare_prompt_environment(battle_id)
     get_image(battle_id)
     print("Red agent completed successfully")

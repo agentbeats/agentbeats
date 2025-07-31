@@ -22,6 +22,8 @@ def static_expose(file_path: str, filename: Optional[str] = None, battle_id: Opt
     Returns:
         str: Public URL of the uploaded file or error message
     """    
+    print("Exposing file to the static directory using Google Cloud Storage...")
+    
     try:
         # Check if file exists
         if not os.path.exists(file_path):
@@ -55,9 +57,11 @@ def static_expose(file_path: str, filename: Optional[str] = None, battle_id: Opt
         return public_url
         
     except GoogleCloudError as e:
+        print("GCP Error: " + str(e))
         error_msg = f"GCP Error: {str(e)}"
         return error_msg
     except Exception as e:
+        print("ERROR: Failed to expose file " + file_path + ": " + str(e))
         error_msg = f"ERROR: Failed to expose file {file_path}: {str(e)}"
         return error_msg
     
