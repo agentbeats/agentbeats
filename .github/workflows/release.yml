@@ -9,7 +9,7 @@ on:
       - 'MANIFEST.in'
       - 'README.md'
   release:
-    types: [ published ]
+    types: [ published ] # semantic-release will create a release when it bumps the version that triggers the second job
 
 jobs:
   bump-and-tag:
@@ -28,15 +28,17 @@ jobs:
 
       - run: pip install python-semantic-release
 
-      - name: Bump version, commit & tag
+      - name: Bump version → commit → tag → GitHub Release
         env:
+          GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: semantic-release version
+        run: semantic-release publish --skip-dist --skip-upload
 
   publish-to-pypi:
     name: Build & Publish to PyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+    if: ${{ github.event_name == 'release' &&
+           github.event.action == 'published' }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -50,7 +52,7 @@ jobs:
 
       - run: python -m build --sdist --wheel
 
-      - name: Publish to PyPI
+      - name: Upload to PyPI
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
