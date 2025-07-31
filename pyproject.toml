@@ -41,3 +41,9 @@ where = ["src"]
 [tool.setuptools.package-data]
 backend = ["**/*"]
 mcpcp = ["**/*"]
+
+# To ensure CI tools can find the version
+[tool.semantic_release]
+version_source   = "pyproject.toml"
+version_variable = "project.version"
+tag_format       = "v{version}"
