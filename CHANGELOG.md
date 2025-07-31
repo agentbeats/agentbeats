@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.2 (2025-07-31)
+
+### Bug Fixes
+
+- Wrong ab version; trigger CI to test again
+  ([`9d73ad1`](https://github.com/agentbeats/agentbeats/commit/9d73ad14ad9933349272c987ee70ecdee0bccd5b))
+
+
 ## v1.0.1 (2025-07-31)
 
 
