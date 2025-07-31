@@ -16,6 +16,7 @@ export GITLAB=
 export OPENROUTER_API_KEY=
 export OPENROUTER_API_BASE="https://openrouter.ai/api/v1"
 export RESET_AUTH_TOKEN=
+export OPENAI_API_KEY=
 ```
 
 ### Python installations
