@@ -2,53 +2,49 @@ name: Agentbeats Automated Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - 'src/**'
       - 'pyproject.toml'
       - 'MANIFEST.in'
       - 'README.md'
+  release:
+    types: [ published ]
 
 jobs:
   bump-and-tag:
     name: Bump version & create GitHub Release
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' && 
-             github.ref == 'refs/heads/main' && 
+    if: ${{ github.event_name == 'push' &&
              !startsWith(github.event.head_commit.message, 'chore(release') }}
     permissions:
-      contents: write   # allow semantic-release to create tags and releases
+      contents: write
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
       - uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+        with: { python-version: '3.x' }
 
       - run: pip install python-semantic-release
 
-      - name: Bump version & create tag + GitHub Release
-        run: semantic-release version
+      - name: Bump version, commit & tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release version
 
   publish-to-pypi:
     name: Build & Publish to PyPI
     runs-on: ubuntu-latest
-    needs: bump-and-tag
     if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
     steps:
       - uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
 
       - uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+        with: { python-version: '3.x' }
 
       - run: pip install build twine
 
