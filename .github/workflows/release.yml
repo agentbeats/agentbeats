@@ -2,11 +2,9 @@ name: Agentbeats Automated Release
 
 on:
   push:
-    branches: # only run if pushing to main or creating a tag
+    branches:
       - main
-    tags:
-      - 'v*.*.*'
-    paths: # only run CI if these files are changed
+    paths:
       - 'src/**'
       - 'pyproject.toml'
       - 'MANIFEST.in'
@@ -14,54 +12,47 @@ on:
 
 jobs:
   bump-and-tag:
-    name: Bump version & create tag
+    name: Bump version & create GitHub Release
     runs-on: ubuntu-latest
-    # only run if pushing to main and commit message does not start with 'chore(release'
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 
+    if: ${{ github.event_name == 'push' && 
+             github.ref == 'refs/heads/main' && 
              !startsWith(github.event.head_commit.message, 'chore(release') }}
     permissions:
-      contents: write
+      contents: write   # allow semantic-release to create tags and releases
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install semantic-release
-        run: pip install python-semantic-release
+      - run: pip install python-semantic-release
 
-      - name: Bump version & tag
+      - name: Bump version & create tag + GitHub Release
         run: semantic-release version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
 
   publish-to-pypi:
     name: Build & Publish to PyPI
     runs-on: ubuntu-latest
     needs: bump-and-tag
-    # only run if creating v*.*.* tag
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
     steps:
-      - name: Checkout tagged code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install build tools
-        run: pip install build twine
+      - run: pip install build twine
 
-      - name: Build distributions
-        run: python -m build --sdist --wheel
+      - run: python -m build --sdist --wheel
 
       - name: Publish to PyPI
         env:
