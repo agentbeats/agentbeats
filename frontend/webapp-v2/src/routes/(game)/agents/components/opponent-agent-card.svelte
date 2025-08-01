@@ -1,20 +1,29 @@
 <script lang="ts">
   import { Card, CardContent, CardHeader } from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
-  import { LineChart } from "layerchart";
-  import { curveLinear } from "d3-shape";
-  import * as Chart from "$lib/components/ui/chart/index.js";
   import AgentChip from "$lib/components/agent-chip.svelte";
-  import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
-  import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
-  import MoveRightIcon from "@lucide/svelte/icons/move-right";
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
   import { goto } from "$app/navigation";
-  import { cartStore } from '$lib/stores/cart';
-  import { toast } from 'svelte-sonner';
+  import { getAgentBattlesLast24Hours } from "$lib/api/battles";
+  import { onMount } from "svelte";
+  import AddToBattleCart from "$lib/components/add-to-battle-cart.svelte";
 
   export let agent: any;
   export let onDelete: (agentId: string, agentName: string) => void;
+
+  let battleCount = 0;
+  let loadingBattles = true;
+
+  onMount(async () => {
+    try {
+      const battles = await getAgentBattlesLast24Hours(agent.agent_id || agent.id);
+      battleCount = battles.length;
+    } catch (error) {
+      console.error('Failed to load battle count:', error);
+      battleCount = 0;
+    } finally {
+      loadingBattles = false;
+    }
+  });
 </script>
 
 <Card class="w-80 mr-8 agent-card">
@@ -30,86 +39,13 @@
     />
   </CardHeader>
   <CardContent class="pt-0 pb-3">
-    {#if agent.elo?.rating}
-      {@const battleHistory = agent.elo.battle_history || []}
-      {@const recentBattles = battleHistory.slice(-5)}
-      {@const chartData = (() => {
-        const data = [];
-        const baseElo = 1000;
-        
-        // Add placeholders for missing battles (left side)
-        const missingBattles = 5 - recentBattles.length;
-        for (let i = 0; i < missingBattles; i++) {
-          data.push({ battle: i + 1, elo: baseElo });
-        }
-        
-        // Add actual battle data (most recent on the right)
-        recentBattles.forEach((battle: any, index: number) => {
-          data.push({ 
-            battle: missingBattles + index + 1, 
-            elo: battle.elo_after || battle.elo_before || baseElo 
-          });
-        });
-        
-        console.log('Chart data:', data);
-        return data;
-      })()}
-      {@const chartConfig = {
-        elo: { label: "ELO Rating", color: "#6b7280" }
-      }}
-      {@const _ = console.log('Chart config:', chartConfig)}
-      {@const recentBattlesWithElo = recentBattles.filter((battle: any) => battle.elo_after && battle.elo_before)}
-      {@const trendChange = recentBattlesWithElo.length > 0 
-        ? recentBattlesWithElo.reduce((total: number, battle: any) => total + (battle.elo_after - battle.elo_before), 0)
-        : 0
-      }
-      {@const trendIcon = trendChange > 0 ? TrendingUpIcon : trendChange < 0 ? TrendingDownIcon : MoveRightIcon}
-            {@const trendColor = trendChange > 0 ? "text-green-600" : trendChange < 0 ? "text-red-600" : "text-gray-600"}
-      
-      <Chart.Container config={chartConfig} class="min-h-[120px] w-full">
-        <LineChart
-          data={chartData}
-          x="battle"
-          series={[
-            {
-              key: "elo",
-              label: "ELO Rating",
-              color: chartConfig.elo.color,
-              props: {
-                strokeWidth: 3,
-              },
-            },
-          ]}
-        >
-          {#snippet tooltip()}
-            <Chart.Tooltip hideLabel />
-          {/snippet}
-        </LineChart>
-      </Chart.Container>
-      
-      <div class="flex items-center gap-1 mt-2 text-xs {trendColor}">
-        <span>
-          {trendChange > 0 ? "up" : trendChange < 0 ? "down" : "no change"} by {Math.abs(trendChange)} pts in recent battles
-        </span>
-        <svelte:component this={trendIcon} class="w-3 h-3" />
-      </div>
-    {/if}
+    <!-- Battle count for last 24 hours -->
+    <div class="text-sm text-muted-foreground mb-4">
+      {loadingBattles ? 'Loading...' : `${battleCount} battles in the past 24 hours`}
+    </div>
+    
     <div class="flex gap-1 pt-6">
-      <Button 
-        onclick={() => {
-          cartStore.addItem({
-            agent: agent,
-            type: 'opponent'
-          });
-          toast.success(`Added ${agent.register_info?.alias || agent.agent_card?.name || 'agent'} to cart as Opponent`);
-        }}
-        class="btn-primary"
-        size="sm"
-        title="Add to cart as Opponent"
-        data-add-to-cart="true"
-      >
-        <ShoppingCartIcon class="w-4 h-4" />
-      </Button>
+      <AddToBattleCart {agent} agentType="opponent" size="sm" />
       <Button 
         onclick={() => onDelete(agent.agent_id || agent.id, agent.register_info?.alias || 'this agent')}
         class="btn-primary"

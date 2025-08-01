@@ -5,9 +5,7 @@
   import { goto } from "$app/navigation";
   import { getAgentBattlesLast24Hours } from "$lib/api/battles";
   import { onMount } from "svelte";
-  import { cartStore } from '$lib/stores/cart';
-  import { toast } from 'svelte-sonner';
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
+  import AddToBattleCart from "$lib/components/add-to-battle-cart.svelte";
 
   export let agent: any;
   export let onDelete: (agentId: string, agentName: string) => void;
@@ -47,21 +45,7 @@
     </div>
     
     <div class="flex gap-1 pt-6">
-      <Button 
-        onclick={() => {
-          cartStore.addItem({
-            agent: agent,
-            type: 'green'
-          });
-          toast.success(`Added ${agent.register_info?.alias || agent.agent_card?.name || 'agent'} to cart as Green Agent`);
-        }}
-        class="btn-primary"
-        size="sm"
-        title="Add to cart as Green Agent"
-        data-add-to-cart="true"
-      >
-        <ShoppingCartIcon class="w-4 h-4" />
-      </Button>
+      <AddToBattleCart {agent} agentType="green" size="sm" />
       <Button 
         onclick={() => onDelete(agent.agent_id || agent.id, agent.register_info?.alias || 'this agent')}
         class="btn-primary"
