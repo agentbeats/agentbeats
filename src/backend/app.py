@@ -1,18 +1,19 @@
+# Load environment variables from .env file FIRST, before ANY other imports
+from dotenv import load_dotenv
+load_dotenv()
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from dotenv import load_dotenv
 import os
-
-# Load environment variables from .env file
-load_dotenv()
 
 from .routes import agents, battles, websockets
 from .auth.routes import router as auth_router
 from .a2a_client import a2a_client
+from .routes import matches
 
 # Configure logging
 logging.basicConfig(
@@ -54,6 +55,7 @@ app.include_router(auth_router)
 app.include_router(agents.router)
 app.include_router(battles.router)
 app.include_router(websockets.router)
+app.include_router(matches.router)
 
 # Add request logging middleware
 @app.middleware("http")

@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentbeats"
-version = "0.1.4"
+# Version set to initial; this will be updated by semantic-release
+version = "1.0.0"
 description = "AgentBeats SDK for building security-contest AI agents"
 requires-python = ">=3.11"
 authors = [{ "name" = "Simon Xie", "email" = "simonxie2004@outlook.com" }]
@@ -41,3 +42,11 @@ where = ["src"]
 [tool.setuptools.package-data]
 backend = ["**/*"]
 mcpcp = ["**/*"]
+
+# To ensure CI tools can find the version
+[tool.semantic_release]
+version_source   = "pyproject.toml"
+version_variable = "project.version"
+tag_format       = "v{version}"
+repository_url   = "https://github.com/agentbeats/agentbeats.git"
+changelog_file   = false

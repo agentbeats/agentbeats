@@ -1,0 +1,17 @@
+name                = "Google Raw Agent"
+description         = """You are a helpful agent."""
+url                 = "http://localhost:9013/"
+version             = "1.0.0"
+
+defaultInputModes   = ["text"]
+defaultOutputModes  = ["text"]
+
+[capabilities]
+streaming               = true
+
+[[skills]]
+id          = "response"
+name        = "Response"
+description = "Generate a helpful response."
+tags        = ["response"]
+examples    = ["Who are you?"]

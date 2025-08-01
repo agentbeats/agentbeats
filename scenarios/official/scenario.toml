@@ -1,0 +1,61 @@
+[scenario]
+name = "official"
+description = "Official and Cleanest Agents"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "Openai Raw Agent"
+card = "openai_raw_agent.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9010
+agent_host = "0.0.0.0"
+agent_port = 9011
+model_type = "openrouter"
+model_name = "openai/o4-mini"
+tools = []
+mcp_servers = []
+
+# Agents to be launched
+[[agents]]
+name = "Google Raw Agent"
+card = "google_raw_agent.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9012
+agent_host = "0.0.0.0"
+agent_port = 9013
+model_type = "openrouter"
+model_name = "google/gemini-2.5-flash-lite"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "Anthropic Raw Agent"
+card = "anthropic_raw_agent.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9014
+agent_host = "0.0.0.0"
+agent_port = 9015
+model_type = "openrouter"
+model_name = "anthropic/claude-opus-4"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "XAI Raw Agent"
+card = "xai_raw_agent.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9016
+agent_host = "0.0.0.0"
+agent_port = 9017
+model_type = "openrouter"
+model_name = "xai/grok-4"
+tools = []
+mcp_servers = []
+
+# Launch configuration
+[launch]
+mode = "separate"  # Options: "tmux", "separate", "current"
+tmux_session_name = "agentbeats-official-agents"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents

@@ -1,0 +1,39 @@
+name: Agentbeats Automated Release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'MANIFEST.in'
+      - 'README.md'
+
+jobs:
+  release-and-publish:
+    runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release') }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.x' }
+
+      - run: pip install python-semantic-release build twine
+
+      - name: Bump version, tag, build & upload
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          semantic-release version --skip-build
+          git fetch --tags
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          git checkout "$latest_tag"
+          python -m build --sdist --wheel
+          python -m twine upload dist/*
