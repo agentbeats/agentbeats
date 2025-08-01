@@ -161,10 +161,10 @@
                           }),
                         ]}
                       >
-                        <Carousel.Content class="gap-1">
+                        <Carousel.Content class="gap-8">
                           {#each topAgents as agent}
                             <Carousel.Item class="basis-1/4 md:basis-1/5">
-                              <div class="p-0.5">
+                              <div class="p-1">
                                 <AgentChip 
                                   agent={{
                                     identifier: agent.register_info?.alias || agent.agent_card?.name || 'Unknown',

@@ -1,10 +1,30 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Dict, Any, List
+import logging
 from ..db.storage import db
 from ..auth.middleware import get_current_user
 from ..services.match_storage import MatchStorage
 from ..services.role_matcher import RoleMatcher
 import asyncio
+
+# =============================================================================
+# MATCHES API LOGGING CONFIGURATION
+# =============================================================================
+# Configure dedicated logger for matches API operations
+matches_api_logger = logging.getLogger('matches_api')
+matches_api_logger.setLevel(logging.ERROR)  # Only log errors
+
+# Create console handler if it doesn't exist
+if not matches_api_logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter(
+        '%(asctime)s - [MATCHES_API] - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+    matches_api_logger.addHandler(console_handler)
+    matches_api_logger.propagate = False  # Prevent duplicate logs
 
 router = APIRouter()
 match_storage = MatchStorage()
@@ -241,9 +261,11 @@ async def get_match_stats(
 ) -> Dict[str, Any]:
     """Get statistics about stored matches."""
     try:
-        return match_storage.get_match_stats()
+        stats = match_storage.get_match_stats()
+        return stats
         
     except Exception as e:
+        matches_api_logger.error(f"Error getting match stats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/matches/clear-cache")
