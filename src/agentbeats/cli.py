@@ -166,7 +166,7 @@ def _check_environment():
     print("\n" + "=" * 50)
     return len(issues) == 0
 
-def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str):
+def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str, dev_login: bool):
     """Deploy AgentBeats with backend, frontend, and MCP server"""
     
     print(f"Deploying AgentBeats in {mode} mode with {launch_mode} launch...")
@@ -182,14 +182,14 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int,
     
     # Route to different launch methods
     if launch_mode == "separate":
-        _deploy_separate_terminals(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+        _deploy_separate_terminals(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login)
     elif launch_mode == "tmux":
-        _deploy_tmux(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+        _deploy_tmux(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login)
     else:  # current
-        _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+        _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login)
 
 
-def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_url: str):
+def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_url: str, dev_login: bool):
     """Start the AgentBeats frontend server"""
     import subprocess
     import os
@@ -224,9 +224,12 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_
     print(f"Frontend directory: {frontend_dir}")
     print(f"Backend URL: {backend_url}")
     
-    # Set environment variable for backend URL
+    # Set environment variables
     env = os.environ.copy()
     env["BACKEND_URL"] = backend_url
+    if dev_login:
+        env["VITE_DEV_LOGIN"] = "true"
+        print("🚀 Development mode enabled - dev login button will be shown")
     
     try:
         if mode == "dev":
@@ -268,7 +271,7 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_
         sys.exit(1)
 
 
-def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool):
+def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool, dev_login: bool):
     """Start the AgentBeats backend server and MCP server in the same terminal"""
     
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
@@ -286,6 +289,11 @@ def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool):
         """Start the backend server"""
         nonlocal backend_process
         try:
+            # Set environment variable for dev login mode
+            if dev_login:
+                os.environ["DEV_LOGIN"] = "true"
+                print("🚀 Development mode enabled - authentication will be bypassed for all API calls")
+            
             print(f"Starting AgentBeats Backend on http://{host}:{backend_port}")
             uvicorn.run(
                 "backend.app:app",
@@ -452,6 +460,7 @@ def main():
     backend_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
     backend_parser.add_argument("--mcp_port", type=int, default=9001, help=f"MCP port (default: 9001)")
     backend_parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
+    backend_parser.add_argument("--dev_login", action="store_true", help="Enable development mode - skip authentication for all API calls")
 
     # run_frontend command
     frontend_parser = sub_parser.add_parser("run_frontend", help="Start the AgentBeats frontend server")
@@ -459,8 +468,9 @@ def main():
                                 help="Frontend mode: dev (development), build (production build), preview (build + preview), install (install dependencies)")
     frontend_parser.add_argument("--host", default="localhost", help="Frontend host (default: localhost)")
     frontend_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
-    frontend_parser.add_argument("--webapp_version", default="webapp", help="Frontend webapp version to run (default: webapp)")
-    frontend_parser.add_argument("--backend_url", required=True, help="Backend URL for API proxy (default: http://localhost:9000)")
+    frontend_parser.add_argument("--webapp_version", default="webapp-v2", help="Frontend webapp version to run (default: webapp)")
+    frontend_parser.add_argument("--backend_url", required=True, help="Backend URL for API proxy")
+    frontend_parser.add_argument("--dev_login", action="store_true", help="Enable development mode - show dev login button on login page")
 
     # deploy command
     deploy_parser = sub_parser.add_parser("deploy", help="Deploy complete AgentBeats stack (backend + frontend + MCP)")
@@ -471,6 +481,7 @@ def main():
     deploy_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
     deploy_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
     deploy_parser.add_argument("--mcp_port", type=int, default=9001, help="MCP server port (default: 9001)")
+    deploy_parser.add_argument("--dev_login", action="store_true", help="Enable development mode")
 
     # check command
     check_parser = sub_parser.add_parser("check", help="Check AgentBeats environment setup")
@@ -510,13 +521,13 @@ def main():
                              frontend_url=args.frontend)
 
     elif args.cmd == "run_backend":
-        _run_backend(host=args.host, backend_port=args.backend_port, mcp_port=args.mcp_port, reload=args.reload)
+        _run_backend(host=args.host, backend_port=args.backend_port, mcp_port=args.mcp_port, reload=args.reload, dev_login=args.dev_login)
     elif args.cmd == "run_frontend":
-        _run_frontend(mode=args.mode, host=args.host, port=args.frontend_port, webapp_version=args.webapp_version, backend_url=args.backend_url)
+        _run_frontend(mode=args.mode, host=args.host, port=args.frontend_port, webapp_version=args.webapp_version, backend_url=args.backend_url, dev_login=args.dev_login)
     elif args.cmd == "deploy":
         _run_deploy(mode=args.mode, backend_port=args.backend_port, 
                    frontend_port=args.frontend_port, mcp_port=args.mcp_port, 
-                   launch_mode=args.launch_mode)
+                   launch_mode=args.launch_mode, dev_login=args.dev_login)
     
     elif args.cmd == "check":
         _check_environment()

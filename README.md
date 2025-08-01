@@ -11,6 +11,16 @@ In this repo we provide `agentbeats` python sdk for easiest agent setup, as well
 First, setup a `python>=3.11` virtual environment + install agentbeats
 Second, setup your OPENAI_API_KEY
 
+Prepare the `.env` file in the root directory with the following content:
+
+```plaintext
+SUPABASE_URL=https://tzaqdnswbrczijajcnks.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6YXFkbnN3YnJjemlqYWpjbmtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTM1NTUsImV4cCI6MjA2ODAyOTU1NX0.VexF6qS_T_6EOBFjPJzHdw1UggbsG_oPdBOmGqkeREk
+
+VITE_SUPABASE_URL=https://tzaqdnswbrczijajcnks.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6YXFkbnN3YnJjemlqYWpjbmtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTM1NTUsImV4cCI6MjA2ODAyOTU1NX0.VexF6qS_T_6EOBFjPJzHdw1UggbsG_oPdBOmGqkeREk
+```
+
 ### Step 2: Start a Battle
 
 <TODO: use `agentbeats run_scenario` to start a battle and watch it on agentbeats.org/battles/xxxxxx>
