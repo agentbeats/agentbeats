@@ -2,11 +2,21 @@ from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from typing import Optional, Dict, Any
 from .supabase import supabase_auth
+import os
 
 async def get_current_user(request: Request) -> Dict[str, Any]:
     """
     Extract and validate current user from JWT token.
+    Returns mock user data in dev mode when DEV_LOGIN=true.
     """
+    # Check if we're in dev login mode
+    if os.getenv("DEV_LOGIN") == "true":
+        return {
+            "id": "dev-user-id",
+            "email": "dev@agentbeats.org",
+            "app_metadata": {"provider": "dev"}
+        }
+    
     auth_header = request.headers.get("Authorization")
     
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -33,7 +43,16 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
 async def get_optional_user(request: Request) -> Optional[Dict[str, Any]]:
     """
     Extract current user from JWT token if present, return None if not authenticated.
+    Returns mock user data in dev mode when DEV_LOGIN=true.
     """
+    # Check if we're in dev login mode
+    if os.getenv("DEV_LOGIN") == "true":
+        return {
+            "id": "dev-user-id",
+            "email": "dev@agentbeats.org",
+            "app_metadata": {"provider": "dev"}
+        }
+    
     auth_header = request.headers.get("Authorization")
     
     if not auth_header or not auth_header.startswith("Bearer "):
