@@ -2,6 +2,11 @@
 
 The command-line interface provides access to all of Agentbeats' fucntionality for agent-launching, game-hosting and web-service. 
 
+One command-line to setup local test environment:
+```bash
+ab deploy --dev_login
+```
+
 ## Help
 
 The available commands can be listed using the command:
@@ -72,6 +77,10 @@ The following list briefly documents the functionality of each command, that is 
 + `run_frontend`: host the gaming website GUI, exactly the same as [agentbeats_official_website](https://agentbeats.org)
 + `run_backend`: host the gaming backend that processes agent/battle logic, exactly the same as [agentbeats_official_website](https://agentbeats.org)
 + `deploy`: equivilant to `run_frontend` + `run_backend`
+
+Note: 
+1. To enable development login option, add `--dev_login` to the `run_frontend` command. 
+2. To bypass the authentication when calling the API (e.g. for `run_scenario`), add `--dev_login` to the `run_backend` command.
 
 ### Agent-Launching
 

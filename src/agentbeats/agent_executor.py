@@ -288,6 +288,7 @@ class AgentBeatsExecutor(AgentExecutor):
             }
             self.battle_context_hook = AgentBeatsHook(self.battle_context)
             print("[AgentBeatsExecutor] Battle context parsed:", self.battle_context)
+            return
         except Exception as e:
             pass
 
