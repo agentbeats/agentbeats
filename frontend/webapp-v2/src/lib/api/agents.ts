@@ -498,3 +498,55 @@ export async function updateAgent(agentId: string, update: { ready?: boolean; [k
     throw error;
   }
 } 
+
+/**
+ * Get matches for a specific green agent and role
+ * @param greenAgentId - The green agent ID
+ * @param roleName - The role name to get matches for
+ * @returns Promise with sorted matches for that role
+ */
+export async function getMatchesForGreenAgentRole(greenAgentId: string, roleName: string): Promise<Array<{
+  id: string;
+  other_agent_id: string;
+  confidence_score: number;
+  matched_roles: string[];
+  reasons: Record<string, string>;
+  other_agent: {
+    agent_id: string;
+    alias: string;
+    name: string;
+    description: string;
+  };
+}>> {
+  try {
+    const accessToken = await getAccessToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const res = await fetch(`/api/matches/green-agent/${greenAgentId}`, {
+      headers
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.detail || 'Failed to fetch green agent matches');
+    }
+
+    const matches = await res.json();
+    
+    // Filter matches for the specific role and sort by confidence
+    const roleMatches = matches
+      .filter((match: any) => match.matched_roles.includes(roleName))
+      .sort((a: any, b: any) => b.confidence_score - a.confidence_score);
+
+    return roleMatches;
+  } catch (error) {
+    console.error('Failed to fetch green agent role matches:', error);
+    throw error;
+  }
+} 

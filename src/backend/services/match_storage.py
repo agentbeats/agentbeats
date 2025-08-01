@@ -1,9 +1,29 @@
 import sqlite3
 import json
 import uuid
+import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import os
+
+# =============================================================================
+# MATCH STORAGE LOGGING CONFIGURATION
+# =============================================================================
+# Configure dedicated logger for match storage operations
+match_storage_logger = logging.getLogger('match_storage')
+match_storage_logger.setLevel(logging.ERROR)  # Only log errors
+
+# Create console handler if it doesn't exist
+if not match_storage_logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter(
+        '%(asctime)s - [MATCH_STORAGE] - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+    match_storage_logger.addHandler(console_handler)
+    match_storage_logger.propagate = False  # Prevent duplicate logs
 
 class MatchStorage:
     def __init__(self, db_path: str = None):
@@ -56,6 +76,10 @@ class MatchStorage:
     
     def create_match(self, match_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a match with roles in normalized format."""
+        match_id = match_data.get("id", "new")
+        green_agent_id = match_data.get("green_agent_id", "unknown")
+        other_agent_id = match_data.get("other_agent_id", "unknown")
+        
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("BEGIN")
             
@@ -63,6 +87,7 @@ class MatchStorage:
                 # Generate ID if not provided
                 if "id" not in match_data:
                     match_data["id"] = str(uuid.uuid4())
+                    match_storage_logger.info(f"🆔 Generated new match ID: {match_data['id']}")
                 
                 # Add timestamps if not provided
                 current_time = datetime.utcnow().isoformat() + "Z"
@@ -85,9 +110,9 @@ class MatchStorage:
                     match_data["updated_at"],
                     match_data["created_by"]
                 ))
-                
                 # Insert role records
                 reasons = match_data.get("reasons", {})
+                role_count = 0
                 for role_name, reason in reasons.items():
                     conn.execute("""
                         INSERT OR REPLACE INTO match_roles 
@@ -99,6 +124,7 @@ class MatchStorage:
                         reason,
                         match_data.get("confidence_score", 0.0)
                     ))
+                    role_count += 1
                 
                 # Also insert matched_roles if provided (for backward compatibility)
                 matched_roles = match_data.get("matched_roles", [])
@@ -115,12 +141,14 @@ class MatchStorage:
                             f"Agent matched to {role_name} role",
                             match_data.get("confidence_score", 0.0)
                         ))
+                        role_count += 1
                 
                 conn.commit()
                 return match_data
                 
             except Exception as e:
                 conn.rollback()
+                match_storage_logger.error(f"Failed to create match: {str(e)}")
                 raise e
     
     def get_matches_for_green_agent(self, green_agent_id: str) -> List[Dict[str, Any]]:

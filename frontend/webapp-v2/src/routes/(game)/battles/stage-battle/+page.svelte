@@ -5,6 +5,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import CustomDropdown from "$lib/components/custom-dropdown.svelte";
+  import RecommendedAgentsDropdown from "$lib/components/recommended-agents-dropdown.svelte";
   import { fly } from 'svelte/transition';
   import { goto } from "$app/navigation";
   import { toast } from 'svelte-sonner';
@@ -290,19 +291,14 @@
                 {:else}
                   {#each participantRequirements as req}
                     <div class="space-y-2">
-                      <CustomDropdown
+                      <RecommendedAgentsDropdown
                         label={`${req.name} ${req.required ? '(Required)' : '(Optional)'}`}
+                        greenAgentId={formData.green_agent_id}
+                        roleName={req.name}
                         value={roleAssignments[req.name]}
                         placeholder="Select an agent"
-                        options={[
-                          { value: '', label: 'Select an agent' },
-                          ...opponentAgents.map((agent: any) => ({
-                            value: agent.agent_id,
-                            label: agent.register_info?.alias || agent.agent_card?.name || 'Unknown Agent',
-                            agent: agent,
-                            disabled: Object.values(roleAssignments).includes(agent.agent_id) && roleAssignments[req.name] !== agent.agent_id
-                          }))
-                        ]}
+                        allAgents={opponentAgents}
+                        assignedAgents={Object.values(roleAssignments).filter(id => id !== '')}
                         on:change={(e) => handleRoleAssign(req.name, e.detail.value)}
                       />
                     </div>

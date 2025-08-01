@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
@@ -11,6 +12,25 @@ from ..auth.middleware import get_current_user, get_optional_user
 from ..services.match_storage import MatchStorage
 from ..services.role_matcher import RoleMatcher
 
+# =============================================================================
+# AGENT REGISTRATION LOGGING CONFIGURATION
+# =============================================================================
+# Configure dedicated logger for agent registration operations
+agent_registration_logger = logging.getLogger('agent_registration')
+agent_registration_logger.setLevel(logging.ERROR)  # Only log errors
+
+# Create console handler if it doesn't exist
+if not agent_registration_logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter(
+        '%(asctime)s - [AGENT_REG] - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+    agent_registration_logger.addHandler(console_handler)
+    agent_registration_logger.propagate = False  # Prevent duplicate logs
+
 router = APIRouter()
 
 # Initialize services
@@ -20,18 +40,13 @@ role_matcher = RoleMatcher()
 async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any]):
     """Asynchronously analyze and store role matches for a newly registered agent."""
     try:
-        print(f"🚀 [BACKEND ROLE MATCHING] Starting async role analysis for agent {agent_id}")
-        
         # Get the agent
         agent = db.read("agents", agent_id)
         if not agent:
-            print(f"🔴 [BACKEND ROLE MATCHING] Agent {agent_id} not found in database")
             return
         
         is_green = agent["register_info"]["is_green"]
         agent_alias = agent["register_info"]["alias"]
-        
-        print(f"🔍 [BACKEND ROLE MATCHING] Agent {agent_alias} ({agent_id}) is_green: {is_green}")
         
         if is_green:
             # Green agent: analyze against all non-green agents
@@ -39,35 +54,26 @@ async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any
                 a for a in db.list("agents") 
                 if not a["register_info"]["is_green"] and a["agent_id"] != agent_id
             ]
-            print(f"🟢 [BACKEND ROLE MATCHING] Green agent {agent_alias} - will analyze against {len(other_agents)} non-green agents")
         else:
             # Non-green agent: analyze against all green agents
             other_agents = [
                 a for a in db.list("agents") 
                 if a["register_info"]["is_green"] and a["agent_id"] != agent_id
             ]
-            print(f"🔴 [BACKEND ROLE MATCHING] Non-green agent {agent_alias} - will analyze against {len(other_agents)} green agents")
         
         matches_created = []
         
         for j, other_agent in enumerate(other_agents):
             other_alias = other_agent['register_info']['alias']
-            print(f"    🔄 [BACKEND ROLE MATCHING] Analyzing {agent_alias} against {other_alias} ({j+1}/{len(other_agents)})")
             
             # Validate agent cards exist
-            if not agent.get("agent_card"):
-                print(f"      ⚠️  [BACKEND ROLE MATCHING] No agent card found for agent {agent_alias}")
-                continue
-            
-            if not other_agent.get("agent_card"):
-                print(f"      ⚠️  [BACKEND ROLE MATCHING] No agent card found for other agent {other_alias}")
+            if not agent.get("agent_card") or not other_agent.get("agent_card"):
                 continue
             
             try:
                 if is_green:
                     # Green agent's requirements vs other agent
                     requirements = agent["register_info"].get("participant_requirements", [])
-                    print(f"      📋 [BACKEND ROLE MATCHING] Green agent {agent_alias} requirements: {[req['name'] for req in requirements]}")
                     
                     result = await role_matcher.analyze_agent_for_roles(
                         agent["agent_card"],
@@ -76,8 +82,6 @@ async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any
                     )
                     
                     if result.get("matched_roles"):
-                        print(f"      ✅ [BACKEND ROLE MATCHING] Match found: {other_alias} can fulfill roles: {result['matched_roles']} (confidence: {result.get('confidence_score', 0.0):.2f})")
-                        
                         match_record = {
                             "green_agent_id": agent_id,
                             "other_agent_id": other_agent["agent_id"],
@@ -89,14 +93,9 @@ async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any
                         
                         created_match = match_storage.create_match(match_record)
                         matches_created.append(created_match)
-                        print(f"      💾 [BACKEND ROLE MATCHING] Saved match to database: {created_match['id']}")
-                    else:
-                        print(f"      ❌ [BACKEND ROLE MATCHING] No match found for {other_alias}")
                 else:
                     # Other agent vs green agent's requirements
                     requirements = other_agent["register_info"].get("participant_requirements", [])
-                    print(f"      📋 [BACKEND ROLE MATCHING] Green agent {other_alias} requirements: {[req['name'] for req in requirements]}")
-                    
                     result = await role_matcher.analyze_agent_for_roles(
                         other_agent["agent_card"],
                         requirements,
@@ -104,8 +103,6 @@ async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any
                     )
                     
                     if result.get("matched_roles"):
-                        print(f"      ✅ [BACKEND ROLE MATCHING] Match found: {agent_alias} can fulfill roles: {result['matched_roles']} (confidence: {result.get('confidence_score', 0.0):.2f})")
-                        
                         match_record = {
                             "green_agent_id": other_agent["agent_id"],
                             "other_agent_id": agent_id,
@@ -117,17 +114,13 @@ async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any
                         
                         created_match = match_storage.create_match(match_record)
                         matches_created.append(created_match)
-                        print(f"      💾 [BACKEND ROLE MATCHING] Saved match to database: {created_match['id']}")
-                    else:
-                        print(f"      ❌ [BACKEND ROLE MATCHING] No match found for {agent_alias}")
                         
             except Exception as e:
-                print(f"      🔴 [BACKEND ROLE MATCHING] Error analyzing {agent_alias} vs {other_alias}: {str(e)}")
-        
-        print(f"✅ [BACKEND ROLE MATCHING] Created {len(matches_created)} matches for agent {agent_alias} ({agent_id})")
+                agent_registration_logger.error(f"Error analyzing {agent_alias} vs {other_alias}: {str(e)}")
+                continue
         
     except Exception as e:
-        print(f"🔴 [BACKEND ROLE MATCHING] Error analyzing matches for agent {agent_id}: {e}")
+        agent_registration_logger.error(f"Error analyzing matches for agent {agent_id}: {e}")
         import traceback
         traceback.print_exc()
 
@@ -135,6 +128,9 @@ async def analyze_agent_matches_async(agent_id: str, current_user: Dict[str, Any
 @router.post("/agents", status_code=status.HTTP_201_CREATED)
 async def register_agent(agent_info: Dict[str, Any], current_user: Dict[str, Any] = Depends(get_current_user)):
     """Register a new agent."""
+    agent_registration_logger.info(f"🚀 Agent registration request received")
+    agent_registration_logger.info(f"📋 Registration info: alias={agent_info.get('alias', 'N/A')}, is_green={agent_info.get('is_green', 'N/A')}")
+    
     try:
         # Validate required fields
         if (
@@ -217,14 +213,18 @@ async def register_agent(agent_info: Dict[str, Any], current_user: Dict[str, Any
         }
 
         # Save to database
+        agent_registration_logger.info(f"💾 Saving agent to database...")
         created_agent = db.create("agents", agent_record)
+        agent_registration_logger.info(f"✅ Agent saved with ID: {created_agent['agent_id']}")
         
         # Trigger role matching analysis asynchronously
+        agent_registration_logger.info(f"🔄 Triggering role matching analysis...")
         try:
             asyncio.create_task(analyze_agent_matches_async(created_agent["agent_id"], current_user))
+            agent_registration_logger.info(f"✅ Role analysis task created successfully")
         except Exception as e:
             # Log error but don't fail registration
-            print(f"Warning: Failed to trigger role analysis: {e}")
+            agent_registration_logger.warning(f"⚠️ Failed to trigger role analysis: {e}")
         
         return created_agent
     except HTTPException:
@@ -346,6 +346,16 @@ def delete_agent(agent_id: str, current_user: Dict[str, Any] = Depends(get_curre
         if agent_user_id and agent_user_id != current_user["id"]:
             raise HTTPException(status_code=403, detail="Access denied - can only delete your own agents")
 
+        # Delete associated role matches first
+        try:
+            deleted_matches = match_storage.delete_matches_for_agent(agent_id)
+            if deleted_matches > 0:
+                agent_registration_logger.info(f"Deleted {deleted_matches} role matches for agent {agent_id}")
+        except Exception as e:
+            agent_registration_logger.error(f"Error deleting role matches for agent {agent_id}: {str(e)}")
+            # Continue with agent deletion even if match cleanup fails
+
+        # Delete the agent
         db.delete("agents", agent_id)
         return None
     except HTTPException:
