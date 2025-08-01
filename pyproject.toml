@@ -50,3 +50,5 @@ version_variable = "project.version"
 tag_format       = "v{version}"
 repository_url   = "https://github.com/agentbeats/agentbeats.git"
 changelog_file   = false
+version_toml     = ["pyproject.toml:project.version"]
+
