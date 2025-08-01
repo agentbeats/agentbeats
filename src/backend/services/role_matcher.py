@@ -24,10 +24,19 @@ class RoleMatcher:
     ) -> Dict[str, Any]:
         """Analyze if an agent can fulfill specific roles based on their card description."""
         
+        green_name = green_agent_card.get('name', 'Unknown')
+        other_name = other_agent_card.get('name', 'Unknown')
+        role_names = [req["name"] for req in participant_requirements]
+        
+        print(f"🔍 [BACKEND ROLE MATCHING] Analyzing {other_name} against {green_name} for roles: {role_names}")
+        
         # Check cache first
         cache_key = self._get_cache_key(green_agent_card, participant_requirements, other_agent_card)
         if self._is_cache_valid(cache_key):
+            print(f"✅ [BACKEND ROLE MATCHING] Using cached result for {other_name} vs {green_name}")
             return self._cache[cache_key]
+        
+        print(f"🔄 [BACKEND ROLE MATCHING] No cache hit, performing fresh analysis for {other_name} vs {green_name}")
         
         # Extract role names from requirements
         role_names = [req["name"] for req in participant_requirements]
@@ -38,6 +47,8 @@ class RoleMatcher:
         )
         
         try:
+            print(f"🤖 [BACKEND ROLE MATCHING] Sending analysis request to LLM for {other_name} vs {green_name}")
+            
             response = await self.client.chat.completions.create(
                 model="anthropic/claude-3.5-sonnet",
                 messages=[{"role": "user", "content": prompt}],
@@ -48,17 +59,21 @@ class RoleMatcher:
             if not content:
                 raise ValueError("Empty response from LLM")
             
+            print(f"📥 [BACKEND ROLE MATCHING] Received LLM response for {other_name} vs {green_name}")
+            
             # Try to parse JSON response
             try:
                 result = json.loads(content)
+                print(f"✅ [BACKEND ROLE MATCHING] Successfully parsed JSON for {other_name} vs {green_name}")
             except json.JSONDecodeError as json_error:
-                print(f"JSON parsing error: {json_error}")
-                print(f"Raw response: {content}")
+                print(f"🔴 [BACKEND ROLE MATCHING] JSON parsing error for {other_name} vs {green_name}: {json_error}")
+                print(f"📄 [BACKEND ROLE MATCHING] Raw response: {content}")
                 # Try to extract JSON from the response if it's wrapped in markdown
                 import re
                 json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group(1))
+                    print(f"✅ [BACKEND ROLE MATCHING] Extracted JSON from markdown for {other_name} vs {green_name}")
                 else:
                     raise ValueError(f"Invalid JSON response: {content}")
             
@@ -81,14 +96,21 @@ class RoleMatcher:
             # Ensure confidence score is within bounds
             result["confidence_score"] = max(0.0, min(1.0, float(result["confidence_score"])))
             
+            print(f"📊 [BACKEND ROLE MATCHING] Analysis result for {other_name} vs {green_name}:", {
+                "matched_roles": result["matched_roles"],
+                "confidence_score": result["confidence_score"],
+                "reasons_count": len(result["reasons"])
+            })
+            
             # Cache the result
             self._cache[cache_key] = result
             self._cache_timestamps[cache_key] = datetime.utcnow().timestamp()
+            print(f"💾 [BACKEND ROLE MATCHING] Cached result for {other_name} vs {green_name}")
             
             return result
             
         except Exception as e:
-            print(f"Error in role analysis: {str(e)}")
+            print(f"🔴 [BACKEND ROLE MATCHING] Error in role analysis for {other_name} vs {green_name}: {str(e)}")
             error_result = {
                 "matched_roles": [],
                 "reasons": {},
@@ -99,6 +121,7 @@ class RoleMatcher:
             # Cache error result too (shorter TTL)
             self._cache[cache_key] = error_result
             self._cache_timestamps[cache_key] = datetime.utcnow().timestamp()
+            print(f"💾 [BACKEND ROLE MATCHING] Cached error result for {other_name} vs {green_name}")
             
             return error_result
     

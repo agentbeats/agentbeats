@@ -28,12 +28,27 @@ export interface AgentRegisterInfo {
   battle_timeout?: number;
 }
 
+export interface RoleMatchResult {
+  matched_roles: string[];
+  reasons: Record<string, string>;
+  confidence_score: number;
+  error?: string;
+}
+
 /**
  * Register a new agent with the backend
  * @param registerInfo - Agent registration information
  * @returns Promise with the created agent data
  */
 export async function registerAgent(registerInfo: AgentRegisterInfo) {
+  console.log('🔵 [ROLE MATCHING] Starting agent registration:', {
+    alias: registerInfo.alias,
+    is_green: registerInfo.is_green,
+    agent_url: registerInfo.agent_url,
+    launcher_url: registerInfo.launcher_url,
+    participant_requirements: registerInfo.participant_requirements
+  });
+
   try {
     const res = await fetch('/api/agents', {
       method: 'POST',
@@ -45,12 +60,173 @@ export async function registerAgent(registerInfo: AgentRegisterInfo) {
 
     if (!res.ok) {
       const errorData = await res.json();
+      console.error('🔴 [ROLE MATCHING] Agent registration failed:', errorData);
       throw new Error(errorData.detail || 'Failed to register agent');
     }
 
-    return await res.json();
+    const result = await res.json();
+    console.log('✅ [ROLE MATCHING] Agent registered successfully:', {
+      agent_id: result.agent_id,
+      alias: result.register_info.alias,
+      is_green: result.register_info.is_green
+    });
+
+    // Log that role matching will be triggered automatically
+    if (result.register_info.is_green) {
+      console.log('🟢 [ROLE MATCHING] Green agent registered - will analyze against all non-green agents');
+    } else {
+      console.log('🔴 [ROLE MATCHING] Non-green agent registered - will analyze against all green agents');
+    }
+
+    return result;
   } catch (error) {
-    console.error('Failed to register agent:', error);
+    console.error('🔴 [ROLE MATCHING] Failed to register agent:', error);
+    throw error;
+  }
+}
+
+/**
+ * Analyze role matches for a specific agent
+ * @param agentId - The agent ID to analyze
+ * @returns Promise with analysis results
+ */
+export async function analyzeAgentMatches(agentId: string): Promise<{
+  agent_id: string;
+  matches_created: number;
+  analysis_details: Array<{
+    other_agent_id: string;
+    other_agent_alias: string;
+    matched_roles: string[];
+    confidence_score: number;
+    reasons: Record<string, string>;
+  }>;
+}> {
+  console.log('🔍 [ROLE MATCHING] Starting role match analysis for agent:', agentId);
+
+  try {
+    const accessToken = await getAccessToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const res = await fetch(`/api/matches/analyze/${agentId}`, {
+      method: 'POST',
+      headers
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error('🔴 [ROLE MATCHING] Role analysis failed:', errorData);
+      throw new Error(errorData.detail || 'Failed to analyze agent matches');
+    }
+
+    const result = await res.json();
+    console.log('✅ [ROLE MATCHING] Role analysis completed:', {
+      agent_id: agentId,
+      matches_created: result.matches_created,
+      total_agents_analyzed: result.analysis_details?.length || 0
+    });
+
+    // Log detailed analysis results
+    if (result.analysis_details) {
+      result.analysis_details.forEach((detail: any, index: number) => {
+        console.log(`📊 [ROLE MATCHING] Analysis ${index + 1}:`, {
+          other_agent_id: detail.other_agent_id,
+          other_agent_alias: detail.other_agent_alias,
+          matched_roles: detail.matched_roles,
+          confidence_score: detail.confidence_score,
+          reasons: detail.reasons
+        });
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('🔴 [ROLE MATCHING] Failed to analyze agent matches:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get role matches for a specific agent
+ * @param agentId - The agent ID to get matches for
+ * @returns Promise with match data
+ */
+export async function getAgentMatches(agentId: string): Promise<{
+  as_green: Array<{
+    id: string;
+    other_agent_id: string;
+    confidence_score: number;
+    matched_roles: string[];
+    reasons: Record<string, string>;
+  }>;
+  as_other: Array<{
+    id: string;
+    green_agent_id: string;
+    confidence_score: number;
+    matched_roles: string[];
+    reasons: Record<string, string>;
+  }>;
+}> {
+  console.log('🔍 [ROLE MATCHING] Fetching role matches for agent:', agentId);
+
+  try {
+    const accessToken = await getAccessToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (accessToken) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    const res = await fetch(`/api/matches/agent/${agentId}`, {
+      headers
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error('🔴 [ROLE MATCHING] Failed to fetch agent matches:', errorData);
+      throw new Error(errorData.detail || 'Failed to fetch agent matches');
+    }
+
+    const result = await res.json();
+    console.log('✅ [ROLE MATCHING] Retrieved agent matches:', {
+      agent_id: agentId,
+      as_green_count: result.as_green?.length || 0,
+      as_other_count: result.as_other?.length || 0
+    });
+
+    // Log detailed match information
+    if (result.as_green && result.as_green.length > 0) {
+      console.log('🟢 [ROLE MATCHING] Matches as green agent:');
+      result.as_green.forEach((match: any, index: number) => {
+        console.log(`  ${index + 1}. vs ${match.other_agent_id}:`, {
+          matched_roles: match.matched_roles,
+          confidence_score: match.confidence_score,
+          reasons: match.reasons
+        });
+      });
+    }
+
+    if (result.as_other && result.as_other.length > 0) {
+      console.log('🔴 [ROLE MATCHING] Matches as other agent:');
+      result.as_other.forEach((match: any, index: number) => {
+        console.log(`  ${index + 1}. vs ${match.green_agent_id}:`, {
+          matched_roles: match.matched_roles,
+          confidence_score: match.confidence_score,
+          reasons: match.reasons
+        });
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('🔴 [ROLE MATCHING] Failed to fetch agent matches:', error);
     throw error;
   }
 }
@@ -120,6 +296,8 @@ export async function getAgentById(agentId: string) {
  * @returns Promise with array of all agents
  */
 export async function getAllAgents(checkLiveness: boolean = false) {
+  console.log('🔍 [ROLE MATCHING] Fetching all agents from backend...');
+  
   try {
     // Get access token from Supabase session
     const accessToken = await getAccessToken();
@@ -138,11 +316,32 @@ export async function getAllAgents(checkLiveness: boolean = false) {
     });
     if (!res.ok) {
       const errorData = await res.json();
+      console.error('🔴 [ROLE MATCHING] Failed to fetch agents:', errorData);
       throw new Error(errorData.detail || 'Failed to fetch agents');
     }
-    return await res.json();
+    
+    const agents = await res.json();
+    console.log('✅ [ROLE MATCHING] Retrieved agents:', {
+      total_count: agents.length,
+      green_agents: agents.filter((a: any) => a.register_info?.is_green).length,
+      non_green_agents: agents.filter((a: any) => !a.register_info?.is_green).length
+    });
+
+    // Log agent details for role matching analysis
+    agents.forEach((agent: any, index: number) => {
+      console.log(`📋 [ROLE MATCHING] Agent ${index + 1}:`, {
+        agent_id: agent.agent_id,
+        alias: agent.register_info?.alias,
+        is_green: agent.register_info?.is_green,
+        participant_requirements: agent.register_info?.participant_requirements?.map((req: any) => req.name) || [],
+        agent_url: agent.register_info?.agent_url,
+        launcher_url: agent.register_info?.launcher_url
+      });
+    });
+
+    return agents;
   } catch (error) {
-    console.error('Failed to fetch agents:', error);
+    console.error('🔴 [ROLE MATCHING] Failed to fetch agents:', error);
     throw error;
   }
 }

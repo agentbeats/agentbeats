@@ -9,7 +9,7 @@ class MatchStorage:
     def __init__(self, db_path: str = None):
         if db_path is None:
             # Use the same database as the main storage
-            db_dir = os.path.join(os.getcwd(), "data")
+            db_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "db", "data")
             os.makedirs(db_dir, exist_ok=True)
             db_path = os.path.join(db_dir, "database.db")
         
