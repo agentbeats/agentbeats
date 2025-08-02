@@ -9,6 +9,7 @@
     agent,
     agent_id,
     isOnline = false,
+    clickable = true,
     onDragStart = null,
     onDragOver = null,
     onDragLeave = null,
@@ -22,6 +23,7 @@
     };
     agent_id: string;
     isOnline?: boolean;
+    clickable?: boolean;
     onDragStart?: ((event: DragEvent) => void) | null;
     onDragOver?: ((event: DragEvent) => void) | null;
     onDragLeave?: ((event: DragEvent) => void) | null;
@@ -33,7 +35,9 @@
   let isDragging = $state(false);
 
   function handleClick() {
-    goto(`/agents/${agent_id}`);
+    if (clickable) {
+      goto(`/agents/${agent_id}`);
+    }
   }
 
   function handleDragStart(event: DragEvent) {
@@ -62,7 +66,7 @@
 >
   <HoverCard.Root openDelay={300} closeDelay={1000}>
     <HoverCard.Trigger 
-      class="inline-flex items-center space-x-1.5 w-40 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing"
+      class="inline-flex items-center space-x-1.5 w-40 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 {clickable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}"
       onclick={handleClick}
     >
       <Avatar.Root class="h-5 w-5">

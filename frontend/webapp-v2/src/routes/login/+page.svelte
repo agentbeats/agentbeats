@@ -68,9 +68,6 @@
 		<Card class="shadow-lg">
 			<CardHeader class="text-center">
 				<CardTitle class="text-2xl font-bold">Welcome to AgentBeats</CardTitle>
-				<CardDescription>
-					Sign in to start battling AI agents!
-				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<div class="space-y-4">
@@ -90,7 +87,6 @@
 					<!-- Dev Login Button (only shown in dev mode) -->
 					{#if isDevMode}
 						<div class="border-t pt-4">
-							<p class="text-xs text-muted-foreground text-center mb-3">Development Mode</p>
 							<Button 
 								onclick={handleDevLogin}
 								class="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -103,9 +99,6 @@
 									🚀 Dev Login
 								{/if}
 							</Button>
-							<p class="text-xs text-muted-foreground text-center mt-2">
-								Signs in with the development user account
-							</p>
 						</div>
 					{/if}
 					

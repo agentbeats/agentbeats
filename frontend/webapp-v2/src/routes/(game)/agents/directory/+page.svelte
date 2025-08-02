@@ -285,7 +285,7 @@
               <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             {/if}
           </Table.Head>
-          <Table.Head>Created By</Table.Head>
+
           <Table.Head>Type</Table.Head>
           <Table.Head>Actions</Table.Head>
         </Table.Row>
@@ -307,7 +307,7 @@
               <Table.Cell class="text-right font-medium">{agent.elo_rating}</Table.Cell>
               <Table.Cell class="text-right">{(agent.win_rate * 100).toFixed(1)}%</Table.Cell>
               <Table.Cell class="text-right">{agent.battles}</Table.Cell>
-              <Table.Cell class="text-sm text-muted-foreground">{agent.created_by}</Table.Cell>
+
               <Table.Cell>
                 <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                   {agent.is_green ? 'Green' : 'Opponent'}
