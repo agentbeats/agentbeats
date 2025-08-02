@@ -131,7 +131,7 @@
         <CarouselContent class="gap-4">
           {#each greenAgents as agent}
             <CarouselItem class="basis-80">
-              <GreenAgentCard {agent} onDelete={handleDeleteAgent} />
+              <GreenAgentCard {agent} onDelete={handleDeleteAgent} showDeleteButton={true} />
             </CarouselItem>
           {/each}
         </CarouselContent>
@@ -150,7 +150,7 @@
                   <CarouselContent class="gap-4">
           {#each opponentAgents as agent}
             <CarouselItem class="basis-80">
-                <OpponentAgentCard {agent} onDelete={handleDeleteAgent} />
+                <OpponentAgentCard {agent} onDelete={handleDeleteAgent} showDeleteButton={true} />
               </CarouselItem>
             {/each}
           </CarouselContent>

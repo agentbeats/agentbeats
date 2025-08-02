@@ -137,15 +137,7 @@
             {/if}
           </Table.Head>
           <Table.Head>Opponents</Table.Head>
-          <Table.Head 
-            class="cursor-pointer select-none"
-            onclick={() => handleSort('created_by')}
-          >
-            Created By
-            {#if sortColumn === 'created_by'}
-              <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </Table.Head>
+
           <Table.Head 
             class="cursor-pointer select-none"
             onclick={() => handleSort('created_at')}
@@ -213,7 +205,7 @@
                   <span class="text-gray-500">No opponents</span>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="text-sm text-muted-foreground">{battle.created_by}</Table.Cell>
+
               <Table.Cell class="text-sm text-muted-foreground">{formatTimestamp(battle.created_at)}</Table.Cell>
               <Table.Cell>
                 <BattleTableActions 
@@ -226,7 +218,7 @@
           {/each}
         {:else}
           <Table.Row>
-            <Table.Cell colspan={6} class="h-24 text-center">
+            <Table.Cell colspan={5} class="h-24 text-center">
               No past battles found.
             </Table.Cell>
           </Table.Row>

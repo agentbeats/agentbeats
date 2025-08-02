@@ -3,11 +3,12 @@
   import * as Popover from "$lib/components/ui/popover/index.js";
   import { cartStore } from '$lib/stores/cart';
   import { toast } from 'svelte-sonner';
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
+  import SwordsIcon from "@lucide/svelte/icons/swords";
   import { getAgentMatches } from "$lib/api/agents";
   import { getAccessToken } from "$lib/auth/supabase";
   import { Spinner } from "$lib/components/ui/spinner";
   import AgentChip from "$lib/components/agent-chip.svelte";
+  import { fly } from 'svelte/transition';
 
   const { agent, agentType = 'opponent', size = 'sm', variant = 'default' } = $props<{
     agent: any;
@@ -218,12 +219,12 @@
       title="Add to battle cart and view matches"
       data-add-to-cart="true"
     >
-      <ShoppingCartIcon class="w-4 h-4" />
+      <SwordsIcon class="w-4 h-4" />
     </Button>
   </Popover.Trigger>
   
-  <Popover.Content class="w-80 transition-all duration-300 ease-out" side="top" align="center">
-    <div class="grid gap-4">
+  <Popover.Content class="w-80" side="top" align="center" style="transition: all 0.3s ease;">
+    <div class="grid gap-4" transition:fly={{ y: 10, duration: 300, delay: 50 }}>
       <div class="space-y-2">
         <h4 class="font-medium leading-none">Top Matches</h4>
       </div>
@@ -260,7 +261,7 @@
                 class="btn-primary flex-shrink-0"
                 size="sm"
               >
-                <ShoppingCartIcon class="w-4 h-4" />
+                <SwordsIcon class="w-4 h-4" />
               </Button>
             </div>
           {/each}
