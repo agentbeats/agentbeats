@@ -297,12 +297,12 @@ class AgentBeatsExecutor(AgentExecutor):
         if task is None: # first chat
             task = new_task(context.message)
             await event_queue.enqueue_event(task)
-        updater = TaskUpdater(event_queue, task.id, task.contextId)
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
 
         # push "working now" status
         await updater.update_status(
             TaskState.working,
-            new_agent_text_message("working...", task.contextId, task.id),
+            new_agent_text_message("working...", task.context_id, task.id),
         )
 
         # await llm response
