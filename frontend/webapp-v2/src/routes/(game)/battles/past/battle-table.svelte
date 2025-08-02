@@ -183,10 +183,10 @@
                         loop: battle.opponent_agents.length > 3,
                       }}
                     >
-                      <Carousel.Content class="gap-14">
+                      <Carousel.Content class="gap-16">
                         {#each battle.opponent_agents as agent}
                           <Carousel.Item class="basis-35/100">
-                            <div class="p-3">
+                            <div class="p-4">
                               <AgentChip 
                                 agent={{
                                   identifier: agent.register_info?.alias || agent.agent_card?.name || 'Unknown',

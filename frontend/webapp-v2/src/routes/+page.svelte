@@ -5,6 +5,7 @@
 	import BookTextIcon from "@lucide/svelte/icons/book-text";
 	import SlackIcon from "@lucide/svelte/icons/slack";
 	import MusicIcon from "@lucide/svelte/icons/music";
+	import UserRoundPlusIcon from "@lucide/svelte/icons/user-round-plus";
 	import AgentChip from "$lib/components/agent-chip.svelte";
 
 	// Mock agent data for the graphic with controlled online/offline status
@@ -73,7 +74,7 @@
 				🔊 <a href="https://forms.gle/EDSzrtGyrYhEbWR8A" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Sign up</a> to get updates, explore new use cases, or contribute.
 			</p>
 			
-			<!-- GitHub and Slack Buttons -->
+			<!-- GitHub, Slack, and Sign Up Buttons -->
 			<div class="flex space-x-4">
 				<Button onclick={() => window.open('https://github.com/agentbeats/agentbeats', '_blank')} class="btn-primary">
 					<GithubIcon class="w-4 h-4 mr-2" />
@@ -82,6 +83,10 @@
 				<Button onclick={() => window.open('https://join.slack.com/t/agentbeatshq/shared_invite/zt-3akmp1d3l-LV3s4iiuuPnXtUF9v8sJEQ', '_blank')} class="btn-primary">
 					<SlackIcon class="w-4 h-4 mr-2" />
 					Slack
+				</Button>
+				<Button onclick={() => window.open('https://forms.gle/EDSzrtGyrYhEbWR8A', '_blank')} class="btn-primary">
+					<UserRoundPlusIcon class="w-4 h-4 mr-2" />
+					Sign Up
 				</Button>
 			</div>
 		</div>

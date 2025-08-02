@@ -263,21 +263,21 @@
   
   <main class="p-4 flex flex-col min-h-[60vh] max-w-xl mx-auto">
     {#if loading}
-      <div>Loading...</div>
+      <div class="text-gray-900">Loading...</div>
     {:else if error}
       <div class="text-red-500">{error}</div>
     {:else if battle}
       <div class="mb-8 space-y-2 border-b pb-4">
-        <h1 class="text-2xl font-bold">Battle #{battle.battle_id?.slice(0, 8)}</h1>
-        <div class="text-sm text-muted-foreground font-mono break-all">ID: {battle.battle_id}</div>
-        <div class="text-sm text-muted-foreground">State: <span class="font-mono">{battle.state}</span></div>
-        <div class="text-sm text-muted-foreground">Green Agent: <span class="font-mono">{greenAgentName}</span></div>
-        <div class="text-sm text-muted-foreground">Opponents: <span class="font-mono">{opponentNames.join(', ')}</span></div>
+        <h1 class="text-2xl font-bold text-gray-900">Battle #{battle.battle_id?.slice(0, 8)}</h1>
+        <div class="text-sm text-gray-600 break-all">ID: <span class="font-semibold">{battle.battle_id}</span></div>
+        <div class="text-sm text-gray-600">State: <span class="font-semibold">{battle.state}</span></div>
+        <div class="text-sm text-gray-600">Green Agent: <span class="font-semibold">{greenAgentName}</span></div>
+        <div class="text-sm text-gray-600">Opponents: <span class="font-semibold">{opponentNames.join(', ')}</span></div>
         {#if battle.result && battle.state === 'finished'}
-          <div class="text-green-700">Winner: <span class="font-mono">{battle.result.winner}</span></div>
+          <div class="text-green-700">Winner: <span class="font-semibold">{battle.result.winner}</span></div>
         {/if}
         {#if battle.error && battle.state === 'error'}
-          <div class="text-red-700">Error: <span class="font-mono">{battle.error}</span></div>
+          <div class="text-red-700">Error: <span class="font-semibold">{battle.error}</span></div>
         {/if}
         
         {#if battleInProgress}
@@ -295,17 +295,17 @@
       <!-- Interact History -->
       {#if battle.interact_history && battle.interact_history.length > 0}
         <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
-          <h2 class="text-lg font-semibold mb-2">Interact History</h2>
+          <h2 class="text-lg font-semibold text-gray-900 mb-2">Interact History</h2>
           {#each battle.interact_history as entry, i (entry.timestamp + entry.message + i)}
             <div class="border rounded-lg p-3 {getEntryBackgroundClass(entry.reported_by)}">
               <div class="flex flex-row justify-between items-center mb-1">
-                <span class="font-mono text-xs text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</span>
-                <span class="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">{entry.reported_by}</span>
+                <span class="text-xs text-gray-600">{new Date(entry.timestamp).toLocaleString()}</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{entry.reported_by}</span>
                 {#if entry.is_result}
                   <span class="text-xs font-bold text-green-700 ml-2">Result</span>
                 {/if}
               </div>
-              <div class="text-sm font-medium mb-1">{entry.message}</div>
+              <div class="text-sm font-medium text-gray-900 mb-1">{entry.message}</div>
               {#if entry.markdown_content}
                 <div class="markdown-content mt-2 bg-white p-3 rounded border text-sm">
                   {@html renderMarkdown(entry.markdown_content)}
