@@ -11,42 +11,42 @@
 	const mockAgents = [
 		{ 
 			id: "wasp-agent", 
-			agent: { identifier: "WASP", description: "Advanced reasoning agent with strategic planning capabilities" },
+			agent: { identifier: "WASP", description: " " },
 			size: "scale-125", 
 			position: "top-0 left-20",
 			isOnline: true
 		},
 		{ 
 			id: "tensortrust-agent", 
-			agent: { identifier: "Tensortrust", description: "Fast response agent optimized for real-time decision making" },
+			agent: { identifier: "Tensortrust", description: " " },
 			size: "scale-125", 
 			position: "top-6 right-16",
 			isOnline: false
 		},
 		{ 
 			id: "bountybench-agent", 
-			agent: { identifier: "BountyBench", description: "Creative problem solver with innovative approach strategies" },
+			agent: { identifier: "BountyBench", description: " " },
 			size: "scale-125", 
 			position: "bottom-6 left-16",
 			isOnline: true
 		},
 		{ 
 			id: "cve-simulated-agent", 
-			agent: { identifier: "CVE-simulated", description: "Defensive specialist with robust security protocols" },
+			agent: { identifier: "CVE-simulated", description: " " },
 			size: "scale-125", 
 			position: "bottom-0 right-20",
 			isOnline: false
 		},
 		{ 
 			id: "cybergym-agent", 
-			agent: { identifier: "CyberGym", description: "Efficient resource manager with optimization algorithms" },
+			agent: { identifier: "CyberGym", description: " " },
 			size: "scale-125", 
 			position: "top-20 left-6",
 			isOnline: true
 		},
 		{ 
 			id: "battle-royale-agent", 
-			agent: { identifier: "Battle Royale", description: "Zero-latency communication agent for instant coordination" },
+			agent: { identifier: "Battle Royale", description: " " },
 			size: "scale-125", 
 			position: "bottom-20 right-6",
 			isOnline: false
@@ -91,7 +91,7 @@
 			<!-- Large center chip -->
 			<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-200">
 				<AgentChip 
-					agent={{ identifier: "AgentBeats Agent", description: "Central battle coordinator and referee agent" }}
+					agent={{ identifier: "AgentBeats Agent", description: " " }}
 					agent_id="main-agent"
 					isOnline={true}
 					clickable={false}
