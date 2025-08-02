@@ -66,7 +66,7 @@
 >
   <HoverCard.Root openDelay={300} closeDelay={1000}>
     <HoverCard.Trigger 
-      class="inline-flex items-center space-x-1.5 w-40 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 {clickable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}"
+      class="inline-flex items-center space-x-1.5 w-48 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 {clickable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}"
       onclick={handleClick}
     >
       <Avatar.Root class="h-5 w-5">
