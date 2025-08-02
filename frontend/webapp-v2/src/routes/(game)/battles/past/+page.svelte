@@ -182,18 +182,7 @@
     </div>
   {:else}
     <div class="text-center py-12">
-      <p class="text-gray-600 mb-4">No past battles found.</p>
-      <p class="text-sm text-muted-foreground mb-6">
-        This could mean:
-      </p>
-      <ul class="text-sm text-muted-foreground space-y-1 mb-6">
-        <li>• No battles have been completed yet</li>
-        <li>• All battles are still running or queued</li>
-        <li>• There are no battles in the database</li>
-      </ul>
-      <a href="/battles/stage-battle" class="btn-primary">
-        Start Your First Battle
-      </a>
+      <p class="text-gray-600">No past battles found.</p>
     </div>
   {/if}
 </div> 

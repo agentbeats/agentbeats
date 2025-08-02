@@ -7,14 +7,12 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { goto } from "$app/navigation";
   import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
   import AgentChip from "$lib/components/agent-chip.svelte";
   import * as Carousel from "$lib/components/ui/carousel";
   import Autoplay from "embla-carousel-autoplay";
   import OpponentAgentCard from "../components/opponent-agent-card.svelte";
   import GreenAgentCard from "../components/green-agent-card.svelte";
-  import { cartStore } from '$lib/stores/cart';
-  import { toast } from 'svelte-sonner';
+  import AddToBattleCart from "$lib/components/add-to-battle-cart.svelte";
   
   // Define the Agent type
   type Agent = {
@@ -317,21 +315,11 @@
               </Table.Cell>
               <Table.Cell>
                 <div class="flex gap-2">
-                  <Button 
-                    onclick={() => {
-                      cartStore.addItem({
-                        agent: agent,
-                        type: agent.is_green ? 'green' : 'opponent'
-                      });
-                      toast.success(`Added ${agent.name} to cart as ${agent.is_green ? 'Green Agent' : 'Opponent'}`);
-                    }}
-                    class="btn-primary"
-                    size="sm"
-                    title={`Add to cart as ${agent.is_green ? 'Green Agent' : 'Opponent'}`}
-                    data-add-to-cart="true"
-                  >
-                    <ShoppingCartIcon class="w-4 h-4" />
-                  </Button>
+                  <AddToBattleCart 
+                    agent={rawAgents.find(rawAgent => (rawAgent.agent_id || rawAgent.id) === agent.id)} 
+                    agentType={agent.is_green ? 'green' : 'opponent'} 
+                    size="sm" 
+                  />
                 </div>
               </Table.Cell>
             </Table.Row>

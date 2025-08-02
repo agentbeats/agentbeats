@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agentbeats"
 # Version set to initial; this will be updated by semantic-release
-version = "1.0.0"
+version = "1.1.1"
 description = "AgentBeats SDK for building security-contest AI agents"
 requires-python = ">=3.11"
 authors = [{ "name" = "Simon Xie", "email" = "simonxie2004@outlook.com" }]
@@ -24,7 +24,8 @@ dependencies = ["tomli>=2",
                 "supabase",
                 "PyJWT",
                 "python-dotenv",
-                "python-multipart"]
+                "python-multipart",
+                "google-cloud-storage"]
 license = { text = "MIT" }
 readme = "README.md"
 classifiers = [
@@ -50,3 +51,5 @@ version_variable = "project.version"
 tag_format       = "v{version}"
 repository_url   = "https://github.com/agentbeats/agentbeats.git"
 changelog_file   = false
+version_toml     = ["pyproject.toml:project.version"]
+

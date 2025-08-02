@@ -1,17 +1,42 @@
 import os
 import json
 import asyncio
+import logging
 from typing import Dict, List, Any, Optional
 from openai import AsyncOpenAI
-from ..db.storage import db
 from datetime import datetime
+
+# =============================================================================
+# ROLE MATCHING LOGGING CONFIGURATION
+# =============================================================================
+# Configure dedicated logger for role matching operations
+role_matcher_logger = logging.getLogger('role_matcher')
+role_matcher_logger.setLevel(logging.ERROR)  # Only log errors
+
+# Create console handler if it doesn't exist
+if not role_matcher_logger.handlers:
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.ERROR)
+    formatter = logging.Formatter(
+        '%(asctime)s - [ROLE_MATCHER] - %(levelname)s - %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    console_handler.setFormatter(formatter)
+    role_matcher_logger.addHandler(console_handler)
+    role_matcher_logger.propagate = False  # Prevent duplicate logs
 
 class RoleMatcher:
     def __init__(self):
+        api_key = os.getenv("OPENROUTER_API_KEY")
+        if not api_key:
+            role_matcher_logger.error("❌ OPENROUTER_API_KEY environment variable not set")
+            raise ValueError("OPENROUTER_API_KEY environment variable is required")
+        
         self.client = AsyncOpenAI(
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            api_key=api_key,
             base_url="https://openrouter.ai/api/v1"
         )
+        
         self._cache = {}  # Simple in-memory cache
         self._cache_ttl = 3600  # 1 hour cache TTL
         self._cache_timestamps = {}
@@ -24,13 +49,14 @@ class RoleMatcher:
     ) -> Dict[str, Any]:
         """Analyze if an agent can fulfill specific roles based on their card description."""
         
+        green_name = green_agent_card.get('name', 'Unknown')
+        other_name = other_agent_card.get('name', 'Unknown')
+        role_names = [req["name"] for req in participant_requirements]
+        
         # Check cache first
         cache_key = self._get_cache_key(green_agent_card, participant_requirements, other_agent_card)
         if self._is_cache_valid(cache_key):
             return self._cache[cache_key]
-        
-        # Extract role names from requirements
-        role_names = [req["name"] for req in participant_requirements]
         
         # Build prompt for LLM analysis
         prompt = self._build_analysis_prompt(
@@ -52,22 +78,44 @@ class RoleMatcher:
             try:
                 result = json.loads(content)
             except json.JSONDecodeError as json_error:
-                print(f"JSON parsing error: {json_error}")
-                print(f"Raw response: {content}")
-                # Try to extract JSON from the response if it's wrapped in markdown
+                role_matcher_logger.error(f"JSON parsing error: {json_error}")
+                
+                # Try multiple extraction strategies
                 import re
+                
+                # Strategy 1: Try to extract JSON from markdown code blocks
                 json_match = re.search(r'```json\s*(\{.*?\})\s*```', content, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group(1))
                 else:
-                    raise ValueError(f"Invalid JSON response: {content}")
+                    # Strategy 2: Try to find the first complete JSON object
+                    json_match = re.search(r'(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})', content, re.DOTALL)
+                    if json_match:
+                        try:
+                            result = json.loads(json_match.group(1))
+                        except json.JSONDecodeError:
+                            # Strategy 3: Try to find JSON between the first { and the last }
+                            start = content.find('{')
+                            end = content.rfind('}')
+                            if start != -1 and end != -1 and end > start:
+                                json_str = content[start:end+1]
+                                try:
+                                    result = json.loads(json_str)
+                                except json.JSONDecodeError:
+                                    raise ValueError(f"Could not extract valid JSON from response: {content}")
+                            else:
+                                raise ValueError(f"Could not find JSON structure in response: {content}")
+                    else:
+                        raise ValueError(f"Could not extract JSON from response: {content}")
             
             # Validate the result structure
             if not isinstance(result, dict):
                 raise ValueError("Response is not a dictionary")
             
-            if "matched_roles" not in result or "reasons" not in result or "confidence_score" not in result:
-                raise ValueError("Missing required fields in response")
+            required_fields = ["matched_roles", "reasons", "confidence_score"]
+            missing_fields = [field for field in required_fields if field not in result]
+            if missing_fields:
+                raise ValueError(f"Missing required fields: {missing_fields}")
             
             if not isinstance(result["matched_roles"], list):
                 raise ValueError("matched_roles must be a list")
@@ -79,7 +127,10 @@ class RoleMatcher:
                 raise ValueError("confidence_score must be a number")
             
             # Ensure confidence score is within bounds
+            original_confidence = result["confidence_score"]
             result["confidence_score"] = max(0.0, min(1.0, float(result["confidence_score"])))
+            if original_confidence != result["confidence_score"]:
+                role_matcher_logger.warning(f"Confidence score clamped from {original_confidence} to {result['confidence_score']}")
             
             # Cache the result
             self._cache[cache_key] = result
@@ -88,7 +139,7 @@ class RoleMatcher:
             return result
             
         except Exception as e:
-            print(f"Error in role analysis: {str(e)}")
+            role_matcher_logger.error(f"Error in role analysis for {other_name} vs {green_name}: {str(e)}")
             error_result = {
                 "matched_roles": [],
                 "reasons": {},
@@ -147,7 +198,8 @@ Skills: {json.dumps(other_agent_card.get('skills', []), indent=2)}
 
 TASK: For each role in the available roles list, determine if this agent can fulfill that role based on their description, capabilities, and skills. Consider how well they align with the green agent's scenario requirements.
 
-IMPORTANT: You must return a valid JSON object with this EXACT structure:
+IMPORTANT: You must return ONLY a valid JSON object with this EXACT structure. Do not include any additional text, explanations, or markdown formatting:
+
 {{
     "matched_roles": ["role1", "role2"],
     "reasons": {{
@@ -162,9 +214,10 @@ RULES:
 2. confidence_score must be a number between 0.0 and 1.0
 3. matched_roles must be an array of role names from the available roles list
 4. reasons must be an object mapping each matched role to a detailed explanation
-5. The JSON must be valid and parseable
+5. Return ONLY the JSON object - no additional text, no explanations, no markdown
+6. The JSON must be valid and parseable
 
-Analyze the compatibility and return the JSON response:
+Analyze the compatibility and return ONLY the JSON response:
 """
     
     def clear_cache(self):

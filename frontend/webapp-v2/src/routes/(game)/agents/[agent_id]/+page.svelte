@@ -1,20 +1,18 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { getAgentById } from "$lib/api/agents";
+  import { getAgentBattlesLast24Hours } from "$lib/api/battles";
   import { Button } from "$lib/components/ui/button/index.js";
   import { goto } from "$app/navigation";
   import { fly } from 'svelte/transition';
   import MoveLeftIcon from "@lucide/svelte/icons/move-left";
-  import { LineChart } from "layerchart";
-  import { curveLinear } from "d3-shape";
-  import * as Chart from "$lib/components/ui/chart/index.js";
-  import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
-  import TrendingDownIcon from "@lucide/svelte/icons/trending-down";
-  import MoveRightIcon from "@lucide/svelte/icons/move-right";
+
 
   let agent = $state<any>(null);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
+  let battleCount = $state(0);
+  let loadingBattles = $state(true);
 
   $effect(() => {
     const agentId = $page.params.agent_id;
@@ -22,6 +20,8 @@
       getAgentById(agentId).then(foundAgent => {
         agent = foundAgent;
         isLoading = false;
+        // Load battle count for the agent
+        loadBattleCount(foundAgent.agent_id || foundAgent.id);
       }).catch(err => {
         console.error('Failed to load agent:', err);
         error = err instanceof Error ? err.message : 'Failed to load agent';
@@ -29,6 +29,18 @@
       });
     }
   });
+
+  async function loadBattleCount(agentId: string) {
+    try {
+      const battles = await getAgentBattlesLast24Hours(agentId);
+      battleCount = battles.length;
+    } catch (error) {
+      console.error('Failed to load battle count:', error);
+      battleCount = 0;
+    } finally {
+      loadingBattles = false;
+    }
+  }
 </script>
 
 <div class="min-h-screen flex flex-col items-center p-4">
@@ -93,6 +105,14 @@
           <div class="bg-white border rounded-lg p-6">
             <h2 class="text-xl font-semibold mb-4">Performance</h2>
             <div class="space-y-4">
+              <!-- Battle count for last 24 hours -->
+              <div>
+                <span class="font-medium">Battles (24h):</span>
+                <span class="text-muted-foreground ml-2">
+                  {loadingBattles ? 'Loading...' : battleCount}
+                </span>
+              </div>
+              
               {#if agent.elo?.rating}
                 <div>
                   <span class="font-medium">ELO Rating:</span>
@@ -105,74 +125,6 @@
                 <div>
                   <span class="font-medium">Total Battles:</span>
                   <span class="text-muted-foreground ml-2">{agent.elo.battles || 0}</span>
-                </div>
-                
-                <!-- ELO Chart -->
-                {@const battleHistory = agent.elo.battle_history || []}
-                {@const recentBattles = battleHistory.slice(-5)}
-                {@const chartData = (() => {
-                  const data = [];
-                  const baseElo = 1000;
-                  
-                  // Add placeholders for missing battles (left side)
-                  const missingBattles = 5 - recentBattles.length;
-                  for (let i = 0; i < missingBattles; i++) {
-                    data.push({ battle: i + 1, elo: baseElo });
-                  }
-                  
-                  // Add actual battle data (most recent on the right)
-                  recentBattles.forEach((battle: any, index: number) => {
-                    data.push({ 
-                      battle: missingBattles + index + 1, 
-                      elo: battle.elo_after || battle.elo_before || baseElo 
-                    });
-                  });
-                  
-                  return data;
-                })()}
-                {@const chartConfig = {
-                  elo: { label: "ELO Rating", color: "#6b7280" }
-                }}
-                {@const recentBattlesWithElo = recentBattles.filter((battle: any) => battle.elo_after && battle.elo_before)}
-                {@const trendChange = recentBattlesWithElo.length > 0 
-                  ? recentBattlesWithElo.reduce((total: number, battle: any) => total + (battle.elo_after - battle.elo_before), 0)
-                  : 0
-                }
-                {@const trendIcon = trendChange > 0 ? TrendingUpIcon : trendChange < 0 ? TrendingDownIcon : MoveRightIcon}
-                {@const trendColor = trendChange > 0 ? "text-green-600" : trendChange < 0 ? "text-red-600" : "text-gray-600"}
-                
-                <div class="mt-4">
-                  <Chart.Container config={chartConfig} class="min-h-[120px] w-full">
-                    <LineChart
-                      data={chartData}
-                      x="battle"
-                      series={[
-                        {
-                          key: "elo",
-                          label: "ELO Rating",
-                          color: chartConfig.elo.color,
-                          props: {
-                            strokeWidth: 3,
-                          },
-                        },
-                      ]}
-                    >
-                      {#snippet tooltip()}
-                        <Chart.Tooltip hideLabel />
-                      {/snippet}
-                    </LineChart>
-                  </Chart.Container>
-                  
-                  <div class="flex items-center gap-1 mt-2 text-xs {trendColor}">
-                    <span>
-                      {trendChange > 0 ? "up" : trendChange < 0 ? "down" : "no change"} by {Math.abs(trendChange)} pts in recent battles
-                    </span>
-                    <svelte:component this={trendIcon} class="w-3 h-3" />
-                  </div>
-                </div>
-              {:else}
-                <div class="text-muted-foreground text-sm">
-                  No performance data available
                 </div>
               {/if}
             </div>
