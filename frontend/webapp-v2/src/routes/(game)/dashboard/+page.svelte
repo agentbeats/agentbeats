@@ -9,6 +9,7 @@
   import * as Carousel from "$lib/components/ui/carousel";
   import Autoplay from "embla-carousel-autoplay";
   import BattleCard from "$lib/components/battle-card.svelte";
+  import ExampleBattleCard from "$lib/components/example-battle-card.svelte";
   import AgentChip from "$lib/components/agent-chip.svelte";
   import { signOut } from "$lib/auth/supabase";
 
@@ -19,6 +20,8 @@
   let username = $state("User");
   let topAgents = $state<any[]>([]);
   let ongoingBattles = $state<any[]>([]);
+  let exampleBattles = $state<any[]>([]);
+  let exampleBattlesLoading = $state(true);
 
   // Get user data from the layout
   let { data } = $props<{ data: { user: any } }>();
@@ -26,6 +29,7 @@
   $effect(() => {
     loadBattles();
     loadMyAgents();
+    loadExampleBattles();
     // Set username from user data
     if (data?.user) {
       username = data.user.user_metadata?.name || data.user.email || "User";
@@ -79,6 +83,28 @@
     }
   }
 
+  async function loadExampleBattles() {
+    try {
+      exampleBattlesLoading = true;
+      console.log('Loading example battles...');
+      const response = await fetch('/example-battles.json');
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`Failed to load example battles: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('Raw data:', data);
+      exampleBattles = data.example_battles || [];
+      console.log('Loaded example battles:', exampleBattles);
+    } catch (error) {
+      console.error('Failed to load example battles:', error);
+      exampleBattles = [];
+    } finally {
+      exampleBattlesLoading = false;
+      console.log('Example battles loading finished. Count:', exampleBattles.length);
+    }
+  }
+
 
 </script>
 
@@ -101,6 +127,57 @@
         Sign Out
       </Button>
     </div>
+
+    <!-- Example Battles Carousel -->
+    <Card class="mb-6">
+      <CardHeader>
+        <CardTitle>Example Battles</CardTitle>
+        <CardDescription>Pre-configured battle scenarios for demonstration</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {#if exampleBattlesLoading}
+          <div class="flex items-center justify-center py-8">
+            <Spinner size="md" />
+            <span class="ml-2 text-sm">Loading example battles... (Count: {exampleBattles.length})</span>
+          </div>
+        {:else if exampleBattles.length === 0}
+          <div class="text-center py-8">
+            <p class="text-muted-foreground text-sm">No example battles found</p>
+            <p class="text-xs text-gray-500 mt-1">Debug: Loading state was {exampleBattlesLoading}</p>
+            <Button 
+              onclick={() => goto('/battles/stage-battle')}
+              class="mt-2 btn-primary"
+              size="sm"
+            >
+              Create Your Own Battle
+            </Button>
+          </div>
+        {:else}
+          <Carousel.Root 
+            class="w-full max-w-6xl mx-auto"
+            opts={{
+              align: "start",
+              loop: exampleBattles.length > 4,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 6000,
+              }),
+            ]}
+          >
+            <Carousel.Content class="gap-2 md:gap-4">
+              {#each exampleBattles as exampleBattle}
+                <Carousel.Item class="basis-1/2 md:basis-1/3 lg:basis-1/4">
+                  <div class="p-1">
+                    <ExampleBattleCard {exampleBattle} />
+                  </div>
+                </Carousel.Item>
+              {/each}
+            </Carousel.Content>
+          </Carousel.Root>
+        {/if}
+      </CardContent>
+    </Card>
 
     <!-- Two Cards Layout -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -161,10 +238,10 @@
                           }),
                         ]}
                       >
-                        <Carousel.Content class="gap-8">
+                        <Carousel.Content class="gap-14">
                           {#each topAgents as agent}
                             <Carousel.Item class="basis-1/4 md:basis-1/5">
-                              <div class="p-1">
+                              <div class="p-3">
                                 <AgentChip 
                                   agent={{
                                     identifier: agent.register_info?.alias || agent.agent_card?.name || 'Unknown',
@@ -303,10 +380,7 @@
                 </Carousel.Item>
               {/each}
             </Carousel.Content>
-            {#if ongoingBattles.length > 4}
-              <Carousel.Previous />
-              <Carousel.Next />
-            {/if}
+
           </Carousel.Root>
         {/if}
       </CardContent>
