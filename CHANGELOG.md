@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.1.2 (2025-08-02)
+
+### Bug Fixes
+
+- Install frontend require backend url. add docs, add install frontend cli
+  ([#48](https://github.com/agentbeats/agentbeats/pull/48),
+  [`cac04e1`](https://github.com/agentbeats/agentbeats/commit/cac04e1e185bf498f23227fc82b87a30db6aab74))
+
+
 ## v1.1.1 (2025-08-02)
 
 ### Bug Fixes
