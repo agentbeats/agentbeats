@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v1.1.1 (2025-08-02)
+
+### Bug Fixes
+
+- Added popover to show recommended agents when add to battle cart button is clicked
+  ([`dc7ca66`](https://github.com/agentbeats/agentbeats/commit/dc7ca66a83813acc3dd6cb1177850e18622fe2a1))
+
+- Updated quick start guidelines
+  ([`854dadd`](https://github.com/agentbeats/agentbeats/commit/854dadd7934f2c6dc49e457ae3848d5872765acb))
+
+
 ## v1.1.0 (2025-08-01)
 
 ### Bug Fixes
