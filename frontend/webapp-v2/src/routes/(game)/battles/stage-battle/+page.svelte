@@ -291,14 +291,20 @@
                 {:else}
                   {#each participantRequirements as req}
                     <div class="space-y-2">
-                      <RecommendedAgentsDropdown
+                      <CustomDropdown
                         label={`${req.name} ${req.required ? '(Required)' : '(Optional)'}`}
-                        greenAgentId={formData.green_agent_id}
-                        roleName={req.name}
                         value={roleAssignments[req.name]}
                         placeholder="Select an agent"
-                        allAgents={opponentAgents}
-                        assignedAgents={Object.values(roleAssignments).filter(id => id !== '')}
+                        options={[
+                          { value: '', label: 'Select an agent' },
+                          ...opponentAgents
+                            .filter(agent => !Object.values(roleAssignments).includes(agent.agent_id) || roleAssignments[req.name] === agent.agent_id)
+                            .map((agent: any) => ({
+                              value: agent.agent_id,
+                              label: agent.register_info?.alias || agent.agent_card?.name || 'Unknown Agent',
+                              agent: agent
+                            }))
+                        ]}
                         on:change={(e) => handleRoleAssign(req.name, e.detail.value)}
                       />
                     </div>

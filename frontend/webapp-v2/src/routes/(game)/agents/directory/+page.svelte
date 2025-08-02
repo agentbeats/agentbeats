@@ -167,7 +167,7 @@
                   class="w-full"
                   opts={{
                     align: "start",
-                    loop: rawAgents.filter(agent => agent.register_info?.is_green === true).length > 4,
+                    loop: false,
                   }}
                   plugins={[
                     Autoplay({
@@ -185,10 +185,6 @@
                       </Carousel.Item>
                     {/each}
                   </Carousel.Content>
-                  {#if rawAgents.filter(agent => agent.register_info?.is_green === true).length > 4}
-                    <Carousel.Previous />
-                    <Carousel.Next />
-                  {/if}
                 </Carousel.Root>
               </div>
             {/if}
@@ -204,7 +200,7 @@
                   class="w-full"
                   opts={{
                     align: "start",
-                    loop: rawAgents.filter(agent => agent.register_info?.is_green === false).length > 4,
+                    loop: false,
                   }}
                   plugins={[
                     Autoplay({
@@ -222,143 +218,141 @@
                       </Carousel.Item>
                     {/each}
                   </Carousel.Content>
-                  {#if rawAgents.filter(agent => agent.register_info?.is_green === false).length > 4}
-                    <Carousel.Previous />
-                    <Carousel.Next />
-                  {/if}
                 </Carousel.Root>
               </div>
             {/if}
 
-<div>
-  <div class="mb-4">
-    <h2 class="text-lg font-semibold">All Agents</h2>
-    <p class="text-sm text-muted-foreground">Browse and search all agents in the system</p>
-  </div>
-  <div class="flex items-center py-4">
-    <Input
-      placeholder="Filter agents..."
-      value={searchTerm}
-      onchange={(e) => handleSearch(e.currentTarget.value)}
-      oninput={(e) => handleSearch(e.currentTarget.value)}
-      class="max-w-sm"
-    />
-  </div>
-  
-  <div class="rounded-md border">
-    <Table.Root>
-      <Table.Header>
-        <Table.Row>
-          <Table.Head 
-            class="cursor-pointer select-none"
-            onclick={() => handleSort('name')}
-          >
-            Agent
-            {#if sortColumn === 'name'}
-              <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </Table.Head>
-          <Table.Head 
-            class="text-right cursor-pointer select-none"
-            onclick={() => handleSort('elo_rating')}
-          >
-            ELO Rating
-            {#if sortColumn === 'elo_rating'}
-              <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </Table.Head>
-          <Table.Head 
-            class="text-right cursor-pointer select-none"
-            onclick={() => handleSort('win_rate')}
-          >
-            Win Rate
-            {#if sortColumn === 'win_rate'}
-              <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </Table.Head>
-          <Table.Head 
-            class="text-right cursor-pointer select-none"
-            onclick={() => handleSort('battles')}
-          >
-            Battles
-            {#if sortColumn === 'battles'}
-              <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </Table.Head>
+{#if !loading}
+  <div>
+    <div class="mb-4">
+      <h2 class="text-lg font-semibold">All Agents</h2>
+      <p class="text-sm text-muted-foreground">Browse and search all agents in the system</p>
+    </div>
+    <div class="flex items-center py-4">
+      <Input
+        placeholder="Filter agents..."
+        value={searchTerm}
+        onchange={(e) => handleSearch(e.currentTarget.value)}
+        oninput={(e) => handleSearch(e.currentTarget.value)}
+        class="max-w-sm"
+      />
+    </div>
+    
+    <div class="rounded-md border">
+      <Table.Root>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head 
+              class="cursor-pointer select-none"
+              onclick={() => handleSort('name')}
+            >
+              Agent
+              {#if sortColumn === 'name'}
+                <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </Table.Head>
+            <Table.Head 
+              class="text-right cursor-pointer select-none"
+              onclick={() => handleSort('elo_rating')}
+            >
+              ELO Rating
+              {#if sortColumn === 'elo_rating'}
+                <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </Table.Head>
+            <Table.Head 
+              class="text-right cursor-pointer select-none"
+              onclick={() => handleSort('win_rate')}
+            >
+              Win Rate
+              {#if sortColumn === 'win_rate'}
+                <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </Table.Head>
+            <Table.Head 
+              class="text-right cursor-pointer select-none"
+              onclick={() => handleSort('battles')}
+            >
+              Battles
+              {#if sortColumn === 'battles'}
+                <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+              {/if}
+            </Table.Head>
 
-          <Table.Head>Type</Table.Head>
-          <Table.Head>Actions</Table.Head>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>
-        {#if paginatedAgents.length > 0}
-          {#each paginatedAgents as agent}
-            <Table.Row>
-              <Table.Cell>
-                <AgentChip 
-                  agent={{
-                    identifier: agent.name,
-                    description: agent.description
-                  }}
-                  agent_id={agent.id}
-                  isOnline={agent.live || false}
-                />
-              </Table.Cell>
-              <Table.Cell class="text-right font-medium">{agent.elo_rating}</Table.Cell>
-              <Table.Cell class="text-right">{(agent.win_rate * 100).toFixed(1)}%</Table.Cell>
-              <Table.Cell class="text-right">{agent.battles}</Table.Cell>
-
-              <Table.Cell>
-                <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  {agent.is_green ? 'Green' : 'Opponent'}
-                </div>
-              </Table.Cell>
-              <Table.Cell>
-                <div class="flex gap-2">
-                  <AddToBattleCart 
-                    agent={rawAgents.find(rawAgent => (rawAgent.agent_id || rawAgent.id) === agent.id)} 
-                    agentType={agent.is_green ? 'green' : 'opponent'} 
-                    size="sm" 
+            <Table.Head>Type</Table.Head>
+            <Table.Head>Actions</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {#if paginatedAgents.length > 0}
+            {#each paginatedAgents as agent}
+              <Table.Row>
+                <Table.Cell>
+                  <AgentChip 
+                    agent={{
+                      identifier: agent.name,
+                      description: agent.description
+                    }}
+                    agent_id={agent.id}
+                    isOnline={agent.live || false}
                   />
-                </div>
+                </Table.Cell>
+                <Table.Cell class="text-right font-medium">{agent.elo_rating}</Table.Cell>
+                <Table.Cell class="text-right">{(agent.win_rate * 100).toFixed(1)}%</Table.Cell>
+                <Table.Cell class="text-right">{agent.battles}</Table.Cell>
+
+                <Table.Cell>
+                  <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    {agent.is_green ? 'Green' : 'Opponent'}
+                  </div>
+                </Table.Cell>
+                <Table.Cell>
+                  <div class="flex gap-2">
+                    <AddToBattleCart 
+                      agent={rawAgents.find(rawAgent => (rawAgent.agent_id || rawAgent.id) === agent.id)} 
+                      agentType={agent.is_green ? 'green' : 'opponent'} 
+                      size="sm" 
+                    />
+                  </div>
+                </Table.Cell>
+              </Table.Row>
+            {/each}
+          {:else}
+            <Table.Row>
+              <Table.Cell class="h-24 text-center">
+                No results.
               </Table.Cell>
             </Table.Row>
-          {/each}
-        {:else}
-          <Table.Row>
-            <Table.Cell class="h-24 text-center">
-              No results.
-            </Table.Cell>
-          </Table.Row>
-        {/if}
-      </Table.Body>
-    </Table.Root>
-  </div>
-  
-  <div class="flex items-center justify-end space-x-2 py-4">
-    <div class="flex-1 text-sm text-muted-foreground">
-      Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, sortedAgents.length)} of {sortedAgents.length} results.
+          {/if}
+        </Table.Body>
+      </Table.Root>
     </div>
-    <div class="space-x-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={() => currentPage = Math.max(1, currentPage - 1)}
-        disabled={currentPage === 1}
-      >
-        Previous
-      </Button>
-      <span class="px-2 py-1 text-sm">
-        Page {currentPage} of {totalPages}
-      </span>
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
-        Next
-      </Button>
+    
+    <div class="flex items-center justify-end space-x-2 py-4">
+      <div class="flex-1 text-sm text-muted-foreground">
+        Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, sortedAgents.length)} of {sortedAgents.length} results.
+      </div>
+      <div class="space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => currentPage = Math.max(1, currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+        <span class="px-2 py-1 text-sm">
+          Page {currentPage} of {totalPages}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => currentPage = Math.min(totalPages, currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   </div>
-</div>
+{/if}

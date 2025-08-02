@@ -240,7 +240,7 @@
                           }),
                         ]}
                       >
-                        <Carousel.Content class="gap-14">
+                        <Carousel.Content class="gap-13">
                           {#each topAgents as agent}
                             <Carousel.Item class="basis-1/4 md:basis-1/5">
                               <div class="p-3">
@@ -306,9 +306,30 @@
                   {#each battles.slice(0, 10) as battle}
                     <div class="flex items-center justify-between p-3 border rounded-lg">
                       <div class="flex-1">
-                        <p class="font-medium text-sm">{battle.battle_id?.slice(0, 8) || 'Unknown'}</p>
-                        <p class="text-xs text-muted-foreground">
-                          {battle.status || 'Unknown Status'}
+                        {#if battle.green_agent_id}
+                          {#if agents.length > 0}
+                            {@const greenAgent = agents.find(agent => agent.agent_id === battle.green_agent_id || agent.id === battle.green_agent_id)}
+                            {#if greenAgent}
+                              <AgentChip 
+                                agent={{
+                                  identifier: greenAgent.register_info?.alias || greenAgent.agent_card?.name || 'Unknown',
+                                  avatar_url: greenAgent.register_info?.avatar_url,
+                                  description: greenAgent.agent_card?.description
+                                }} 
+                                agent_id={greenAgent.agent_id || greenAgent.id}
+                                isOnline={greenAgent.live || false}
+                              />
+                            {:else}
+                              <p class="font-medium text-sm">Green Agent (ID: {battle.green_agent_id?.slice(0, 8)})</p>
+                            {/if}
+                          {:else}
+                            <p class="font-medium text-sm">Green Agent (ID: {battle.green_agent_id?.slice(0, 8)})</p>
+                          {/if}
+                        {:else}
+                          <p class="font-medium text-sm">{battle.battle_id?.slice(0, 8) || 'Unknown'}</p>
+                        {/if}
+                        <p class="text-xs text-muted-foreground mt-1">
+                          {battle.state || 'Unknown Status'}
                         </p>
                       </div>
                       <Button 
