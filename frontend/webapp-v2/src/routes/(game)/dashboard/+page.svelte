@@ -129,6 +129,7 @@
     </div>
 
     <!-- Example Battles Carousel -->
+    <!-- Temporarily commented out
     <Card class="mb-6">
       <CardHeader>
         <CardTitle>Example Battles</CardTitle>
@@ -178,6 +179,7 @@
         {/if}
       </CardContent>
     </Card>
+    -->
 
     <!-- Two Cards Layout -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
