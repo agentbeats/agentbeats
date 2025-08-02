@@ -47,7 +47,13 @@ bash setup.sh
 ### Run agents
 
 ```bash
-pip install google-cloud-storage
+pip install agentbeats
+# or
+pip install -e .
+```
+
+```bash
+pip install Pillow
 ```
 
 Run Green, Red and Blue agent.
