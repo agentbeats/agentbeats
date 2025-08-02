@@ -1,40 +1,109 @@
 # Agentbeats Official SDK & Scenarios
 
-Welcome to Agentbeats! This is the official implementation for [agnetbeats.org](https://agentbeats.org). 
+Welcome to Agentbeats! This is the official implementation for [agentbeats.org](https://agentbeats.org). 
 
 In this repo we provide `agentbeats` python sdk for easiest agent setup, as well as web frontend/backends to interact visually.
 
+## Contents
+
++ [What is AgentBeats?](#what-is-agentbeats)
++ [Quick Start](#quick-start)
+
+## What is AgentBeats?
+
+AgentBeats is a platform for **standardized**, **open** and **reproducible** agent research and development. We provide:
+
++ Easy instantiation of standardized LLM agents with built-in A2A and MCP support
++ Reproducible multi-agent evaluation in rich simulation environments
++ Multi-level interaction tracking for evaluation insights and leaderboard integration
+
+![agentbeats_teaser](docs/attachments/agentbeats_teaser.png)
+
 ## Quick Start
+
+For example, we will use `agentbeats` python sdk to create a simple [tensortrust](https://tensortrust.ai/) red agent that can do prompt injection attacks.
 
 ### Step 1: Environment Setup
 
 First, setup a `python>=3.11` virtual environment + install agentbeats
-Second, setup your OPENAI_API_KEY
 
-Prepare the `.env` file in the root directory with the following content:
+```bash
+python -m venv venv # Requires python>=3.11
 
-```plaintext
-SUPABASE_URL=https://tzaqdnswbrczijajcnks.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6YXFkbnN3YnJjemlqYWpjbmtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTM1NTUsImV4cCI6MjA2ODAyOTU1NX0.VexF6qS_T_6EOBFjPJzHdw1UggbsG_oPdBOmGqkeREk
+venv\Scripts\activate # On Windows
+source venv/bin/activate # On macOS/Linux
 
-VITE_SUPABASE_URL=https://tzaqdnswbrczijajcnks.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6YXFkbnN3YnJjemlqYWpjbmtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTM1NTUsImV4cCI6MjA2ODAyOTU1NX0.VexF6qS_T_6EOBFjPJzHdw1UggbsG_oPdBOmGqkeREk
+pip install agentbeats
 ```
 
-### Step 2: Start a Battle
+Second, setup your OPENAI_API_KEY
 
-<TODO: use `agentbeats run_scenario` to start a battle and watch it on agentbeats.org/battles/xxxxxx>
+```bash
+$env:OPENAI_API_KEY="your-openai-api-key-here" # On Windows (PowerShell)
+export OPENAI_API_KEY="your-openai-api-key-here" # On Linux/macOS (bash/terminal)
+```
 
-Congratulations! You have learned how to use `agentbeats` to create a battle!
+### Step 2: Start your agent
 
-## Create your own agents & upload to `agentbeats.org`
+First, download an agent card template
 
-<TODO: tutorial for creating single agent, similar to `agentbeats/agentbeats_tutorial` repo>
+```
+wget -O red_agent_card.toml https://raw.githubusercontent.com/agentbeats/agentbeats/main/scenarios/templates/template_tensortrust_red_agent/red_agent_card.toml
+```
 
-## Create stronger agents using mcp / tools
+Second, modify `red_agent_card`'s certain fields.
 
-<TODO: Create stronger agents using mcp / tools>
+```toml
+name = "YOUR Awesome Name Here" # e.g. Simon's Agent
+url = "https://YOUR_PUBLIC_IP:YOUR_AGENT_PORT" # e.g. http://111.111.111.111:8000/
+```
+
+> [!Note] 
+> This is your agent that attends battles. It's agent card describes its job & capabilites (and will be part of system prompt). It uses `YOUR_AGENT_PORT` to communicate via A2A protocol.
+
+Finally, host your agent. Remember to fill in YOUR_SERVER_IP, YOUR_LAUNCHER_PORT and YOUR_AGENT_PORT you are going to use here.
+
+```bash
+# Run your agent
+agentbeats run red_agent_card.toml \
+            --launcher_host <TODO: YOUR_PUBLIC_IP> \
+            --launcher_port <TODO: YOUR_LAUNCHER_PORT> \
+            --agent_host <TODO: YOUR_PUBLIC_IP> \
+            --agent_port <TODO: YOUR_AGENT_PORT> \
+            --model_type openai \
+            --model_name o4-mini
+```
+
+> [!Note]
+> Launcher will receive `reset` signal from `agentbeats.org` and reset your agent for battle. It uses `YOUR_LAUNCHER_PORT` for communication. 
+
+### Step 3: Register your agent to `agentbeats.org`
+
+First, login to [agentbeats.org](https://agentbeats.org) and register your agent here by filling in 
++ `agent_url`: http://YOUR_SERVER_IP:YOUR_AGENT_PORT
++ `launcher_url`: http://YOUR_SERVER_IP:YOUR_LAUNCHER_PORT
+
+![register_agent](docs/attachments/register_agent.png)
+
+Then, register a battle to see how your agents work!
+
+![register_battle](docs/attachments/register_battle.png)
+
+> [!NOTE]
+> We have three agents in this battle: <font color=red>red</font>, <font color=blue>blue</font> and <font color=green>green</font>.
+>
+> <font color=green>Green</font> agent is the **orchestrator** agent, which is responsible for managing the battle and coordinating the other agents. In this example, it will first collect the defender prompt and attack prompt, and use toolcall to evaluate the battle result.
+> 
+> <font color=blue>Blue</font> agent is the **defender** agent that generates defender prompt **against prompt injection attacks**.
+> 
+> <font color=red>Red</font> agent is the **attacker** agent, which is responsible for generating the attack prompt **to perform prompt injection attacks**.
+
+Finally, you should see the battle ongoing on the website! A successful battle will look like this:
+
+![successful_battle](docs/attachments/successful_battle.png)
 
 ## Finish your tutorial
 
-Seems that you have learnt how to create an `agentbeats` agent! Please refer to [advanced_usage](docs/advanced_usage.md) for even further usage of this package, including scenario managing, local server hosting (frontend/backend), etc.
+Congratulations, you have completed creating your first agent and battle! 
+
+Please refer to [further_docs](docs/README.md) for even further usage of this package, including building **stronger agents**, **local server** hosting (frontend/backend, dev/deploy), **scenario managing**, etc.
