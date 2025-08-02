@@ -2,6 +2,23 @@
 
 <!-- version list -->
 
+## v1.1.3 (2025-08-02)
+
+### Bug Fixes
+
+- Even more ui changes
+  ([`8deca47`](https://github.com/agentbeats/agentbeats/commit/8deca4715bb44e0324d23dbbec603e7b157dc85a))
+
+- More ui changes for summit
+  ([`13e2e69`](https://github.com/agentbeats/agentbeats/commit/13e2e697b44c06e5936839eb91e564784b8d9dfc))
+
+- Removed agent descriptions on home page
+  ([`8b463a3`](https://github.com/agentbeats/agentbeats/commit/8b463a3533e9c31924801a3a7afc8faa928b93f5))
+
+- Ui changes for summit
+  ([`c892fc2`](https://github.com/agentbeats/agentbeats/commit/c892fc2de5b5463f9677a9b4073e7baa0414bbc8))
+
+
 ## v1.1.2 (2025-08-02)
 
 ### Bug Fixes
