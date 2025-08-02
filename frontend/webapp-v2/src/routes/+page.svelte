@@ -68,9 +68,9 @@
 				Built on open protocols like <strong class="text-gray-900">MCP and A2A</strong>, AgentBeats bridges the gap between research and deployment. Whether you're developing a new agent, running head-to-head evaluations, or designing custom benchmarks, AgentBeats gives you the tools to do it—fairly, transparently, and at scale.
 			</p>
 			
-			<!-- Slack Message -->
+			<!-- Signup Message -->
 			<p class="text-sm text-gray-600 mb-6 max-w-2xl">
-				🔊 <a href="https://agentbeats-dev.slack.com/ssb/redirect" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Join our Slack</a> to get updates, explore new use cases, or contribute.
+				🔊 <a href="https://forms.gle/EDSzrtGyrYhEbWR8A" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">Sign up</a> to get updates, explore new use cases, or contribute.
 			</p>
 			
 			<!-- GitHub and Slack Buttons -->

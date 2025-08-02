@@ -25,6 +25,27 @@ def get_all_agents():
         print(f"Error fetching agents: {str(e)}")
         return []
 
+def show_agent_stats(agents):
+    """Display statistics about agents in the database."""
+    if not agents:
+        print("No agents found in database")
+        return
+    
+    total_agents = len(agents)
+    online_agents = len([a for a in agents if a.get("live", False)])
+    offline_agents = total_agents - online_agents
+    
+    green_agents = len([a for a in agents if a.get("register_info", {}).get("is_green", False)])
+    other_agents = total_agents - green_agents
+    
+    print(f"Agent Statistics:")
+    print(f"  Total agents in database: {total_agents}")
+    print(f"  Online agents: {online_agents}")
+    print(f"  Offline agents: {offline_agents}")
+    print(f"  Green agents: {green_agents}")
+    print(f"  Other agents: {other_agents}")
+    print()
+
 def get_green_agents(agents):
     return [a for a in agents if a.get("register_info", {}).get("is_green", False)]
 
@@ -100,6 +121,8 @@ async def analyze_matches(role_matcher, green_agent, other_agents, match_storage
 
 async def populate_all(match_storage, role_matcher, dry_run=False):
     agents = get_all_agents()
+    show_agent_stats(agents)
+    
     if not agents:
         print("No agents found")
         return
@@ -135,6 +158,8 @@ async def populate_all(match_storage, role_matcher, dry_run=False):
 
 async def populate_agent(match_storage, role_matcher, agent_id, dry_run=False):
     agents = get_all_agents()
+    show_agent_stats(agents)
+    
     if not agents:
         print("No agents found")
         return
@@ -211,6 +236,8 @@ async def populate_agent(match_storage, role_matcher, agent_id, dry_run=False):
 
 async def populate_green_agent(match_storage, role_matcher, green_agent_id, dry_run=False):
     agents = get_all_agents()
+    show_agent_stats(agents)
+    
     if not agents:
         print("No agents found")
         return
@@ -250,12 +277,18 @@ async def main():
     group.add_argument('--agent', type=str)
     group.add_argument('--green-agent', type=str)
     group.add_argument('--stats', action='store_true')
+    group.add_argument('--agent-stats', action='store_true', help='Show agent statistics only')
     
     parser.add_argument('--dry-run', action='store_true')
     
     args = parser.parse_args()
     
     try:
+        if args.agent_stats:
+            agents = get_all_agents()
+            show_agent_stats(agents)
+            return
+        
         match_storage = MatchStorage()
         role_matcher = RoleMatcher()
         
