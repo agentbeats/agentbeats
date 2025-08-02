@@ -28,19 +28,12 @@ python
 python3.10
 ```
 
-### Create virtural environemnt
-
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install agentbeats
-```
-
 ### Run setup script
 
 Setup script will clone WASP repository and perform virtual environment setup.
 
 ```bash
+cd scenarios/wasp
 bash setup.sh
 ```
 
@@ -83,6 +76,8 @@ Use the web app to add the following agents:
 - MCP URL: http://localhost:9001/sse
 
 ### Running the GCP server deployment
+
+You can skip this part and just test the pipeline without screenshots visible.
 
 Authenticate the process to access GCP bucket
 ```bash
