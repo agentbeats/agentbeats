@@ -13,7 +13,7 @@ This guide explains how to self-host AgentBeats services including backend (with
 
 First, install frontend dependencies:
 ```bash
-agentbeats run_frontend --mode install
+agentbeats install_frontend
 ```
 
 ## Deployment Options
