@@ -44,8 +44,8 @@ class AgentBeatsHook(RunHooks):
             battle_id=self.battle_context["battle_id"],
             backend_url=self.battle_context["backend_url"],
             message=f"Agent {agent.name} finished using tool {tool.name}.",
-            detail=tool.params_json_schema,
-            reported_by=agent.name
+            # detail=tool.params_json_schema,
+            reported_by=agent.name + " (from agentbeats sdk toolcall hooks)"
         )
         return super().on_tool_start(context, agent, tool)
 
@@ -194,6 +194,32 @@ class BeatsAgent:
         self.tool_list.append(wrapped_tool)
         return wrapped_tool
 
+    # Will update in next version
+    # def _register_tool(self, func: Callable, name: str | None = None):
+    #     """Register a tool function with the agent."""
+    #     tool_name = name or func.__name__
+    #     wrapped = function_tool(name_override=tool_name)(func)
+    #     self.tool_list.append(wrapped)
+    #     return wrapped
+    
+    # def tool(self, func: Callable | None = None, *, name: str | None = None):
+    #     """
+    #     Usage 1: @agent.tool                -> No-argument decorator
+    #     Usage 2: @agent.tool(name="Search") -> Argument decorator with name
+    #     Usage 3: agent.tool(func_obj)       -> Directly register a function
+    #     """
+    #     if func is None:
+    #         # @agent.tool(name="xxx"), a decorator with name argument
+    #         def decorator(f):                   # noqa: D401
+    #             self._register_tool(f, name=name)
+    #             return f                        # Keep the original function usable
+    #         return decorator
+    #     else:
+    #         # Supports both @agent.tool as a no-argument decorator and explicit call agent.tool(foo)
+    #         return self._register_tool(func, name=name)
+
+    # register_tool = tool  # Alias for backward compatibility
+
 
 class AgentBeatsExecutor(AgentExecutor):
     def __init__(self, agent_card_json: Dict[str, Any], 
@@ -297,12 +323,12 @@ class AgentBeatsExecutor(AgentExecutor):
         if task is None: # first chat
             task = new_task(context.message)
             await event_queue.enqueue_event(task)
-        updater = TaskUpdater(event_queue, task.id, task.contextId)
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
 
         # push "working now" status
         await updater.update_status(
             TaskState.working,
-            new_agent_text_message("working...", task.contextId, task.id),
+            new_agent_text_message("working...", task.context_id, task.id),
         )
 
         # await llm response
