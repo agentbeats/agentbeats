@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.4 (2025-08-03)
+
+### Bug Fixes
+
+- More ui changes for summit
+  ([`5692633`](https://github.com/agentbeats/agentbeats/commit/5692633d6258f723dd2f2bd764dca24f2326c948))
+
+
 ## v1.1.3 (2025-08-02)
 
 ### Bug Fixes
