@@ -12,196 +12,15 @@ import os
 import sys
 import json
 import subprocess
-import asyncio
-from uuid import uuid4
-import time
 import docker
 from pathlib import Path
 from typing import Optional, Dict, Any
 import logging
-import httpx
-from collections import defaultdict
-from a2a.client import A2ACardResolver, A2AClient
-from a2a.types import (
-    Message,
-    MessageSendParams,
-    SendStreamingMessageRequest,
-    SendStreamingMessageSuccessResponse,
-    TaskArtifactUpdateEvent,
-    TaskStatusUpdateEvent,
-    Role,
-    Part,
-    TextPart,
-    AgentCard,
-)
-
 
 from agentbeats import tool
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-########################################################
-# Agent communication tools
-########################################################
-
-httpx_client: httpx.AsyncClient = httpx.AsyncClient()
-
-battle_start_times = defaultdict(float)
-battle_cumulative_times = defaultdict(float)
-
-
-async def _make_client(base_url: str) -> A2AClient:
-    resolver = A2ACardResolver(
-        httpx_client=httpx_client,
-        base_url=base_url,
-    )
-    card: AgentCard | None = await resolver.get_agent_card(
-        relative_card_path="/.well-known/agent.json"
-    )
-    if card is None:
-        raise RuntimeError(f"Failed to resolve agent card from {base_url}")
-    return A2AClient(httpx_client=httpx_client, agent_card=card)
-
-
-@tool
-async def talk_to_red_agent(
-    query: str, target_url: str, battle_id: str, timeout_seconds: float = 120.0
-) -> str:
-    """Talk to a red or blue agent at the given URL with a query. Tracks cumulative time for the battle."""
-    logging.info(
-        f"Talking to agent at {target_url} with query: {query} for battle {battle_id}"
-    )
-    logging.info(f"Timeout: {timeout_seconds}")
-
-    # Check if battle has started, if not start the stopwatch
-    if (
-        battle_id not in battle_start_times
-        or battle_start_times[battle_id] == 0
-    ):
-        battle_start_times[battle_id] = time.time()
-        logging.info(f"Starting stopwatch for battle {battle_id}")
-    else:
-        logging.info(
-            f"Continuing existing battle {battle_id} (started at {battle_start_times[battle_id]})"
-        )
-
-    client = await _make_client(target_url)
-    params = MessageSendParams(
-        message=Message(
-            role=Role.user,
-            parts=[Part(TextPart(text=query))],
-            messageId=uuid4().hex,
-            taskId=None,  # Let the red agent create a new task
-        )
-    )
-    req = SendStreamingMessageRequest(id=str(uuid4()), params=params)
-    chunks: List[str] = []
-    message_start_time = time.time()
-    try:
-
-        async def stream_reply():
-            async for chunk in client.send_message_streaming(req):
-                # Log the chunk for debugging
-                logging.debug(f"Received chunk: {chunk}")
-
-                if not isinstance(
-                    chunk.root, SendStreamingMessageSuccessResponse
-                ):
-                    continue
-                event = chunk.root.result
-
-                # Handle TaskArtifactUpdateEvent (final response)
-                if isinstance(event, TaskArtifactUpdateEvent):
-                    for p in event.artifact.parts:
-                        if isinstance(p.root, TextPart):
-                            chunks.append(p.root.text)
-                # Handle TaskStatusUpdateEvent (status messages)
-                elif isinstance(event, TaskStatusUpdateEvent):
-                    msg = event.status.message
-                    if msg:
-                        for p in msg.parts:
-                            if isinstance(p.root, TextPart):
-                                chunks.append(p.root.text)
-                # Handle any other event type that might contain text
-                else:
-                    # Try to extract text from any other event type
-                    if hasattr(event, "message") and event.message:
-                        for p in event.message.parts:
-                            if isinstance(p.root, TextPart):
-                                chunks.append(p.root.text)
-                    elif hasattr(event, "text"):
-                        chunks.append(str(event.text))
-                    elif hasattr(event, "content"):
-                        chunks.append(str(event.content))
-
-        await asyncio.wait_for(stream_reply(), timeout=timeout_seconds)
-        message_end_time = time.time()
-        message_elapsed = message_end_time - message_start_time
-
-        # Update cumulative time for this battle
-        battle_cumulative_times[battle_id] += message_elapsed
-
-        ans = "".join(chunks).strip() or "No response from agent."
-        logging.info(ans)
-        logging.info(f"Message response time: {message_elapsed:.2f} seconds")
-        logging.info(
-            f"Battle {battle_id} cumulative time: {battle_cumulative_times[battle_id]:.2f} seconds"
-        )
-
-        return f"{ans}\n[Message response time: {message_elapsed:.2f} seconds]\n[Battle cumulative time: {battle_cumulative_times[battle_id]:.2f} seconds]"
-    except asyncio.TimeoutError:
-        # Still count timeout towards cumulative time
-        message_end_time = time.time()
-        message_elapsed = message_end_time - message_start_time
-        battle_cumulative_times[battle_id] += message_elapsed
-
-        logging.warning(
-            f"[Timeout] No response from agent at {target_url} after {timeout_seconds} seconds."
-        )
-        logging.info(
-            f"Battle {battle_id} cumulative time: {battle_cumulative_times[battle_id]:.2f} seconds"
-        )
-        return f"[Timeout] No response from agent at {target_url} after {timeout_seconds} seconds.\n[Battle cumulative time: {battle_cumulative_times[battle_id]:.2f} seconds]"
-
-
-@tool
-async def get_attack_cumulative_time(battle_id: str) -> str:
-    """Get the cumulative time the red agent has spent attacking the target."""
-    if battle_id not in battle_cumulative_times:
-        return f"No communication time recorded for battle {battle_id}"
-
-    cumulative_time = battle_cumulative_times[battle_id]
-    start_time = battle_start_times.get(battle_id, 0)
-
-    if start_time == 0:
-        return f"Battle {battle_id} has no recorded start time"
-
-    current_time = time.time()
-    total_battle_time = current_time - start_time
-
-    return (
-        f"Battle {battle_id} stats:\n"
-        # f"- Cumulative red agent attack time: {cumulative_time:.2f} seconds\n"
-        f"- Red agent attack time: {total_battle_time:.2f} seconds\n"
-    )
-
-
-@tool
-async def reset_battle_timing(battle_id: str) -> str:
-    """Reset the timing data for a specific battle."""
-    if battle_id in battle_start_times:
-        del battle_start_times[battle_id]
-    if battle_id in battle_cumulative_times:
-        del battle_cumulative_times[battle_id]
-
-    return f"Timing data reset for battle {battle_id}"
-
-
-########################################################
-# Cybench tools
-########################################################
 
 
 client = docker.from_env()
@@ -279,12 +98,15 @@ def parse_json_output(output: str) -> Optional[Dict[Any, Any]]:
 
 
 def run_container(task_dir: str, battle_id: str = None) -> str:
-    """Run the Docker container for the given task_dir and battle_id"""
     cybench_dir = Path(__file__).resolve().parents[2] / "resources" / "cybench"
-    logger.info(f"cybench_dir: {cybench_dir}/setup_cybench_env.py")
+    print(f"cybench_dir: {cybench_dir}/setup_cybench_env.py")
     volumes = {
         str(cybench_dir / "agent"): {"bind": "/app/agent", "mode": "ro"},
         str(cybench_dir / "setup_cybench_env.py"): {
+            "bind": "/app/setup_cybench_env.py",
+            "mode": "ro",
+        },
+        str(cybench_dir / "run_task.py"): {
             "bind": "/app/run_task.py",
             "mode": "ro",
         },
@@ -300,15 +122,12 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
                     env_vars[key] = value
     if "DOCKER_NETWORK_DRIVER" not in env_vars:
         env_vars["DOCKER_NETWORK_DRIVER"] = "bridge"
-    logger.info("Running Docker container for task_dir.")
+    print("Running Docker container for task_dir:", task_dir)
     container_name = _get_container_name(battle_id)
-    # Build the command to run inside the container
-    command = [
-        "--task_dir",
-        task_dir,
-    ]
+    # Use a long-running command to keep the container alive
+    command = ["tail", "-f", "/dev/null"]
     try:
-        logger.info("Pulling latest image...")
+        print("Pulling latest image...")
         client.images.pull(image_name)
         container = client.containers.run(
             image=image_name,
@@ -325,34 +144,7 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
             cgroupns="host",
         )
         containers[container_name] = container
-
-        # Wait for the setup process to complete and get the IMPORTANT logs
-        result = container.wait()
-        logs = container.logs(stdout=True, stderr=True).decode("utf-8")
-        with open("/tmp/benchmark-latest.log", "w") as f:
-            f.write(logs)
-
-        if result["StatusCode"] != 0:
-            raise RuntimeError(
-                f"Container setup failed with status code {result['StatusCode']}"
-            )
-
-        # Now restart the container with a command that keeps it alive
-        logger.info(
-            "Setup completed successfully. Restarting container to keep it alive..."
-        )
-        container.restart()
-
-        # Execute a command to keep the container running indefinitely
-        import time
-
-        time.sleep(2)  # Give restart a moment
-        container.exec_run(["sh", "-c", "tail -f /dev/null"], detach=True)
-
-        logger.info(
-            f"Container {container_name} setup complete and staying alive for commands"
-        )
-        return logs
+        return ""  # No logs yet, since nothing has run
     except Exception as e:
         try:
             container = client.containers.get(container_name)
@@ -366,57 +158,25 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
 
 @tool
 def setup_cybench_task(task_dir: str, battle_id: str = None) -> Dict[Any, Any]:
-    """
-    This is the first tool to be called by the green agent.
-    It will setup the cybench task by
-    1. Setting up the docker environment
-    2. Preparing the task environment
-    3. Returning the results
-
-    Returns:
-        Dict[Any, Any]: The results of the task.
-        {
-            "challenge_prompt": str, # The challenge prompt to be used by the agent to solve the task
-            "task": {
-                "name": str,
-                "path": str,
-                "easy_prompt": str,
-                "challenging_prompt": str,
-                "subtasks": List[Dict[Any, Any]],
-            },
-            "task_objective": str,
-        }
-
-        Subtasks:
-        {
-            "question": str,
-            "answer": str,
-            "hint": str,
-            "annotator_note": str,
-            "answer_format": str,
-            "commands": List[str],
-        }
-    """
-    # self.validate_current_directory()
-    logger.info(f"Setting up cybench task: {task_dir}")
+    print(f"\033[32mSetting up cybench task: {task_dir}\033[0m")
     cleanup_existing_container(battle_id)
     create_network_if_needed()
-    start_script = os.path.join(task_dir, "start_docker.sh")
-    execute_task_script(start_script, "start_docker.sh")
-    try:
-        output = run_container(task_dir, battle_id)
-        json_result = parse_json_output(output)
-        if json_result is None:
-            logger.warning(
-                "Warning: Could not parse JSON output, trying text extraction"
-            )
-            return {"output": output, "prompt": None}
-        logger.info("Cybench task setup complete")
-        return json_result
-    finally:
-        # stop_script = os.path.join(task_dir, "stop_docker.sh")
-        # self.execute_task_script(stop_script, "stop_docker.sh")
-        pass
+    run_container(task_dir, battle_id)
+    container_name = _get_container_name(battle_id)
+    container = client.containers.get(container_name)
+    # Run the setup script inside the container
+    exec_result = container.exec_run(
+        f"python3 /app/setup_cybench_env.py --task_dir {task_dir}",
+        stdout=True,
+        stderr=True,
+    )
+    output = exec_result.output.decode("utf-8")
+    json_result = parse_json_output(output)
+    if json_result is None:
+        print("Warning: Could not parse JSON output, trying text extraction")
+        return {"output": output, "prompt": None}
+    print(f"\033[32mCybench task setup complete\033[0m")
+    return json_result
 
 
 @tool
@@ -507,6 +267,19 @@ def destroy_container(
     except Exception as e:
         print(f"Error destroying container {container_name}: {e}")
         return False
+
+
+@tool
+def update_battle_process(stage: int, process: str) -> bool:
+    """
+    Update the battle process.
+    Stage: The stage of the game.
+    Process: The process of the game.
+    """
+    logger.info(
+        f"\033[95mUpdating battle process for stage {stage}: {process}\033[0m"
+    )
+    return True
 
 
 def _cleanup_network():

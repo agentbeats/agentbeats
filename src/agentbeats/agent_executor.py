@@ -10,13 +10,13 @@ import os
 from typing import Dict, List, Any, Optional, Callable
 
 from agents import (
-    Agent, 
-    Runner, 
-    function_tool, 
-    Model, 
-    ModelProvider, 
-    OpenAIChatCompletionsModel, 
-    set_tracing_disabled
+    Agent,
+    Runner,
+    function_tool,
+    Model,
+    ModelProvider,
+    OpenAIChatCompletionsModel,
+    set_tracing_disabled,
 )
 from agents.mcp import MCPServerSse
 from openai import AsyncOpenAI
@@ -36,12 +36,13 @@ __all__ = [
 
 
 def create_agent(
-        agent_name: str,
-        instructions: str,
-        model_type: str, 
-        model_name: str,
-        tools: Optional[List[Any]] = None,
-        mcp_servers: Optional[List[MCPServerSse]] = None) -> Agent:
+    agent_name: str,
+    instructions: str,
+    model_type: str,
+    model_name: str,
+    tools: Optional[List[Any]] = None,
+    mcp_servers: Optional[List[MCPServerSse]] = None,
+) -> Agent:
     """Create an Agent instance based on the model type and name."""
 
     agent_args = {
@@ -53,26 +54,36 @@ def create_agent(
 
     # openai agents, e.g. "o4-mini"
     if model_type == "openai":
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY").strip() # in case of empty \n
+        OPENAI_API_KEY = os.getenv(
+            "OPENAI_API_KEY"
+        ).strip()  # in case of empty \n
         if not OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is not set")
-        
+
         print("[AgentBeats] Using OpenAI model:", model_name)
         return Agent(**agent_args, model=model_name)
-        
+
     # openrouter agents, e.g. "anthropic/claude-3.5-sonnet"
     elif model_type == "openrouter":
-        OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY").strip() # in case of empty \n
+        OPENROUTER_API_KEY = os.getenv(
+            "OPENROUTER_API_KEY"
+        ).strip()  # in case of empty \n
         if not OPENROUTER_API_KEY:
             raise ValueError("OPENROUTER_API_KEY is not set")
-        
+
         print("[AgentBeats] Using OpenRouter model:", model_name)
         set_tracing_disabled(True)  # Disable tracing for OpenRouter models
         os.environ["OPENAI_TRACING_V2"] = "false"
-        openrouter_client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1", 
-                                        api_key=OPENROUTER_API_KEY)
+        openrouter_client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1", api_key=OPENROUTER_API_KEY
+        )
         openrouter_model_provider = OpenRouterModelProvider()
-        return Agent(**agent_args, model=openrouter_model_provider.get_model(model_name, openrouter_client))
+        return Agent(
+            **agent_args,
+            model=openrouter_model_provider.get_model(
+                model_name, openrouter_client
+            ),
+        )
 
     # no matching agents
     else:
@@ -81,20 +92,24 @@ def create_agent(
 
 class OpenRouterModelProvider(ModelProvider):
     """Provider for OpenRouter models, allowing dynamic model in openai-agents."""
-    def get_model(self, model_name: str, openrouter_client: AsyncOpenAI) -> Model:
+
+    def get_model(
+        self, model_name: str, openrouter_client: AsyncOpenAI
+    ) -> Model:
         return OpenAIChatCompletionsModel(
-            model=model_name, 
-            openai_client=openrouter_client
+            model=model_name, openai_client=openrouter_client
         )
 
 
 class BeatsAgent:
-    def __init__(self, 
-                 name: str, 
-                 agent_host: str, 
-                 agent_port: int, 
-                 model_type: str,
-                 model_name: str):
+    def __init__(
+        self,
+        name: str,
+        agent_host: str,
+        agent_port: int,
+        model_type: str,
+        model_name: str,
+    ):
         self.name = name
         self.agent_host = agent_host
         self.agent_port = agent_port
@@ -105,7 +120,7 @@ class BeatsAgent:
         self.mcp_url_list: List[str] = []
         self.agent_card_json = None
         self.app = None
-    
+
     def load_agent_card(self, card_path: str):
         """Load agent card from a TOML file."""
         with open(card_path, "rb") as f:
@@ -120,7 +135,9 @@ class BeatsAgent:
 
         # Ensure the agent card is loaded before running
         if not self.agent_card_json:
-            raise ValueError("Agent card not loaded. Please load an agent card before running.")
+            raise ValueError(
+                "Agent card not loaded. Please load an agent card before running."
+            )
 
         # Create the application instance
         self._make_app()
@@ -135,7 +152,7 @@ class BeatsAgent:
     def get_app(self) -> Optional[A2AStarletteApplication]:
         """Get the application instance for the agent."""
         return self.app
-    
+
     def _make_app(self) -> None:
         """Asynchronously create the application instance for the agent."""
         self.app = A2AStarletteApplication(
@@ -154,18 +171,20 @@ class BeatsAgent:
 
     def tool(self, name: str = None):
         """Decorator to register a function as a tool for the agent."""
+
         def decorator(func):
             # Use function name if no name provided
             tool_name = name or func.__name__
-            
+
             # Apply the @function_tool decorator from agents library
             # This creates the proper tool format for openai-agents
             tool_func = function_tool(name_override=tool_name)(func)
-            
+
             # Add to the tool list
             self.tool_list.append(tool_func)
-            
+
             return func
+
         return decorator
 
     def register_tool(self, func: Callable, *, name: str | None = None):
@@ -176,23 +195,32 @@ class BeatsAgent:
 
 
 class AgentBeatsExecutor(AgentExecutor):
-    def __init__(self, agent_card_json: Dict[str, Any], 
-                        model_type: str,
-                        model_name: str,
-                        mcp_url_list: Optional[List[str]] = None, 
-                        tool_list: Optional[List[Any]] = None):
-        """ (Shouldn't be called directly) 
-            Initialize the AgentBeatsExecutor with the MCP URL and agent card JSON. """
+    def __init__(
+        self,
+        agent_card_json: Dict[str, Any],
+        model_type: str,
+        model_name: str,
+        mcp_url_list: Optional[List[str]] = None,
+        tool_list: Optional[List[Any]] = None,
+    ):
+        """(Shouldn't be called directly)
+        Initialize the AgentBeatsExecutor with the MCP URL and agent card JSON.
+        """
         self.agent_card_json = agent_card_json
         self.model_type = model_type
         self.model_name = model_name
         self.chat_history: List[Dict[str, str]] = []
 
         self.mcp_url_list = mcp_url_list or []
-        self.mcp_list = [MCPServerSse(params={"url": url}) 
-                         for url in self.mcp_url_list]
+        self.mcp_list = [
+            MCPServerSse(
+                params={"url": url},
+                client_session_timeout_seconds=60,  # @luke: set it dynamically in the future
+            )
+            for url in self.mcp_url_list
+        ]
         self.tool_list = tool_list or []
-        
+
         # construct self.AGENT_PROMPT with agent_card_json
         self.AGENT_PROMPT = str(agent_card_json["description"])
         self.AGENT_PROMPT += "\n\n"
@@ -205,7 +233,7 @@ class AgentBeatsExecutor(AgentExecutor):
         """Initialize the main agent with the provided tools and MCP servers."""
         for mcp_server in self.mcp_list:
             await mcp_server.connect()
-        
+
         self.main_agent = create_agent(
             agent_name=self.agent_card_json["name"],
             model_type=self.model_type,
@@ -216,9 +244,10 @@ class AgentBeatsExecutor(AgentExecutor):
         )
 
         # Print agent instructions for debugging
-        print(f"[AgentBeatsExecutor] Initializing agent: {self.main_agent.name} with {len(self.tool_list)} tools and {len(self.mcp_list)} MCP servers.")
+        print(
+            f"[AgentBeatsExecutor] Initializing agent: {self.main_agent.name} with {len(self.tool_list)} tools and {len(self.mcp_list)} MCP servers."
+        )
         print(f"[AgentBeatsExecutor] Agent instructions: {self.AGENT_PROMPT}")
-        
 
     async def invoke_agent(self, context: RequestContext) -> str:
         """Run a single turn of conversation through *self.main_agent*."""
@@ -226,21 +255,25 @@ class AgentBeatsExecutor(AgentExecutor):
         # Must initialize here, because agent init and server run (mcp serve) must be in the same asyncio loop
         if not self.main_agent:
             await self._init_agent_and_mcp()
-        
+
         # print agent input
         print(f"[AgentBeatsExecutor] Agent input: {context.get_user_input()}")
 
         # Build contextual chat input for the runner
-        query_ctx = self.chat_history + [{
-            "content": context.get_user_input(),
-            "role": "user",
-        }]
+        query_ctx = self.chat_history + [
+            {
+                "content": context.get_user_input(),
+                "role": "user",
+            }
+        ]
 
         result = await Runner.run(self.main_agent, query_ctx, max_turns=30)
         self.chat_history = result.to_input_list()
 
         # print agent output
-        print(f"[AgentBeatsExecutor] Agent output: {result.final_output}")
+        print(
+            f"\033[33m[AgentBeatsExecutor] Agent output: {result.final_output}\033[0m"
+        )
 
         return result.final_output
 
@@ -251,7 +284,7 @@ class AgentBeatsExecutor(AgentExecutor):
     ) -> None:
         # make / get current task
         task = context.current_task
-        if task is None: # first chat
+        if task is None:  # first chat
             task = new_task(context.message)
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
