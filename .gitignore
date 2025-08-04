@@ -135,3 +135,6 @@ src/agentbeats_backend/assets/static/icons/*
 # --- CyberGym ---
 scenarios/cybergym/resources/cybergym/
 scenarios/cybergym/scripts/
+
+# --- CyBench ---
+scenarios/cybench/resources/cybench/
