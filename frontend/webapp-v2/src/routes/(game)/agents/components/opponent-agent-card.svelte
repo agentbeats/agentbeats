@@ -9,6 +9,7 @@
 
   export let agent: any;
   export let onDelete: (agentId: string, agentName: string) => void;
+  export let showDeleteButton: boolean = false;
 
   let battleCount = 0;
   let loadingBattles = true;
@@ -46,13 +47,15 @@
     
     <div class="flex gap-1 pt-6">
       <AddToBattleCart {agent} agentType="opponent" size="sm" />
-      <Button 
-        onclick={() => onDelete(agent.agent_id || agent.id, agent.register_info?.alias || 'this agent')}
-        class="btn-primary"
-        size="sm"
-      >
-        Delete
-      </Button>
+      {#if showDeleteButton}
+        <Button 
+          onclick={() => onDelete(agent.agent_id || agent.id, agent.register_info?.alias || 'this agent')}
+          class="btn-primary"
+          size="sm"
+        >
+          Delete
+        </Button>
+      {/if}
     </div>
   </CardContent>
 </Card> 

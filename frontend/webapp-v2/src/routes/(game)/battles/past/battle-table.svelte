@@ -137,15 +137,7 @@
             {/if}
           </Table.Head>
           <Table.Head>Opponents</Table.Head>
-          <Table.Head 
-            class="cursor-pointer select-none"
-            onclick={() => handleSort('created_by')}
-          >
-            Created By
-            {#if sortColumn === 'created_by'}
-              <span class="ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>
-            {/if}
-          </Table.Head>
+
           <Table.Head 
             class="cursor-pointer select-none"
             onclick={() => handleSort('created_at')}
@@ -191,10 +183,10 @@
                         loop: battle.opponent_agents.length > 3,
                       }}
                     >
-                      <Carousel.Content class="gap-8">
+                      <Carousel.Content class="gap-16">
                         {#each battle.opponent_agents as agent}
                           <Carousel.Item class="basis-35/100">
-                            <div class="p-1">
+                            <div class="p-4">
                               <AgentChip 
                                 agent={{
                                   identifier: agent.register_info?.alias || agent.agent_card?.name || 'Unknown',
@@ -213,7 +205,7 @@
                   <span class="text-gray-500">No opponents</span>
                 {/if}
               </Table.Cell>
-              <Table.Cell class="text-sm text-muted-foreground">{battle.created_by}</Table.Cell>
+
               <Table.Cell class="text-sm text-muted-foreground">{formatTimestamp(battle.created_at)}</Table.Cell>
               <Table.Cell>
                 <BattleTableActions 
@@ -226,7 +218,7 @@
           {/each}
         {:else}
           <Table.Row>
-            <Table.Cell colspan={6} class="h-24 text-center">
+            <Table.Cell colspan={5} class="h-24 text-center">
               No past battles found.
             </Table.Cell>
           </Table.Row>

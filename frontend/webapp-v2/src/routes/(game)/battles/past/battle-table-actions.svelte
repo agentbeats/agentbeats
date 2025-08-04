@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import { goto } from "$app/navigation";
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
+  import SwordsIcon from "@lucide/svelte/icons/swords";
   import { cartStore } from "$lib/stores/cart";
   import { participantSlotsStore } from "$lib/stores/participant-slots";
   import { toast } from "svelte-sonner";
@@ -96,6 +96,6 @@
     size="sm"
     title="Add battle agents to cart"
   >
-    <ShoppingCartIcon class="w-4 h-4" />
+    <SwordsIcon class="w-4 h-4" />
   </Button>
 </div> 

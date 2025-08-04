@@ -4,7 +4,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import AgentChip from './agent-chip.svelte';
-  import ShoppingCartIcon from "@lucide/svelte/icons/shopping-cart";
+  import SwordsIcon from "@lucide/svelte/icons/swords";
   import XIcon from "@lucide/svelte/icons/x";
   import { goto } from "$app/navigation";
   import { cartStore } from '$lib/stores/cart';
@@ -299,7 +299,7 @@
     class="relative h-16 w-16 rounded-full btn-primary shadow-lg hover:shadow-xl transition-all duration-200"
     title="Battle Cart"
   >
-    <ShoppingCartIcon class="w-8 h-8" />
+    <SwordsIcon class="w-8 h-8" />
     {#if cartCount > 0}
       <div class="absolute -top-1 -right-1 bg-white text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border border-gray-300">
         {cartCount}
@@ -330,7 +330,7 @@
       <div class="flex-1 overflow-y-auto p-4">
         {#if cartItems.length === 0}
           <div class="text-center py-8 text-muted-foreground">
-            <ShoppingCartIcon class="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <SwordsIcon class="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p class="text-sm">Your battle cart is empty</p>
             <p class="text-xs">Add agents to start a battle</p>
           </div>
