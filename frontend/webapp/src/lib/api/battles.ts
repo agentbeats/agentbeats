@@ -19,4 +19,18 @@ export async function createBattle(battleInfo: any) {
 		console.error('Failed to create battle:', error);
 		throw error;
 	}
+}
+
+export async function getAllBattles() {
+	try {
+		const res = await fetch('/api/battles');
+		if (!res.ok) {
+			const errorData = await res.json();
+			throw new Error(errorData.detail || 'Failed to fetch battles');
+		}
+		return await res.json();
+	} catch (error) {
+		console.error('Failed to fetch battles:', error);
+		throw error;
+	}
 } 

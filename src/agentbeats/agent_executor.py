@@ -4,10 +4,11 @@
 AgentBeats SDK implementation for the AgentBeats platform.
 """
 
+import os
+import json
 import tomllib
 import uvicorn
-import os
-from typing import Dict, List, Any, Optional, Callable
+from typing import *
 
 from agents import (
     Agent,
@@ -17,6 +18,14 @@ from agents import (
     ModelProvider,
     OpenAIChatCompletionsModel,
     set_tracing_disabled,
+    Agent,
+    Runner,
+    function_tool,
+    Model,
+    ModelProvider,
+    OpenAIChatCompletionsModel,
+    set_tracing_disabled,
+    RunHooks,
 )
 from agents.mcp import MCPServerSse
 from openai import AsyncOpenAI
@@ -28,6 +37,48 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.events import EventQueue
 from a2a.utils import new_task, new_agent_text_message
 from a2a.types import Part, TextPart, TaskState, AgentCard
+
+from .logging import update_battle_process
+
+
+class AgentBeatsHook(RunHooks):
+    """Custom hooks for AgentBeats to handle agent execution events."""
+
+    def __init__(self, battle_context: Dict[str, Any]):
+        super().__init__()
+        self.battle_context = battle_context
+
+    def on_tool_start(self, context, agent, tool):
+        update_battle_process(
+            battle_id=self.battle_context["battle_id"],
+            backend_url=self.battle_context["backend_url"],
+            message=f"Agent {agent.name} finished using tool {tool.name}.",
+            # detail=tool.params_json_schema,
+            reported_by=agent.name + " (from agentbeats sdk toolcall hooks)",
+        )
+        return super().on_tool_start(context, agent, tool)
+
+
+from .logging import update_battle_process
+
+
+class AgentBeatsHook(RunHooks):
+    """Custom hooks for AgentBeats to handle agent execution events."""
+
+    def __init__(self, battle_context: Dict[str, Any]):
+        super().__init__()
+        self.battle_context = battle_context
+
+    def on_tool_start(self, context, agent, tool):
+        update_battle_process(
+            battle_id=self.battle_context["battle_id"],
+            backend_url=self.battle_context["backend_url"],
+            message=f"Agent {agent.name} finished using tool {tool.name}.",
+            # detail=tool.params_json_schema,
+            reported_by=agent.name + " (from agentbeats sdk toolcall hooks)",
+        )
+        return super().on_tool_start(context, agent, tool)
+
 
 __all__ = [
     "BeatsAgent",
@@ -193,6 +244,32 @@ class BeatsAgent:
         self.tool_list.append(wrapped_tool)
         return wrapped_tool
 
+    # Will update in next version
+    # def _register_tool(self, func: Callable, name: str | None = None):
+    #     """Register a tool function with the agent."""
+    #     tool_name = name or func.__name__
+    #     wrapped = function_tool(name_override=tool_name)(func)
+    #     self.tool_list.append(wrapped)
+    #     return wrapped
+
+    # def tool(self, func: Callable | None = None, *, name: str | None = None):
+    #     """
+    #     Usage 1: @agent.tool                -> No-argument decorator
+    #     Usage 2: @agent.tool(name="Search") -> Argument decorator with name
+    #     Usage 3: agent.tool(func_obj)       -> Directly register a function
+    #     """
+    #     if func is None:
+    #         # @agent.tool(name="xxx"), a decorator with name argument
+    #         def decorator(f):                   # noqa: D401
+    #             self._register_tool(f, name=name)
+    #             return f                        # Keep the original function usable
+    #         return decorator
+    #     else:
+    #         # Supports both @agent.tool as a no-argument decorator and explicit call agent.tool(foo)
+    #         return self._register_tool(func, name=name)
+
+    # register_tool = tool  # Alias for backward compatibility
+
 
 class AgentBeatsExecutor(AgentExecutor):
     def __init__(
@@ -228,6 +305,8 @@ class AgentBeatsExecutor(AgentExecutor):
             self.AGENT_PROMPT += str(agent_card_json["skills"])
 
         self.main_agent = None
+        self.battle_context = None
+        self.battle_context_hook = None
 
     async def _init_agent_and_mcp(self):
         """Initialize the main agent with the provided tools and MCP servers."""
@@ -267,7 +346,12 @@ class AgentBeatsExecutor(AgentExecutor):
             }
         ]
 
-        result = await Runner.run(self.main_agent, query_ctx, max_turns=30)
+        result = await Runner.run(
+            self.main_agent,
+            query_ctx,
+            max_turns=30,
+            hooks=self.battle_context_hook,
+        )
         self.chat_history = result.to_input_list()
 
         # print agent output
@@ -282,17 +366,38 @@ class AgentBeatsExecutor(AgentExecutor):
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
+        """Execute the agent with the given context and event queue."""
+
+        # First try to parse battle context from the request
+        try:
+            raw_input_str = context.get_user_input()
+            raw_input_json = json.loads(raw_input_str)
+            self.battle_context = {
+                "frontend_agent_name": raw_input_json["agent_name"],
+                "agent_id": raw_input_json["agent_id"],
+                "battle_id": raw_input_json["battle_id"],
+                "backend_url": raw_input_json["backend_url"],
+            }
+            self.battle_context_hook = AgentBeatsHook(self.battle_context)
+            print(
+                "[AgentBeatsExecutor] Battle context parsed:",
+                self.battle_context,
+            )
+            return
+        except Exception as e:
+            pass
+
         # make / get current task
         task = context.current_task
         if task is None:  # first chat
             task = new_task(context.message)
             await event_queue.enqueue_event(task)
-        updater = TaskUpdater(event_queue, task.id, task.contextId)
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
 
         # push "working now" status
         await updater.update_status(
             TaskState.working,
-            new_agent_text_message("working...", task.contextId, task.id),
+            new_agent_text_message("working...", task.context_id, task.id),
         )
 
         # await llm response

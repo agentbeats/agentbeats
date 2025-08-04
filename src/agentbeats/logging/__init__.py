@@ -12,6 +12,7 @@ from .logging import (
     log_error,
     log_startup,
     log_shutdown,
+    update_battle_process
 )
 
 # Interaction history functions
@@ -30,6 +31,7 @@ __all__ = [
     'log_error',
     'log_startup',
     'log_shutdown',
+    'update_battle_process',
     
     # Interaction history
     'record_battle_event',

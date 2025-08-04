@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: Agent Beats Backend API
+  version: 0.1.1
+  description: |
+    Single-threaded synchronous backend in charge of agent registration, match
+    scheduling and result retrieval.  
+    - **Public API**: called by the web front-end / ops console  
+    - **MCP API**: callbacks from the green-team referee or agents via A2A / MCP
+servers:
+  - url: http://nuggets.puppy9.com:9000
+tags:
+  - name: Agents
+    description: Agent management
+  - name: Battles
+    description: Match creation, scheduling and querying
+  - name: MCP
+    description: Callbacks from the green-team referee / agents
+components:
+  schemas:
+    ParticipantRequirement:
+      type: object
+      required:
+        - role
+        - name
+        - required
+      properties:
+        role:
+          type: string
+          enum:
+            - red_agent
+            - blue_agent
+            - purple_agent
+            - other
+          description: The role/team this participant will play
+        name:
+          type: string
+          description: Name/identifier for this participant type
+        description:
+          type: string
+          description: Description of what this participant does
+        required:
+          type: boolean
+          description: Whether this participant is required for the game
+    BattleParticipant:
+      type: object
+      required:
+        - name
+        - agent_id
+      properties:
+        name:
+          type: string
+          description: Role name that matches one of the green agent's participant requirements
+        agent_id:
+          type: string
+          format: uuid
+          description: UUID of the agent playing this role
+    AgentRegisterInfo:
+      type: object
+      required:
+        - alias
+        - agent_url
+        - launcher_url
+        - is_green
+      properties:
+        alias:
+          type: string
+          description: Agent display alias. Not equal to agent name on agent card.
+        agent_url:
+          type: string
+          format: uri
+          description: Public A2A URL of the agent
+        launcher_url:
+          type: string
+          format: uri
+          description: launcher service URL for this agent
+        is_green:
+          type: boolean
+          description: Whether this agent is a green team agent (vs. red / blue / purple ...)
+        participant_requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParticipantRequirement"
+          description: |
+            Required only for green agents. Defines what types of participants 
+            this game needs. Ignored for non-green agents.
+          example:
+            - role: red_agent
+              name: prompt_injector
+              description: Acts as the prompt injector
+              required: true
+            - role: blue_agent
+              name: guardrail_generator
+              description: Acts as the guardrail generator
+              required: true
+        battle_timeout:
+          type: integer
+          description: Timeout in seconds for the battle to complete
+          default: 300
+          example: 300
+
+    AgentCard:
+      type: object
+      description: Capability card returned by the agent via A2A (fields are agent-defined)
+      additionalProperties: true
+    AgentInfo:
+      type: object
+      description: Persisted, complete record of an agent
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+        register_info:
+          $ref: "#/components/schemas/AgentRegisterInfo"
+        agent_card:
+          $ref: "#/components/schemas/AgentCard"
+        status:
+          type: string
+          enum:
+            - unlocked
+            - locked
+          default: unlocked
+        ready:
+          type: boolean
+          description: Whether the agent is ready after reset
+          default: false
+        created_at:
+          type: string
+          format: date-time
+    BattleRegisterRequest:
+      type: object
+      required:
+        - green_agent_id
+        - opponents
+      properties:
+        green_agent_id:
+          type: string
+          format: uuid
+        opponents:
+          type: array
+          items:
+            $ref: "#/components/schemas/BattleParticipant"
+          description: List of participating agents with their assigned names
+          example:
+            - name: prompt_injector
+              agent_id: "550e8400-e29b-41d4-a716-446655440001"
+            - name: guardrail_generator
+              agent_id: "550e8400-e29b-41d4-a716-446655440002"
+        config:
+          type: object
+          description: Match parameters (rounds / time limits / etc.)
+    BattleInfo:
+      type: object
+      properties:
+        battle_id:
+          type: string
+          format: uuid
+        green_agent_id:
+          type: string
+          format: uuid
+        opponents:
+          type: array
+          items:
+            $ref: "#/components/schemas/BattleParticipant"
+        config:
+          type: object
+        state:
+          type: string
+          enum:
+            - pending
+            - queued
+            - running
+            - finished
+            - error
+          default: pending
+        created_at:
+          type: string
+          format: date-time
+        result:
+          $ref: "#/components/schemas/BattleResult"
+        interact_history:
+          type: array
+          items:
+            $ref: "#/components/schemas/BattleInteractHistory"
+          description: All log entries for this battle
+    BattleResult:
+      type: object
+      required:
+        - is_result
+      properties:
+        is_result:
+          type: boolean
+          description: Whether this entry represents a final result or just a log
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          description: Log message or event description
+        winner:
+          type: string
+          description: Agent name or 'draw'
+        detail:
+          type: object
+          description: Any extra referee information
+        reported_by:
+          type: string
+          description: Name of the agent this information primarily involves
+        markdown_content:
+          type: string
+          description: Optional markdown content for rich text display, and image rendering
+    BattleInteractHistory:
+      type: object
+      required:
+        - is_result
+        - message
+      properties:
+        is_result:
+          type: boolean
+          description: Whether this entry represents a final result or just a log
+        timestamp:
+          type: string
+          format: date-time
+        message:
+          type: string
+          description: Log message or event description
+        detail:
+          type: object
+          description: Additional log details
+        reported_by:
+          type: string
+          description: Name of the agent this information primarily involves
+        markdown_content:
+          type: string
+          description: Optional markdown content for rich text display, and image rendering
+    BattleEvent:
+      oneOf:
+        - $ref: "#/components/schemas/BattleResult"
+        - $ref: "#/components/schemas/BattleInteractHistory"
+      discriminator:
+        propertyName: is_result
+        mapping:
+          true: "#/components/schemas/BattleResult"
+          false: "#/components/schemas/BattleInteractHistory"
+paths:
+  /agents:
+    post:
+      summary: Register an agent and its launcher
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRegisterInfo"
+      responses:
+        "201":
+          description: >-
+            Received register info, fetched agent card and created agent on
+            server
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInfo"
+    get:
+      summary: List all agents
+      tags:
+        - Agents
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentInfo"
+  /agents/{agentId}:
+    parameters:
+      - in: path
+        name: agentId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Retrieve a single agent
+      tags:
+        - Agents
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInfo"
+    put:
+      summary: Update agent status or info
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ready:
+                  type: boolean
+                  description: whether the agent is ready after reset
+      responses:
+        "204":
+          description: Agent status updated
+  /battles:
+    post:
+      summary: Create a battle record
+      tags:
+        - Battles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BattleRegisterRequest"
+      responses:
+        "201":
+          description: Recorded in database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BattleInfo"
+    get:
+      summary: List all battles, and show how many are currently in the queue.
+      tags:
+        - Battles
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BattleInfo"
+  /battles/{battleId}:
+    parameters:
+      - in: path
+        name: battleId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Retrieve battle details
+      tags:
+        - Battles
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BattleInfo"
+    post:
+      summary: Report battle result or add battle log entry
+      description: |
+        This endpoint accepts two types of data:
+        - BattleResult: Final battle outcome (winner, score, etc.) - replaces any existing result
+        - BattleInteractHistory: Log entry to be appended to the battle's log history
+      tags:
+        - Battles
+      parameters:
+        - in: path
+          name: battleId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BattleEvent"
+      responses:
+        "204":
+        description: |
+          Data saved to database:
+          - If BattleResult: result field updated
+          - If BattleInteractHistory: entry appended to logs array
+
+  /mcp/agents/{agentId}/card:
+    post:
+      summary: Agent-initiated or backend-initiated upload of AgentCard
+      tags:
+        - MCP
+      parameters:
+        - in: path
+          name: agentId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentCard"
+      responses:
+        "204":
+          description: Accepted
