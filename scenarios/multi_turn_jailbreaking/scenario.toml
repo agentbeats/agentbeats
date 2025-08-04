@@ -1,0 +1,51 @@
+[scenario]
+name = "multi_turn_jailbreaking"
+description = "Multi-turn Jailbreaking scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "Multi-turn Jailbreaking"
+card = "agents/green/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8444
+agent_host = "0.0.0.0"
+agent_port = 8445
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/green/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+[[agents]]
+name = "[Multi-turn Jailbreaking] Red Agent"
+card = "agents/red/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8446
+agent_host = "0.0.0.0"
+agent_port = 8447
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/red/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+[[agents]]
+name = "[Multi-turn Jailbreaking] Blue Agent"
+card = "agents/blue/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8448
+agent_host = "0.0.0.0"
+agent_port = 8449
+backend = "http://localhost:9000"
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = ["agents/blue/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+# Launch configuration
+[launch]
+mode = "tmux"  # Options: "tmux", "current", "separate"
+tmux_session_name = "agentbeats-multi_turn_jailbreaking"
+startup_interval = 2  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents
