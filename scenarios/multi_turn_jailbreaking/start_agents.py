@@ -11,29 +11,47 @@ import subprocess
 import threading
 import time
 import argparse
+import shlex
 from pathlib import Path
 
-# =============================================================================
-# Configuration Section - Modify your scenario commands here
-# =============================================================================
+SCENARIO_NAME = "multi_turn_jailbreaking"
 
-SCENARIO_NAME = "cybench"
+# ANSI color codes
+COLORS = {
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "blue": "\033[34m",
+    "yellow": "\033[33m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+    "white": "\033[37m",
+    "reset": "\033[0m",
+    "bold": "\033[1m",
+}
 
 # Configure your agent launch commands here. Example:
 AGENT_COMMANDS = [
     {
         "name": "MCP Server",
-        "command": "python resources/mcp_server.py --port 9003",
+        "command": "python resources/mcp_server.py --port 9004",
     },
     {
-        "name": "Green Agent",
-        "command": "agentbeats run agents/green_agent/agent_card.toml --launcher_port 8335 --agent_port 8336 --tool agents/green_agent/tools.py --mcp http://localhost:9001/sse",
+        "name": "Multi-turn Jailbreaking",
+        "color": "green",
+        "command": "agentbeats run agents/green/agent_card.toml --launcher_port 8444 --agent_port 8445 --mcp http://localhost:9001/sse --tool agents/green/tools.py",
     },
     {
-        "name": "Red Agent",
-        "command": "agentbeats run agents/red_agent_card.toml --launcher_port 8060 --agent_port 8061  --mcp http://localhost:9001/sse --mcp http://localhost:9003/sse --model_name o4-mini-2025-04-16",
+        "name": "[Multi-turn Jailbreaking] Red Agent",
+        "color": "red",
+        "command": "agentbeats run agents/red/agent_card.toml --launcher_port 8446 --agent_port 8447 --mcp http://localhost:9004/sse",
+    },
+    {
+        "name": "[Multi-turn Jailbreaking] Blue Agent",
+        "color": "blue",
+        "command": "agentbeats run agents/blue/agent_card.toml --launcher_port 8448 --agent_port 8449",
     },
 ]
+
 
 # =============================================================================
 # Implementation Section - No need to modify
