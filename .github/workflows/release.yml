@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'MANIFEST.in'
+      - 'README.md'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    concurrency: release-main
+    permissions:
+      contents: write # update tag & changelog
+    
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      # update version
+      - id: semrel
+        uses: python-semantic-release/python-semantic-release@v10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # continue if release
+      - name: Build distributions
+        if: steps.semrel.outputs.released == 'true'
+        run: |
+          pip install build
+          python -m build --sdist --wheel
+
+      # upload to PYPI
+      - name: Publish package distributions to PyPI
+        if: steps.semrel.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with: 
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

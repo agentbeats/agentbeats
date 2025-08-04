@@ -23,15 +23,15 @@ SCENARIO_NAME = "multi_turn_jailbreaking"
 AGENT_COMMANDS = [
     {
         "name": "Multi-turn Jailbreaking",
-        "command": "agentbeats run agents/green/agent_card.toml --launcher_port 8444 --agent_port 8445 --backend http://localhost:9000 --mcp http://localhost:9001/sse --tool agents/green/tools.py",
+        "command": "agentbeats run agents/green/agent_card.toml --launcher_port 8444 --agent_port 8445 --mcp http://localhost:9001/sse --tool agents/green/tools.py",
     },
     {
         "name": "[Multi-turn Jailbreaking] Red Agent",
-        "command": "agentbeats run agents/red/agent_card.toml --launcher_port 8446 --agent_port 8447 --backend http://localhost:9000 --mcp http://localhost:9003/sse",
+        "command": "agentbeats run agents/red/agent_card.toml --launcher_port 8446 --agent_port 8447 --mcp http://localhost:9003/sse",
     },
     {
         "name": "[Multi-turn Jailbreaking] Blue Agent",
-        "command": "agentbeats run agents/blue/agent_card.toml --launcher_port 8448 --agent_port 8449 --backend http://localhost:9000 --mcp http://localhost:9001/sse",
+        "command": "agentbeats run agents/blue/agent_card.toml --launcher_port 8448 --agent_port 8449 --mcp http://localhost:9001/sse",
     },
 ]
 

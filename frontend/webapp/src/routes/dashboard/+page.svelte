@@ -5,6 +5,7 @@
 	import { signOut, supabase } from "$lib/auth/supabase";
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
 	import UserProfile from "$lib/components/user-profile.svelte";
+	import { getAllBattles } from "$lib/api/battles";
 
 	export const title = 'Dashboard';
 
@@ -12,39 +13,50 @@
 	const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === 'true';
 
 	let unsubscribe: (() => void) | null = null;
+	let battles = $state<any[]>([]);
+	let battlesLoading = $state(true);
 
 	onMount(async () => {
 		// Skip authentication check if VITE_SKIP_AUTH is set to 'true'
 		if (SKIP_AUTH) {
 			console.log('Dashboard page: Skipping authentication (VITE_SKIP_AUTH=true)');
-			return;
+		} else {
+			// Check authentication using user store (works with dev login)
+			const unsubscribeUser = user.subscribe(($user) => {
+				if (!$user && !$loading) {
+					console.log('Dashboard page: No user found, redirecting to login');
+					goto('/login');
+				}
+			});
+			
+			// If no user in store, check Supabase session as fallback
+			if (!$user) {
+				const { data: { session } } = await supabase.auth.getSession();
+				if (!session) {
+					console.log('Dashboard page: No session found, redirecting to login');
+					goto('/login');
+					return;
+				}
+			}
+			
+			// Subscribe to auth state changes for logout detection
+			unsubscribe = user.subscribe(($user) => {
+				if (!$user && !$loading) {
+					console.log('Dashboard page: User logged out, redirecting to login');
+					goto('/login');
+				}
+			});
 		}
 
-		// Check authentication using user store (works with dev login)
-		const unsubscribeUser = user.subscribe(($user) => {
-			if (!$user && !$loading) {
-				console.log('Dashboard page: No user found, redirecting to login');
-				goto('/login');
-			}
-		});
-		
-		// If no user in store, check Supabase session as fallback
-		if (!$user) {
-			const { data: { session } } = await supabase.auth.getSession();
-			if (!session) {
-				console.log('Dashboard page: No session found, redirecting to login');
-				goto('/login');
-				return;
-			}
+		// Load battles
+		try {
+			battles = await getAllBattles();
+		} catch (error) {
+			console.error('Failed to load battles:', error);
+			battles = [];
+		} finally {
+			battlesLoading = false;
 		}
-		
-		// Subscribe to auth state changes for logout detection
-		unsubscribe = user.subscribe(($user) => {
-			if (!$user && !$loading) {
-				console.log('Dashboard page: User logged out, redirecting to login');
-				goto('/login');
-			}
-		});
 	});
 
 	onDestroy(() => {
@@ -67,113 +79,98 @@
 			console.error('Logout error:', error);
 		}
 	}
+
+	const username = $derived(SKIP_AUTH ? 'Test User' : ($user?.user_metadata?.name || $user?.email || 'User'));
 </script>
 
-<main class="flex-1 p-6 flex flex-col items-center justify-start">
-	{#if $loading && !SKIP_AUTH}
-		<div class="flex items-center justify-center h-64">
-			<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-			<span class="ml-2">Loading...</span>
+<main class="flex-1 p-6">
+	<div class="w-full max-w-7xl mx-auto">
+		<!-- Welcome Message -->
+		<div class="mb-6">
+			<h1 class="text-3xl font-bold text-gray-900">Welcome, {username}</h1>
 		</div>
-	{:else}
-		<div class="w-full max-w-6xl mx-auto">
-			<div class="flex justify-between items-center mb-6">
-				<h2 class="text-2xl font-bold">Dashboard</h2>
-				<div class="flex items-center gap-4">
-					{#if $user || SKIP_AUTH}
-						<span class="text-sm text-gray-600">
-							{#if SKIP_AUTH}
-								Welcome, Test User (Development Mode)
-							{:else}
-								Welcome, {$user?.user_metadata?.name || $user?.email || 'User'}
-							{/if}
-						</span>
-						<button 
-							on:click={handleLogout}
-							class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-						>
-							{#if SKIP_AUTH}
-								Development Mode
-							{:else}
-								Logout
-							{/if}
-						</button>
-					{:else}
-						<button 
-							on:click={() => goto('/login')}
-							class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-						>
-							Sign In
-						</button>
-					{/if}
-				</div>
-			</div>
-			
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<!-- User Profile or Login Prompt -->
-				<div class="lg:col-span-1">
-					{#if $user}
-						<UserProfile />
-					{:else}
-						<Card>
-							<CardHeader>
-								<CardTitle>Get Started</CardTitle>
-								<CardDescription>
-									Sign in to access your profile and battle stats!
-								</CardDescription>
-							</CardHeader>
-							<CardContent>
+
+		<!-- Two Cards Layout -->
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+			<!-- User Info Card (Wider) -->
+			<div class="lg:col-span-2">
+				<Card>
+					<CardHeader>
+						<CardTitle>User Information</CardTitle>
+						<CardDescription>Your profile and account details</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{#if $user || SKIP_AUTH}
+							<UserProfile />
+						{:else}
+							<div class="text-center py-8">
+								<p class="text-muted-foreground mb-4">Sign in to view your profile information</p>
 								<button 
 									on:click={() => goto('/login')}
-									class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+									class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
 								>
-									Sign In to Continue!
+									Sign In
 								</button>
-							</CardContent>
-						</Card>
-					{/if}
-				</div>
-				
-				<!-- Main Dashboard Content -->
-				<div class="lg:col-span-2 space-y-6">
-					<Card>
-						<CardHeader>
-							<CardTitle>Welcome to AgentBeats!</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{#if $user}
-								<p class="text-muted-foreground">
-									Here's your dashboard! Here, you'll see your battle history, agents, and ranking (do later).
-								</p>
-							{:else}
-								<p class="text-muted-foreground">
-									Sign in to start battling AI agents, track your performance, and climb the leaderboard.
-								</p>
-							{/if}
-						</CardContent>
-					</Card>
-					
-					<Card>
-						<CardHeader>
-							<CardTitle>Quick Actions</CardTitle>
-						</CardHeader>
-						<CardContent class="grid grid-cols-2 gap-4">
-							<button 
-								on:click={() => goto('/agents')}
-								class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-							>
-								Manage Agents
-							</button>
-							<button 
-								on:click={() => goto('/battles')}
-								class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-							>
-								View Battles
-							</button>
-						</CardContent>
-					</Card>
-				</div>
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
+			</div>
+
+			<!-- Past Battles Card -->
+			<div class="lg:col-span-1">
+				<Card>
+					<CardHeader>
+						<CardTitle>Past Battles</CardTitle>
+						<CardDescription>Your recent battle history</CardDescription>
+					</CardHeader>
+					<CardContent>
+						{#if battlesLoading}
+							<div class="flex items-center justify-center py-4">
+								<div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+								<span class="ml-2 text-sm">Loading...</span>
+							</div>
+						{:else if battles.length === 0}
+							<div class="text-center py-4">
+								<p class="text-muted-foreground text-sm">No battles found</p>
+								<button 
+									on:click={() => goto('/battles/stage-battle')}
+									class="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+								>
+									Start a Battle
+								</button>
+							</div>
+						{:else}
+							<div class="space-y-3">
+								{#each battles.slice(0, 5) as battle}
+									<div class="flex items-center justify-between p-3 border rounded-lg">
+										<div class="flex-1">
+											<p class="font-medium text-sm">{battle.battle_id?.slice(0, 8) || 'Unknown'}</p>
+											<p class="text-xs text-muted-foreground">
+												{battle.status || 'Unknown Status'}
+											</p>
+										</div>
+										<button 
+											on:click={() => goto(`/battles/${battle.battle_id}`)}
+											class="text-xs text-blue-600 hover:text-blue-800"
+										>
+											View
+										</button>
+									</div>
+								{/each}
+								{#if battles.length > 5}
+									<button 
+										on:click={() => goto('/battles')}
+										class="w-full text-sm text-blue-600 hover:text-blue-800 py-2"
+									>
+										View All Battles
+									</button>
+								{/if}
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
 			</div>
 		</div>
-	{/if}
+	</div>
 </main>

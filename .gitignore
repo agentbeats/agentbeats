@@ -121,16 +121,19 @@ logs/
 
 # --- Assets and Uploads ---
 # Auto-generated assets folder structure (ignore all uploaded files)
-src/agentbeats_backend/assets/uploads/avatars/users/*
-src/agentbeats_backend/assets/uploads/avatars/agents/*
-src/agentbeats_backend/assets/uploads/battles/*
+src/backend/assets/uploads/avatars/users/*
+src/backend/assets/uploads/avatars/agents/*
+src/backend/assets/uploads/battles/*
 
 # Static assets (ignore session files)
-src/agentbeats_backend/assets/static/images/*
-src/agentbeats_backend/assets/static/css/*
-src/agentbeats_backend/assets/static/js/*
-src/agentbeats_backend/assets/static/fonts/*
-src/agentbeats_backend/assets/static/icons/*
+src/backend/assets/static/images/*
+src/backend/assets/static/css/*
+src/backend/assets/static/js/*
+src/backend/assets/static/fonts/*
+src/backend/assets/static/icons/*
+
+# python build artifacts
+dist/
 
 # --- CyberGym ---
 scenarios/cybergym/resources/cybergym/

@@ -16,7 +16,7 @@ from .agent_executor import *
 from .agent_launcher import *
 from .utils.deploy.scenario_manager import ScenarioManager
 from . import get_registered_tools, tool
-from .utils.deploy.depoly import _deploy_current_terminal, _deploy_separate_terminals, _deploy_tmux
+from .utils.deploy.deploy import _deploy_current_terminal, _deploy_separate_terminals, _deploy_tmux
 
 
 def _check_environment():
@@ -27,7 +27,7 @@ def _check_environment():
     
     # Find directories
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    backend_dir = current_dir / "src" / "agentbeats_backend"
+    backend_dir = current_dir / "src" / "backend"
     frontend_dir = current_dir / "frontend" / "webapp"
     
     issues = []
@@ -65,7 +65,7 @@ def _check_environment():
         print("  ✓ Frontend dependencies installed")
     else:
         print("  ✗ Frontend dependencies NOT installed")
-        issues.append("Frontend dependencies not installed (run: agentbeats run_frontend --mode install)")
+        issues.append("Frontend dependencies not installed (run: agentbeats install_frontend)")
     
     # 3. Check root .env file
     print("\n[3/5] Checking root .env file...")
@@ -158,7 +158,6 @@ def _check_environment():
             for i, warning in enumerate(warnings, 1):
                 print(f"  {i}. {warning}")
     
-    # Quick fix suggestions
     if issues or warnings:
         print("\n" + "=" * 50)
         print("Fix Suggestions:")
@@ -167,18 +166,15 @@ def _check_environment():
     print("\n" + "=" * 50)
     return len(issues) == 0
 
-def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str):
+def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str, dev_login: bool):
     """Deploy AgentBeats with backend, frontend, and MCP server"""
     
     print(f"Deploying AgentBeats in {mode} mode with {launch_mode} launch...")
     print("=" * 50)
-    if backend_port != 9000 or mcp_port != 9001:
-        print(f"Warning: Backend port is set to {backend_port}, MCP port is set to {mcp_port}.")
-        print("Make sure your [mcp, frontend, agents] are configured to connect to these ports.")
     
     # Find directories
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    mcp_server_path = current_dir / "src" / "agentbeats_backend" / "mcp" / "mcp_server.py"
+    mcp_server_path = current_dir / "src" / "backend" / "mcp" / "mcp_server.py"
     
     if not mcp_server_path.exists():
         print(f"Error: MCP server not found at {mcp_server_path}")
@@ -186,46 +182,40 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int,
     
     # Route to different launch methods
     if launch_mode == "separate":
-        _deploy_separate_terminals(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+        _deploy_separate_terminals(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login)
     elif launch_mode == "tmux":
-        _deploy_tmux(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+        _deploy_tmux(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login)
     else:  # current
-        _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path)
+        _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login)
 
 
-def _run_frontend(mode: str, host: str, port: int):
+def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_url: str, dev_login: bool):
     """Start the AgentBeats frontend server"""
-    import subprocess
-    import os
-    import pathlib
-    
     # Find the frontend directory
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
-    frontend_dir = current_dir / "frontend" / "webapp"
+    frontend_dir = current_dir / "frontend" / webapp_version
     
     if not frontend_dir.exists():
         print(f"Error: Frontend directory not found at {frontend_dir}")
         print("Make sure you're running this from the AgentBeats project root.")
+        print(f"Available frontend directories: {list((current_dir / 'frontend').glob('*'))}")
         sys.exit(1)
-
-    if mode == "install":
-        print("Installing frontend dependencies...")
-        try:
-            subprocess.run("npm install", cwd=frontend_dir, check=True, shell=True)
-            print("Frontend dependencies installed successfully!")
-            sys.exit(0)
-        except subprocess.CalledProcessError as e:
-            print(f"Error installing frontend dependencies: {e}")
-            sys.exit(1)
 
     # Check if frontend installed
     if not (frontend_dir / "node_modules").exists():
-        print(f"Error: Frontend dependencies not installed. Run `agentbeats run_frontend --mode install` to install them.")
+        print(f"Error: Frontend dependencies not installed for {webapp_version}. Run `agentbeats install_frontend --webapp_version {webapp_version}` to install them.")
         sys.exit(1)
     
-    print(f"Starting AgentBeats Frontend in {mode} mode...")
+    print(f"Starting AgentBeats Frontend ({webapp_version}) in {mode} mode...")
     print(f"Frontend directory: {frontend_dir}")
-    print("Note: Assume backend is running at http://localhost:9000, if not, please go to `frontend/webapp/vite.config.js` to change the backend URL.")
+    print(f"Backend URL: {backend_url}")
+    
+    # Set environment variables
+    env = os.environ.copy()
+    env["BACKEND_URL"] = backend_url
+    if dev_login:
+        env["VITE_DEV_LOGIN"] = "true"
+        print("🚀 Development mode enabled - dev login button will be shown")
     
     try:
         if mode == "dev":
@@ -234,26 +224,26 @@ def _run_frontend(mode: str, host: str, port: int):
             # Run development server
             subprocess.run(
                 f"npm run dev -- --host {host} --port {str(port)}", 
-                cwd=frontend_dir, check=True, shell=True
+                cwd=frontend_dir, check=True, shell=True, env=env
             )
             
         elif mode == "build":
-            print("Building frontend for production...")
+            print(f"Building frontend ({webapp_version}) for production...")
             # Build for production
-            subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True)
+            subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True, env=env)
             print("Build completed successfully!")
             print(f"Built files are in {frontend_dir / 'build'}")
             
         elif mode == "preview":
-            print("Building and previewing production build...")
+            print(f"Building and previewing production build for {webapp_version}...")
             # First build
-            subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True)
+            subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True, env=env)
             # Then preview
             print(f"Preview server will be available at http://{host}:{port}")
             print("Press Ctrl+C to stop the server")
             subprocess.run(
                 f"npm run preview -- --host {host} --port {str(port)}", 
-                cwd=frontend_dir, check=True, shell=True
+                cwd=frontend_dir, check=True, shell=True, env=env
             )
             
     except subprocess.CalledProcessError as e:
@@ -266,27 +256,105 @@ def _run_frontend(mode: str, host: str, port: int):
         print("Make sure Node.js and npm are installed.")
         sys.exit(1)
 
-
-def _run_backend(host: str, port: int, reload: bool = False):
-    """Start the AgentBeats backend server"""
-    if port != 9000:
-        print(f"Warning: Backend port is set to {port}, which is not the default 9000. Make sure your [frontend, mcp, agents] are configured to connect to this port.")
+def _install_frontend(webapp_version: str):
+    current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
+    frontend_dir = current_dir / "frontend" / webapp_version
+    print(f"Installing frontend dependencies for {webapp_version}...")
     try:
-        print(f"Starting AgentBeats Backend...")
-        print(f"API will be available at http://{host}:{port}")
-        print("Press Ctrl+C to stop the server")
-        
-        # Use the module name for uvicorn to properly handle imports
-        uvicorn.run(
-            "agentbeats_backend.app:app",
-            host=host,
-            port=port,
-            reload=reload
-        )
-    except Exception as e:
-        print(f"Error starting backend: {e}")
-        print("Make sure all backend dependencies are installed.")
+        subprocess.run("npm install", cwd=frontend_dir, check=True, shell=True)
+        print(f"Frontend dependencies installed successfully for {webapp_version}!")
+        sys.exit(0)
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing frontend dependencies: {e}")
         sys.exit(1)
+
+
+def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool, dev_login: bool):
+    """Start the AgentBeats backend server and MCP server in the same terminal"""
+    
+    current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
+    mcp_server_path = current_dir / "src" / "backend" / "mcp" / "mcp_server.py"
+    
+    if not mcp_server_path.exists():
+        print(f"Error: MCP server not found at {mcp_server_path}")
+        sys.exit(1)
+    
+    # Global variables to track processes
+    backend_process = None
+    mcp_process = None
+    
+    def start_backend():
+        """Start the backend server"""
+        nonlocal backend_process
+        try:
+            # Set environment variable for dev login mode
+            if dev_login:
+                os.environ["DEV_LOGIN"] = "true"
+                print("🚀 Development mode enabled - authentication will be bypassed for all API calls")
+            
+            print(f"Starting AgentBeats Backend on http://{host}:{backend_port}")
+            uvicorn.run(
+                "backend.app:app",
+                host=host,
+                port=backend_port,
+                reload=reload
+            )
+        except Exception as e:
+            print(f"Error starting backend: {e}")
+            print("Make sure all backend dependencies are installed.")
+    
+    def start_mcp():
+        """Start the MCP server"""
+        nonlocal mcp_process
+        try:
+            print(f"Starting MCP server on port {mcp_port}")
+            mcp_process = subprocess.Popen(
+                [sys.executable, str(mcp_server_path),
+                 "--host", str(host),
+                 "--mcp_port", str(mcp_port),
+                 "--backend_url", f"http://{host}:{backend_port}"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True
+            )
+            
+            # Print MCP server output
+            for line in mcp_process.stdout:
+                print(f"[MCP] {line.rstrip()}")
+                
+        except Exception as e:
+            print(f"Error starting MCP server: {e}")
+            print("Make sure the MCP server script is available and dependencies are installed.")
+    
+    def signal_handler(signum, frame):
+        """Handle Ctrl+C to gracefully shutdown both servers"""
+        print("\nShutting down servers...")
+        if mcp_process:
+            mcp_process.terminate()
+            try:
+                mcp_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                mcp_process.kill()
+        sys.exit(0)
+    
+    # Register signal handler for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    print("Starting AgentBeats Backend and MCP Server...")
+    print(f"Backend: http://{host}:{backend_port}")
+    print(f"MCP Port: http://{host}:{mcp_port}")
+    print("Press Ctrl+C to stop both servers")
+    print("=" * 50)
+    
+    # Start MCP server in a separate thread
+    mcp_thread = threading.Thread(target=start_mcp, daemon=True)
+    mcp_thread.start()
+    
+    # Give MCP server a moment to start
+    time.sleep(2)
+    
+    # Start backend server (blocking)
+    start_backend()
 
 
 def _import_tool_file(path: str | pathlib.Path):
@@ -319,7 +387,7 @@ def _run_agent(card_path: str,
         _import_tool_file(file)
 
     # 2. Instantiate agent and register tools
-    agent = BeatsAgent(__name__, 
+    agent = BeatsAgent(name=__name__, 
                        agent_host=agent_host, 
                        agent_port=agent_port, 
                        model_type=model_type,
@@ -364,8 +432,6 @@ def main():
                        help="Model type to use, e.g. 'openai', 'openrouter', etc.")
     run_parser.add_argument("--model_name", default="o4-mini",
                        help="Model name to use, e.g. 'o4-mini', etc.")
-    run_parser.add_argument("--backend", required=True,
-                       help="Backend base URL to receive ready signal")
     run_parser.add_argument("--mcp",  action="append", default=[],
                        help="One or more MCP SSE server URLs")
     run_parser.add_argument("--tool", action="append", default=[],
@@ -373,35 +439,50 @@ def main():
     run_parser.add_argument("--reload", action="store_true")
 
     # load_scenario command
-    scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml")
-    scenario_parser.add_argument("scenario_name", help="Name of the scenario folder")
-    scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
-                                default="", help="Launch mode (default: tmux)")
-    scenario_parser.add_argument("--scenarios-root", help="Path to scenarios directory")
-    scenario_parser.add_argument("--backend", help="Override backend URL for all agents")
+    load_scenario_parser = sub_parser.add_parser("load_scenario", help="Launch a complete scenario from scenario.toml (agents, environment, etc.)")
+    load_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
+    load_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
+                                default="", help="Launching terminal; Will override scenario.toml's settings!")
+
+    # run_scenario command
+    run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml (requires frontend and backend to be running; eqivalant to `ab load_scenario` + register agent + start battle)")
+    run_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
+    run_scenario_parser.add_argument("--launch_mode", choices=["tmux", "separate", "current"],
+                                default="", help="Launching terminal; Will override scenario.toml's settings!")
+    run_scenario_parser.add_argument("--backend", help="Backend URL", default="http://localhost:9000")
+    run_scenario_parser.add_argument("--frontend", help="Frontend URL", default="http://localhost:5173")
 
     # run_backend command
     backend_parser = sub_parser.add_parser("run_backend", help="Start the AgentBeats backend server")
-    backend_parser.add_argument("--host", default="0.0.0.0", help="Backend host (default: 0.0.0.0)")
-    backend_parser.add_argument("--port", type=int, default=9000, help="Backend port (default: 9000)")
+    backend_parser.add_argument("--host", default="localhost", help="Backend host")
+    backend_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
+    backend_parser.add_argument("--mcp_port", type=int, default=9001, help=f"MCP port (default: 9001)")
     backend_parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
+    backend_parser.add_argument("--dev_login", action="store_true", help="Enable development mode - skip authentication for all API calls")
 
     # run_frontend command
     frontend_parser = sub_parser.add_parser("run_frontend", help="Start the AgentBeats frontend server")
-    frontend_parser.add_argument("--mode", choices=["dev", "build", "preview", "install"], default="dev", 
+    frontend_parser.add_argument("--mode", choices=["dev", "build", "preview"], default="dev", 
                                 help="Frontend mode: dev (development), build (production build), preview (build + preview), install (install dependencies)")
     frontend_parser.add_argument("--host", default="localhost", help="Frontend host (default: localhost)")
-    frontend_parser.add_argument("--port", type=int, default=5173, help="Frontend port (default: 5173)")
+    frontend_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
+    frontend_parser.add_argument("--webapp_version", default="webapp-v2", help="Frontend webapp version to run (default: webapp)")
+    frontend_parser.add_argument("--backend_url", required=True, help="Backend URL for API proxy")
+    frontend_parser.add_argument("--dev_login", action="store_true", help="Enable development mode - show dev login button on login page")
+
+    frontend_install_parser = sub_parser.add_parser("install_frontend", help="Install frontend dependencies")
+    frontend_install_parser.add_argument("--webapp_version", default="webapp-v2", help="Frontend webapp version to install (default: webapp-v2)")
 
     # deploy command
     deploy_parser = sub_parser.add_parser("deploy", help="Deploy complete AgentBeats stack (backend + frontend + MCP)")
     deploy_parser.add_argument("--mode", choices=["dev", "build"], default="dev",
                               help="Deployment mode: dev (development) or build (production)")
-    deploy_parser.add_argument("--launch-mode", choices=["current", "separate", "tmux"], default="current",
+    deploy_parser.add_argument("--launch_mode", choices=["current", "separate", "tmux"], default="current",
                               help="Launch mode: current (same terminal), separate (separate terminals), tmux (tmux session)")
-    deploy_parser.add_argument("--backend-port", type=int, default=9000, help="Backend port (default: 9000)")
-    deploy_parser.add_argument("--frontend-port", type=int, default=5173, help="Frontend port (default: 5173)")
-    deploy_parser.add_argument("--mcp-port", type=int, default=9001, help="MCP server port (default: 9001)")
+    deploy_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
+    deploy_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
+    deploy_parser.add_argument("--mcp_port", type=int, default=9001, help="MCP server port (default: 9001)")
+    deploy_parser.add_argument("--dev_login", action="store_true", help="Enable development mode")
 
     # check command
     check_parser = sub_parser.add_parser("check", help="Check AgentBeats environment setup")
@@ -416,31 +497,40 @@ def main():
                    model_type=args.model_type,
                    tool_files=args.tool, 
                    mcp_urls=args.mcp)
+    
     elif args.cmd == "run":
-        launcher = BeatsAgentLauncher(
-            agent_card=args.card,
-            launcher_host=args.launcher_host,
-            launcher_port=args.launcher_port,
-            agent_host=args.agent_host,
-            agent_port=args.agent_port,
-            model_type=args.model_type,
-            model_name=args.model_name,
-            mcp_list=args.mcp,
-            tool_list=args.tool,
-            backend_url=args.backend,
-        )
+        launcher = BeatsAgentLauncher(agent_card=args.card,
+                                      launcher_host=args.launcher_host,
+                                      launcher_port=args.launcher_port,
+                                      agent_host=args.agent_host,
+                                      agent_port=args.agent_port,
+                                      model_type=args.model_type,
+                                      model_name=args.model_name,
+                                      mcp_list=args.mcp,
+                                      tool_list=args.tool)
         launcher.run(reload=args.reload)
+    
     elif args.cmd == "load_scenario":
-        scenarios_root = pathlib.Path(args.scenarios_root) if args.scenarios_root else None
-        manager = ScenarioManager(scenarios_root)
-        manager.load_scenario(args.scenario_name, args.launch_mode, backend_override=args.backend)
+        manager = ScenarioManager(scenario_root=pathlib.Path(args.scenario_root))
+        manager.load_scenario(mode=args.launch_mode)
+    
+    elif args.cmd == "run_scenario":
+        manager = ScenarioManager(scenario_root=pathlib.Path(args.scenario_root))
+        manager.load_scenario(mode=args.launch_mode)
+        time.sleep(10) # TODO: should check aliveness here; can implement later
+        manager.start_battle(backend_url=args.backend, 
+                             frontend_url=args.frontend)
+
     elif args.cmd == "run_backend":
-        _run_backend(host=args.host, port=args.port, reload=args.reload)
+        _run_backend(host=args.host, backend_port=args.backend_port, mcp_port=args.mcp_port, reload=args.reload, dev_login=args.dev_login)
     elif args.cmd == "run_frontend":
-        _run_frontend(mode=args.mode, host=args.host, port=args.port)
+        _run_frontend(mode=args.mode, host=args.host, port=args.frontend_port, webapp_version=args.webapp_version, backend_url=args.backend_url, dev_login=args.dev_login)
+    elif args.cmd == "install_frontend":
+        _install_frontend(webapp_version=args.webapp_version)
     elif args.cmd == "deploy":
         _run_deploy(mode=args.mode, backend_port=args.backend_port, 
                    frontend_port=args.frontend_port, mcp_port=args.mcp_port, 
-                   launch_mode=args.launch_mode)
+                   launch_mode=args.launch_mode, dev_login=args.dev_login)
+    
     elif args.cmd == "check":
         _check_environment()
