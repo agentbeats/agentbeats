@@ -8,7 +8,7 @@ import atexit
 import platform
 import os
 
-def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, mcp_port: int, current_dir: pathlib.Path, mcp_server_path: pathlib.Path, dev_login: bool):
+def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, mcp_port: int, current_dir: pathlib.Path, mcp_server_path: pathlib.Path, dev_login: bool, public_url: str = None):
     """Deploy all services in the current terminal (original behavior)"""
     
     # Store process references for cleanup
@@ -65,6 +65,10 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
 
         if dev_login:
             backend_cmd.append("--dev_login")
+
+        if public_url:
+            backend_cmd.append("--public_url")
+            backend_cmd.append(public_url)
             
         backend_proc = subprocess.Popen(backend_cmd)
         processes.append(backend_proc)
@@ -102,7 +106,7 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
                 print(f"[Production] Starting frontend with PM2...")
                 
                 # Use existing production server setup logic
-                frontend_dir = current_dir / "frontend" / "webapp"
+                frontend_dir = current_dir / "frontend" / "webapp-v2"
                 subprocess.run("pm2 delete agentbeats-ssr", shell=True, capture_output=True)
                 subprocess.run(
                     f"pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon",  
@@ -176,7 +180,7 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
         sys.exit(0)
 
 
-def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int, mcp_port: int, current_dir: pathlib.Path, mcp_server_path: pathlib.Path, dev_login: bool):
+def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int, mcp_port: int, current_dir: pathlib.Path, mcp_server_path: pathlib.Path, dev_login: bool, public_url: str = None):
     """Deploy each service in a separate terminal window"""
    
     print("Starting services in separate terminals...")
@@ -184,9 +188,13 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
     system = platform.system()
     
     # Commands for each service
-    backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" + (" --reload" if mode == "dev" else "")
+    backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}"
+    if mode == "dev":
+        backend_cmd += " --reload"
     if dev_login:
         backend_cmd += " --dev_login"
+    if public_url:
+        backend_cmd += f" --public_url {public_url}"
 
 
     # Frontend command depends on mode
@@ -202,7 +210,7 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
             
             # Build first, then start with PM2
             build_cmd = f"{sys.executable} -m agentbeats run_frontend --mode build"
-            frontend_dir = current_dir / "frontend" / "webapp"
+            frontend_dir = current_dir / "frontend" / "webapp-v2"
             if system == "Windows":
                 pm2_cmd = f"pm2 delete agentbeats-ssr 2>nul || echo Cleaned && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
             else:
@@ -211,7 +219,7 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
             
         except (subprocess.CalledProcessError, FileNotFoundError):
             print("[Warning] PM2 not found, using preview mode...")
-            frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode preview --host localhost --frontend_port {frontend_port}"
+            frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --mode preview --host localhost --frontend_port {frontend_port} --backend_url http://localhost:{backend_port}"
     
     services = [
         ("Backend", backend_cmd),
@@ -276,7 +284,7 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
         print("Use 'pm2 stop agentbeats-ssr' to stop frontend.")
 
 
-def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int, current_dir: pathlib.Path, mcp_server_path: pathlib.Path, dev_login: bool):
+def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int, current_dir: pathlib.Path, mcp_server_path: pathlib.Path, dev_login: bool, public_url: str = None):
     """Deploy services in tmux session with split panes"""
     
     # Check if tmux is available
@@ -317,9 +325,13 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
         ], check=True)
         
         # Commands for each pane
-        backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" + (" --reload" if mode == "dev" else "")
+        backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}"
+        if mode == "dev":
+            backend_cmd += " --reload"
         if dev_login:
             backend_cmd += " --dev_login"
+        if public_url:
+            backend_cmd += f" --public_url {public_url}"
             
         # Frontend command depends on mode
         if mode == "dev":
@@ -332,7 +344,7 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
                 
                 # Build first, then start with PM2
                 build_cmd = f"{sys.executable} -m agentbeats run_frontend --mode build"
-                frontend_dir = current_dir / "frontend" / "webapp"
+                frontend_dir = current_dir / "frontend" / "webapp-v2"
                 pm2_cmd = f"npx pm2 delete agentbeats-ssr 2>/dev/null || true && npx pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
                 frontend_cmd = f"echo 'Building frontend...' && {build_cmd} && echo 'Starting with PM2...' && {pm2_cmd} && echo 'Frontend started with PM2. Use pm2 logs agentbeats-ssr to see logs.'"
                 
