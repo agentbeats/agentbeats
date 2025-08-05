@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import AgentChip from "$lib/components/agent-chip.svelte";
-  import { getAgentById } from "$lib/api/agents";
+  import { getBattleById } from "$lib/api/battles";
+  import { getAllAgents } from "$lib/api/agents";
   import { onMount } from "svelte";
 
   let { exampleBattle } = $props<{
@@ -14,51 +15,67 @@
     };
   }>();
 
+  let battleData = $state<any>(null);
   let greenAgent = $state<any>(null);
   let opponentAgents = $state<any[]>([]);
   let loading = $state(true);
+  let allAgents = $state<any[]>([]);
 
   onMount(async () => {
-    await loadAgentData();
+    await loadBattleData();
   });
 
-  async function loadAgentData() {
+  // Helper function to find agent by ID from the cached agents
+  function findAgentById(agentId: string): any | null {
+    return allAgents.find(agent => agent.agent_id === agentId || agent.id === agentId) || null;
+  }
+
+  async function loadBattleData() {
     try {
       loading = true;
       
-      // Load green agent
-      if (exampleBattle.green_agent_id) {
+      // Load all agents first
+      console.log('Loading all agents for example battle...');
+      allAgents = await getAllAgents();
+      console.log('All agents loaded:', allAgents.length);
+      
+      // Load the actual battle data using the battle ID
+      if (exampleBattle.battle_id) {
         try {
-          greenAgent = await getAgentById(exampleBattle.green_agent_id);
-        } catch (error) {
-          console.error('Failed to load green agent:', error);
-        }
-      }
-
-      // Load opponent agents
-      if (exampleBattle.opponents && exampleBattle.opponents.length > 0) {
-        opponentAgents = [];
-        for (const opponent of exampleBattle.opponents) {
-          try {
-            const agent = await getAgentById(opponent.agent_id);
-            opponentAgents.push({
-              ...agent,
-              role: opponent.name
-            });
-          } catch (error) {
-            console.error(`Failed to load opponent agent ${opponent.agent_id}:`, error);
-            // Add placeholder for failed agent
-            opponentAgents.push({
-              agent_id: opponent.agent_id,
-              register_info: { alias: `Unknown ${opponent.name}` },
-              agent_card: { name: `Unknown ${opponent.name}`, description: 'Agent data unavailable' },
-              role: opponent.name
-            });
+          console.log('Loading battle data for ID:', exampleBattle.battle_id);
+          battleData = await getBattleById(exampleBattle.battle_id);
+          console.log('Loaded battle data:', battleData);
+          
+          // Load green agent
+          if (battleData.green_agent_id) {
+            greenAgent = findAgentById(battleData.green_agent_id);
+            console.log('Green agent found:', greenAgent);
           }
+          
+          // Load opponent agents
+          if (battleData.opponents && battleData.opponents.length > 0) {
+            opponentAgents = [];
+            for (const opponent of battleData.opponents) {
+              const agent = findAgentById(opponent.agent_id);
+              if (agent) {
+                opponentAgents.push({
+                  ...agent,
+                  role: opponent.name
+                });
+              }
+            }
+            console.log('Opponent agents found:', opponentAgents.length);
+          }
+        } catch (error) {
+          console.error('Failed to load battle data:', error);
+          // Keep the example battle data as fallback
+          battleData = exampleBattle;
         }
       }
     } catch (error) {
       console.error('Failed to load example battle data:', error);
+      // Keep the example battle data as fallback
+      battleData = exampleBattle;
     } finally {
       loading = false;
     }
@@ -115,18 +132,10 @@
         />
       </div>
     {:else}
-      <!-- Fallback Green Agent -->
+      <!-- No Green Agent Data -->
       <div class="space-y-2">
         <div class="text-xs font-medium text-gray-500">Green Agent (Coordinator)</div>
-        <AgentChip 
-          agent={{
-            identifier: "WASP Agent",
-            description: "Advanced reasoning agent"
-          }}
-          agent_id="example-wasp"
-          isOnline={true}
-          clickable={false}
-        />
+        <div class="text-xs text-gray-500">Agent data not available</div>
       </div>
     {/if}
 
@@ -150,29 +159,10 @@
         </div>
       </div>
     {:else}
-      <!-- Fallback Opponent Agents -->
+      <!-- No Opponent Agents Data -->
       <div class="space-y-2 flex-1">
         <div class="text-xs font-medium text-gray-500">Opponents</div>
-        <div class="space-y-1">
-          <AgentChip 
-            agent={{
-              identifier: "CyberGym Agent", 
-              description: "Cybersecurity specialist"
-            }}
-            agent_id="example-cybergym"
-            isOnline={true}
-            clickable={false}
-          />
-          <AgentChip 
-            agent={{
-              identifier: "BountyBench Agent", 
-              description: "Creative problem solver"
-            }}
-            agent_id="example-bountybench"
-            isOnline={true}
-            clickable={false}
-          />
-        </div>
+        <div class="text-xs text-gray-500">No opponent data available</div>
       </div>
     {/if}
 
