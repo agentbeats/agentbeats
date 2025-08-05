@@ -13,11 +13,11 @@ The available commands can be listed using the command:
 
 ```bash
 usage: agentbeats [-h]
-                  {run_agent,run,load_scenario,run_scenario,run_backend,run_frontend,deploy,check}
+                  {run_agent,run,load_scenario,run_scenario,run_backend,run_frontend,deploy,check,install_frontend}
                   ...
 
 positional arguments:
-  {run_agent,run,load_scenario,run_scenario,run_backend,run_frontend,deploy,check}
+  {run_agent,run,load_scenario,run_scenario,run_backend,run_frontend,deploy,check,install_frontend}
     run_agent           Start an Agent from card
     run                 Launch an Agent with controller layer
     load_scenario       Launch a complete scenario from

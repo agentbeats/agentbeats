@@ -108,24 +108,16 @@ source ~/.bashrc
 
 #### 3. Supabase Configuration
 
-Create environment files for database and authentication:
+Prepare the `.env` file in the root directory with the following content:
 
-**Backend Configuration** - Create `src/backend/.env`:
-```env
+```plaintext
 SUPABASE_URL=https://tzaqdnswbrczijajcnks.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6YXFkbnN3YnJjemlqYWpjbmtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTM1NTUsImV4cCI6MjA2ODAyOTU1NX0.VexF6qS_T_6EOBFjPJzHdw1UggbsG_oPdBOmGqkeREk
 
-FRONTEND_URL=http://localhost:5173
-
-PORT=9000
-HOST=0.0.0.0
-```
-
-**Frontend Configuration** - Create `webapp/.env`:
-```env
 VITE_SUPABASE_URL=https://tzaqdnswbrczijajcnks.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6YXFkbnN3YnJjemlqYWpjbmtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NTM1NTUsImV4cCI6MjA2ODAyOTU1NX0.VexF6qS_T_6EOBFjPJzHdw1UggbsG_oPdBOmGqkeREk
 ```
+
 ### Script Setup (Recommended)
 
 For a quick and easy setup, we provide automated scripts to launch all services and agents.

@@ -12,7 +12,7 @@ launcher_port = 9052
 agent_host = "0.0.0.0"
 agent_port = 9053
 model_type = "openrouter"
-model_name = "openai/o4-mini"
+model_name = "openai/gpt-4o-mini"
 tools = ["blue_agent/tools.py"]
 mcp_servers = ["http://localhost:9001/sse"]
 
@@ -36,7 +36,7 @@ launcher_port = 9056
 agent_host = "0.0.0.0"
 agent_port = 9057
 model_type = "openrouter"
-model_name = "openai/o4-mini"
+model_name = "openai/gpt-4o-mini"
 tools = ["green_agent/tools.py"]
 mcp_servers = ["http://localhost:9001/sse"]
 is_green = true

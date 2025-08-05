@@ -1,8 +1,8 @@
-name: Agentbeats Automated Release
+name: Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'src/**'
       - 'pyproject.toml'
@@ -10,30 +10,33 @@ on:
       - 'README.md'
 
 jobs:
-  release-and-publish:
+  release:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release') }}
+    concurrency: release-main
     permissions:
-      contents: write
+      contents: write # update tag & changelog
+    
     steps:
-      - uses: actions/checkout@v3
-        with: { fetch-depth: 0 }
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
 
-      - uses: actions/setup-python@v4
-        with: { python-version: '3.x' }
+      # update version
+      - id: semrel
+        uses: python-semantic-release/python-semantic-release@v10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: pip install python-semantic-release build twine
-
-      - name: Bump version, tag, build & upload
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      # continue if release
+      - name: Build distributions
+        if: steps.semrel.outputs.released == 'true'
         run: |
-          semantic-release version --skip-build
-          git fetch --tags
-          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
-          git checkout "$latest_tag"
+          pip install build
           python -m build --sdist --wheel
-          python -m twine upload dist/*
+
+      # upload to PYPI
+      - name: Publish package distributions to PyPI
+        if: steps.semrel.outputs.released == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with: 
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
