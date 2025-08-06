@@ -9,8 +9,6 @@ import json
 import tomllib
 import uvicorn
 import functools
-import inspect
-import asyncio
 from typing import *
 
 from agents import (
@@ -213,7 +211,13 @@ class AgentBeatsExecutor(AgentExecutor):
         self.chat_history: List[Dict[str, str]] = []
 
         self.mcp_url_list = mcp_url_list or []
-        self.mcp_list = [MCPServerSse(params={"url": url}) 
+        self.mcp_list = [MCPServerSse(
+                                client_session_timeout_seconds=20,
+                                cache_tools_list=True, 
+                                params={"url": url, 
+                                        "timeout": 5, 
+                                        "sse_read_timeout": 20}
+                            ) 
                          for url in self.mcp_url_list]
         self.tool_list = tool_list or []
         
@@ -221,7 +225,11 @@ class AgentBeatsExecutor(AgentExecutor):
         self.AGENT_PROMPT = str(agent_card_json["description"])
         self.AGENT_PROMPT += "\n\n"
         if "skills" in agent_card_json:
-            self.AGENT_PROMPT += str(agent_card_json["skills"])
+            self.AGENT_PROMPT += "Here are your skills defined in your agent card:\n"
+            self.AGENT_PROMPT += json.dumps(agent_card_json["skills"], indent=2)
+            self.AGENT_PROMPT += "\n\n"
+            self.AGENT_PROMPT += "You should use these skills to help the user.\n"
+        self.AGENT_PROMPT += "Above is your system prompt. Please respond accordingly. The below will be your user input: \n"
 
         self.main_agent = None
         self.battle_context = None
@@ -309,6 +317,7 @@ class AgentBeatsExecutor(AgentExecutor):
                                   query_ctx, 
                                   max_turns=30)
         self.chat_history = result.to_input_list()
+        # print(self.chat_history)
 
         # print agent output
         print(f"[AgentBeatsExecutor] Agent output: {result.final_output}")
@@ -332,7 +341,7 @@ class AgentBeatsExecutor(AgentExecutor):
         # push "working now" status
         await updater.update_status(
             TaskState.working,
-            new_agent_text_message("working...", task.context_id, task.id),
+            new_agent_text_message("", task.context_id, task.id),
         )
 
         # try to parse battle_info from the request
@@ -345,6 +354,10 @@ class AgentBeatsExecutor(AgentExecutor):
                 "battle_id": raw_input_json["battle_id"],
                 "backend_url": raw_input_json["backend_url"],
             }
+            self.chat_history.append({
+                "content": f"Battle context received: battle_id={self.battle_context['battle_id']}, ",
+                "role": "system",
+            })
             # self.battle_context_hook = AgentBeatsHook(self.battle_context)
             print("[AgentBeatsExecutor] Battle context parsed:", self.battle_context)
             
