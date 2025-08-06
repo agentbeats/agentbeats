@@ -60,7 +60,7 @@ def _deploy_current_terminal(deploy_mode: str, backend_port: int, frontend_port:
                 "--host", "localhost",
                 "--backend_port", str(backend_port),
                 "--mcp_port", str(mcp_port),
-                "--reload"
+                # "--reload"
             ]
 
         if supabase_auth:
