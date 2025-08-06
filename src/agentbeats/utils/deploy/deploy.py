@@ -60,7 +60,7 @@ def _deploy_current_terminal(mode: str, backend_port: int, frontend_port: int, m
                 "--host", "localhost",
                 "--backend_port", str(backend_port),
                 "--mcp_port", str(mcp_port),
-                "--reload"
+                # "--reload"
             ]
 
         if dev_login:
@@ -184,7 +184,7 @@ def _deploy_separate_terminals(mode: str, backend_port: int, frontend_port: int,
     system = platform.system()
     
     # Commands for each service
-    backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" + (" --reload" if mode == "dev" else "")
+    backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" # + (" --reload" if mode == "dev" else "")
     if dev_login:
         backend_cmd += " --dev_login"
 
@@ -317,7 +317,7 @@ def _deploy_tmux(mode: str, backend_port: int, frontend_port: int, mcp_port: int
         ], check=True)
         
         # Commands for each pane
-        backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" + (" --reload" if mode == "dev" else "")
+        backend_cmd = f"{sys.executable} -m agentbeats run_backend --host {'127.0.0.1' if mode == 'build' else 'localhost'} --backend_port {backend_port} --mcp_port {mcp_port}" # + (" --reload" if mode == "dev" else "")
         if dev_login:
             backend_cmd += " --dev_login"
             

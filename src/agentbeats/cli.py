@@ -297,7 +297,7 @@ def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool, dev_
                 "backend.app:app",
                 host=host,
                 port=backend_port,
-                reload=reload
+                # reload=reload
             )
         except Exception as e:
             print(f"Error starting backend: {e}")
