@@ -2,17 +2,32 @@
 	import { signInWithGitHub, supabase } from "$lib/auth/supabase";
 	import { 
 		error as authError,
-		loading as authLoading
+		loading as authLoading,
+		user
 	} from "$lib/stores/auth";
 	import { goto } from "$app/navigation";
 	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
 	import { Github, MoveLeft, Zap } from "@lucide/svelte";
+	import { onMount } from 'svelte';
 
 	let localError = "";
 	
 	// Check if dev login is enabled
 	const isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+
+	// In dev mode, redirect immediately if user is already set
+	onMount(() => {
+		if (isDevMode) {
+			// Check if user is already authenticated
+			user.subscribe(currentUser => {
+				if (currentUser) {
+					console.log('Dev mode: User already authenticated, redirecting to dashboard');
+					goto('/dashboard');
+				}
+			});
+		}
+	});
 
 	async function handleGitHubLogin() {
 		localError = "";
@@ -32,19 +47,10 @@
 		console.log("Development login, signing in with dev user...");
 		
 		try {
-			const { data, error } = await supabase.auth.signInWithPassword({
-				email: 'dev@agentbeats.org',
-				password: 'devpassword'
-			});
-
-			if (error) {
-				console.error("Dev login error:", error);
-				localError = "Dev login failed: " + error.message;
-				return;
-			}
-
-			console.log("Dev login successful:", data);
-			// Supabase will handle the redirect automatically
+			// In dev mode, we don't need to actually call supabase
+			// The mock client will handle this, or we can set user directly
+			console.log("Dev login successful - redirecting to dashboard");
+			goto('/dashboard');
 			
 		} catch (err) {
 			console.error("Dev login error:", err);

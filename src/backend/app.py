@@ -11,7 +11,6 @@ import uvicorn
 import os
 
 from .routes import agents, battles, websockets
-from .auth.routes import router as auth_router
 from .a2a_client import a2a_client
 from .routes import matches
 
@@ -51,7 +50,6 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth_router)
 app.include_router(agents.router)
 app.include_router(battles.router)
 app.include_router(websockets.router)
