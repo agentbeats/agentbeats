@@ -556,7 +556,7 @@ async def check_launcher_status(request: Dict[str, Any]):
         
         launcher_url_clean = launcher_url.rstrip('/')
         
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             response = await client.get(f"{launcher_url_clean}/status")
             
             if response.status_code == 200:
