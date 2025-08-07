@@ -6,6 +6,13 @@ from datetime import datetime, timedelta
 
 class SupabaseAuth:
     def __init__(self):
+        # In dev login mode, skip supabase initialization
+        if os.getenv("DEV_LOGIN") == "true":
+            self.supabase_url = None
+            self.supabase_anon_key = None
+            self.client = None
+            return
+            
         self.supabase_url = os.getenv("SUPABASE_URL")
         self.supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
         
@@ -18,6 +25,11 @@ class SupabaseAuth:
         """
         Verify JWT token and return user data.
         """
+        # In dev mode, this method shouldn't be called, but return None if it is
+        if os.getenv("DEV_LOGIN") == "true":
+            print("Warning: verify_jwt called in dev mode, returning None")
+            return None
+            
         try:
             # Decode JWT without verification first to get user data
             decoded = jwt.decode(token, options={"verify_signature": False})
@@ -43,6 +55,15 @@ class SupabaseAuth:
         """
         Get user data by user ID.
         """
+        # In dev mode, return mock user data
+        if os.getenv("DEV_LOGIN") == "true":
+            return {
+                "id": "dev-user-id",
+                "email": "dev@agentbeats.org",
+                "app_metadata": {"provider": "dev"},
+                "user_metadata": {}
+            }
+            
         try:
             # For now, return basic user data
             # In production, you'd call Supabase admin API
@@ -61,6 +82,10 @@ class SupabaseAuth:
         """
         Sign out user (invalidate token).
         """
+        # In dev mode, always return success
+        if os.getenv("DEV_LOGIN") == "true":
+            return True
+            
         try:
             # In production, you'd call Supabase sign out
             # For now, just return success
