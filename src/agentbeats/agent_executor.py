@@ -32,7 +32,15 @@ from a2a.server.events import EventQueue
 from a2a.utils import new_task, new_agent_text_message
 from a2a.types import Part, TextPart, TaskState, AgentCard
 
-from .logging import update_battle_process
+from .logging import (
+    update_battle_process, 
+    set_battle_context, 
+    get_battle_context, 
+    get_battle_id, 
+    get_agent_id, 
+    get_frontend_agent_name, 
+    get_backend_url
+)
 
 # class AgentBeatsHook(RunHooks):
 #     """Custom hooks for AgentBeats to handle agent execution events."""
@@ -232,26 +240,25 @@ class AgentBeatsExecutor(AgentExecutor):
         self.AGENT_PROMPT += "Above is your system prompt. Please respond accordingly. The below will be your user input: \n"
 
         self.main_agent = None
-        self.battle_context = None
 
     def _wrap_tool_with_logging(self, tool_fn):
         """
         Wrap tool_fn with logging:
-        - Extract battle_id and backend_url from self.battle_context
+        - Extract battle_id and backend_url from battle_context
         - Log function parameters only once before calling
         - Return the result of tool_fn
         """
         def log(params_json: dict):
-            if not self.battle_context:  # if no battle context, skip logging
+            if not get_battle_context():  # if no battle context, skip logging
                 return
             try:
                 update_battle_process(
-                    battle_id=self.battle_context["battle_id"],
-                    backend_url=self.battle_context["backend_url"],
+                    battle_id=get_battle_id(),
+                    backend_url=get_backend_url(),
                     message=f"Calling tool {tool_fn.__name__}",
                     detail=params_json, 
                     reported_by=(
-                        self.battle_context.get("frontend_agent_name", "unknown")
+                        get_frontend_agent_name()
                         + " (agentbeats sdk toolcall hooks)"
                     ),
                 )
@@ -348,24 +355,21 @@ class AgentBeatsExecutor(AgentExecutor):
         try:
             raw_input_str = context.get_user_input()
             raw_input_json = json.loads(raw_input_str)
-            self.battle_context = {
+
+            set_battle_context({
                 "frontend_agent_name": raw_input_json["agent_name"],
                 "agent_id": raw_input_json["agent_id"],
                 "battle_id": raw_input_json["battle_id"],
                 "backend_url": raw_input_json["backend_url"],
-            }
-            self.chat_history.append({
-                "content": f"Battle context received: battle_id={self.battle_context['battle_id']}, ",
-                "role": "system",
             })
             # self.battle_context_hook = AgentBeatsHook(self.battle_context)
-            print("[AgentBeatsExecutor] Battle context parsed:", self.battle_context)
-            
-            reply_text = f"Agent {self.battle_context['frontend_agent_name']} is ready to battle!"
+            print("[AgentBeatsExecutor] Battle context parsed:", get_battle_context())
+
+            reply_text = f"Agent {get_frontend_agent_name()} is ready to battle!"
 
         # if battle_info is not provided (normal conversation), 
         # use the agent output as the reply text
-        except Exception as e:
+        except Exception:
             reply_text = await self.invoke_agent(context)
 
         # push final response
