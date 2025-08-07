@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0" version="27.2.0">
+  <diagram name="第 1 页" id="yRlwvheH94YCqA0lsmSC">
+    <mxGraphModel dx="2096" dy="830" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-1" value="" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="230" y="370" width="470" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-2" value="" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="290" y="410" width="390" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-5" value="A2A Starlette Server" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="250" y="380" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-6" value="A2A Agent Warpper (User Impl)" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="310" y="420" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-8" value="MCP" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="330" y="465" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" parent="1" source="AP3T2yx7zMJ1LtFptapf-14" target="JwILjWc9-AQ_-x498-Dt-2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-7" value="Ready" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="JwILjWc9-AQ_-x498-Dt-6" vertex="1" connectable="0">
+          <mxGeometry x="0.32" y="-3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-14" value="Launcher" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="20" y="380" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="AP3T2yx7zMJ1LtFptapf-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.005;entryY=0.16;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="AP3T2yx7zMJ1LtFptapf-14" target="AP3T2yx7zMJ1LtFptapf-1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-5" value="Reload&lt;div&gt;Custom Args (MCP URL)&lt;/div&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="AP3T2yx7zMJ1LtFptapf-15" vertex="1" connectable="0">
+          <mxGeometry x="-0.1077" y="1" relative="1" as="geometry">
+            <mxPoint y="26" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-1" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="JwILjWc9-AQ_-x498-Dt-2" target="AP3T2yx7zMJ1LtFptapf-14" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="80" y="270" as="sourcePoint" />
+            <mxPoint x="140" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-3" value="Reset&lt;br&gt;(OPTIONAL) MCP URL" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="JwILjWc9-AQ_-x498-Dt-1" vertex="1" connectable="0">
+          <mxGeometry x="-0.3018" relative="1" as="geometry">
+            <mxPoint x="-60" y="9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-2" value="Backend" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="20" y="260" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-8" value="MCP 2" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="480" y="465" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="JwILjWc9-AQ_-x498-Dt-9" value="User&#39;s Agent (Might launch with custom MCP)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="1" vertex="1" connectable="0">
+          <mxGeometry x="350" y="360" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
