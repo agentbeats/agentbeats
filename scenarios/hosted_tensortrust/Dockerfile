@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Stage 2: Runtime
 FROM python:3.11-slim
 # TODO: replace with actual repo URL
-LABEL org.opencontainers.image.source="TODO: https://github.com/yourrepo" 
+# LABEL org.opencontainers.image.source="TODO: https://github.com/yourrepo" 
 WORKDIR /workspace
 # copy build artifacts to runtime image, avoiding unnecessary re-installation
 COPY --from=builder /usr/local /usr/local
