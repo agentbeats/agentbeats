@@ -26,8 +26,20 @@ AGENT_COMMANDS = [
         "command": "python resources/mcp_server.py --port 9003",
     },
     {
-        "name": "Green Agent",
-        "command": "agentbeats run agents/green_agent/agent_card.toml --launcher_port 8335 --agent_port 8336 --tool agents/green_agent/tools.py --mcp http://localhost:9001/sse",
+        "name": "Green (Crypto)",
+        "command": "agentbeats run agents/green_agent/agent_card_crypto.toml --launcher_port 8335 --agent_port 8336 --tool agents/green_agent/tools.py --mcp http://localhost:9001/sse",
+    },
+    {
+        "name": "Green (Forensics)",
+        "command": "agentbeats run agents/green_agent/agent_card_forensics.toml --launcher_port 8337 --agent_port 8338 --tool agents/green_agent/tools.py --mcp http://localhost:9001/sse",
+    },
+    {
+        "name": "Green (Pwn)",
+        "command": "agentbeats run agents/green_agent/agent_card_pwn.toml --launcher_port 8339 --agent_port 8340 --tool agents/green_agent/tools.py --mcp http://localhost:9001/sse",
+    },
+    {
+        "name": "Green (Reverse Engineering)",
+        "command": "agentbeats run agents/green_agent/agent_card_rev.toml --launcher_port 8341 --agent_port 8342 --tool agents/green_agent/tools.py --mcp http://localhost:9001/sse",
     },
     {
         "name": "Red Agent",

@@ -368,7 +368,20 @@ class AgentBeatsExecutor(AgentExecutor):
     ) -> None:
         """Execute the agent with the given context and event queue."""
 
-        # First try to parse battle context from the request
+        # make / get current task first
+        task = context.current_task
+        if task is None:  # first chat
+            task = new_task(context.message)
+            await event_queue.enqueue_event(task)
+        updater = TaskUpdater(event_queue, task.id, task.context_id)
+
+        # push "working now" status
+        await updater.update_status(
+            TaskState.working,
+            new_agent_text_message("working...", task.context_id, task.id),
+        )
+
+        # try to parse battle_info from the request
         try:
             raw_input_str = context.get_user_input()
             raw_input_json = json.loads(raw_input_str)
@@ -383,25 +396,13 @@ class AgentBeatsExecutor(AgentExecutor):
                 "[AgentBeatsExecutor] Battle context parsed:",
                 self.battle_context,
             )
-            return
+
+            reply_text = f"Agent {self.battle_context['frontend_agent_name']} is ready to battle!"
+
+        # if battle_info is not provided (normal conversation),
+        # use the agent output as the reply text
         except Exception as e:
-            pass
-
-        # make / get current task
-        task = context.current_task
-        if task is None:  # first chat
-            task = new_task(context.message)
-            await event_queue.enqueue_event(task)
-        updater = TaskUpdater(event_queue, task.id, task.context_id)
-
-        # push "working now" status
-        await updater.update_status(
-            TaskState.working,
-            new_agent_text_message("working...", task.context_id, task.id),
-        )
-
-        # await llm response
-        reply_text = await self.invoke_agent(context)
+            reply_text = await self.invoke_agent(context)
 
         # push final response
         await updater.add_artifact(
