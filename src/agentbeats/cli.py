@@ -166,10 +166,10 @@ def _check_environment():
     print("\n" + "=" * 50)
     return len(issues) == 0
 
-def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str, dev_login: bool, public_url: str = None):
+def _run_deploy(deploy_mode: str, backend_port: int, frontend_port: int, mcp_port: int, launch_mode: str, supabase_auth: bool, public_url: str = None):
     """Deploy AgentBeats with backend, frontend, and MCP server"""
     
-    print(f"Deploying AgentBeats in {mode} mode with {launch_mode} launch...")
+    print(f"Deploying AgentBeats in {deploy_mode} mode with {launch_mode} launch...")
     print("=" * 50)
     
     # Find directories
@@ -182,19 +182,19 @@ def _run_deploy(mode: str, backend_port: int, frontend_port: int, mcp_port: int,
     
     # Route to different launch methods
     if launch_mode == "separate":
-        _deploy_separate_terminals(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login, public_url)
+        _deploy_separate_terminals(deploy_mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, supabase_auth, public_url)
     elif launch_mode == "tmux":
-        _deploy_tmux(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login, public_url)
+        _deploy_tmux(deploy_mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, supabase_auth, public_url)
     else:  # current
-        _deploy_current_terminal(mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, dev_login, public_url)
+        _deploy_current_terminal(deploy_mode, backend_port, frontend_port, mcp_port, current_dir, mcp_server_path, supabase_auth, public_url)
 
 
-def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_url: str, dev_login: bool):
+def _run_frontend(frontend_mode: str, host: str, port: int, webapp_version: str, backend_url: str, supabase_auth: bool):
     """Start the AgentBeats frontend server"""
     
     # Validate backend_url requirement based on mode
-    if mode in ["dev", "preview"] and not backend_url:
-        print(f"Error: --backend_url is required for {mode} mode")
+    if frontend_mode in ["dev", "preview"] and not backend_url:
+        print(f"Error: --backend_url is required for {frontend_mode} mode")
         sys.exit(1)
     # Find the frontend directory
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
@@ -211,7 +211,7 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_
         print(f"Error: Frontend dependencies not installed for {webapp_version}. Run `agentbeats install_frontend --webapp_version {webapp_version}` to install them.")
         sys.exit(1)
     
-    print(f"Starting AgentBeats Frontend ({webapp_version}) in {mode} mode...")
+    print(f"Starting AgentBeats Frontend ({webapp_version}) in {frontend_mode} mode...")
     print(f"Frontend directory: {frontend_dir}")
     if backend_url:
         print(f"Backend URL: {backend_url}")
@@ -220,12 +220,12 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_
     env = os.environ.copy()
     if backend_url:  # Only set if backend_url is provided
         env["BACKEND_URL"] = backend_url
-    if dev_login:
+    if not supabase_auth:
         env["VITE_DEV_LOGIN"] = "true"
         print("🚀 Development mode enabled - dev login button will be shown")
     
     try:
-        if mode == "dev":
+        if frontend_mode == "dev":
             print(f"Development server will be available at http://{host}:{port}")
             print("Press Ctrl+C to stop the server")
             # Run development server
@@ -234,14 +234,14 @@ def _run_frontend(mode: str, host: str, port: int, webapp_version: str, backend_
                 cwd=frontend_dir, check=True, shell=True, env=env
             )
             
-        elif mode == "build":
+        elif frontend_mode == "build":
             print(f"Building frontend ({webapp_version}) for production...")
             # Build for production
             subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True, env=env)
             print("Build completed successfully!")
             print(f"Built files are in {frontend_dir / 'build'}")
             
-        elif mode == "preview":
+        elif frontend_mode == "preview":
             print(f"Building and previewing production build for {webapp_version}...")
             # First build
             subprocess.run("npm run build", cwd=frontend_dir, check=True, shell=True, env=env)
@@ -276,7 +276,7 @@ def _install_frontend(webapp_version: str):
         sys.exit(1)
 
 
-def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool, dev_login: bool, public_url: str):
+def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool, supabase_auth: bool, public_url: str):
     """Start the AgentBeats backend server and MCP server in the same terminal"""
     
     current_dir = pathlib.Path(__file__).parent.parent.parent  # Go up to project root
@@ -307,7 +307,7 @@ def _run_backend(host: str, backend_port: int, mcp_port: int, reload: bool, dev_
         nonlocal backend_process
         try:
             # Set environment variable for dev login mode
-            if dev_login:
+            if not supabase_auth:
                 os.environ["DEV_LOGIN"] = "true"
                 print("🚀 Development mode enabled - authentication will be bypassed for all API calls")
 
@@ -506,32 +506,32 @@ def main():
     backend_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
     backend_parser.add_argument("--mcp_port", type=int, default=9001, help=f"MCP port (default: 9001)")
     backend_parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
-    backend_parser.add_argument("--dev_login", action="store_true", help="Enable development mode - skip authentication for all API calls")
+    backend_parser.add_argument("--supabase_auth", action="store_true", help="Enable Supabase authentication (default: use dev login mode)")
     backend_parser.add_argument("--public_url", help="Public URL for backend (e.g., http://yourdomain.com:9000).")
 
     # run_frontend command
     frontend_parser = sub_parser.add_parser("run_frontend", help="Start the AgentBeats frontend server")
-    frontend_parser.add_argument("--mode", choices=["dev", "build", "preview"], default="dev", 
+    frontend_parser.add_argument("--frontend_mode", choices=["dev", "build", "preview"], default="dev", 
                                 help="Frontend mode: dev (development), build (production build), preview (build + preview), install (install dependencies)")
     frontend_parser.add_argument("--host", default="localhost", help="Frontend host (default: localhost)")
     frontend_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
     frontend_parser.add_argument("--webapp_version", default="webapp-v2", help="Frontend webapp version to run (default: webapp)")
     frontend_parser.add_argument("--backend_url", help="Backend URL for API proxy (required for dev and preview modes)")
-    frontend_parser.add_argument("--dev_login", action="store_true", help="Enable development mode - show dev login button on login page")
+    frontend_parser.add_argument("--supabase_auth", action="store_true", help="Enable Supabase authentication (default: use dev login mode)")
 
     frontend_install_parser = sub_parser.add_parser("install_frontend", help="Install frontend dependencies")
     frontend_install_parser.add_argument("--webapp_version", default="webapp-v2", help="Frontend webapp version to install (default: webapp-v2)")
 
     # deploy command
     deploy_parser = sub_parser.add_parser("deploy", help="Deploy complete AgentBeats stack (backend + frontend + MCP)")
-    deploy_parser.add_argument("--mode", choices=["dev", "build"], default="dev",
+    deploy_parser.add_argument("--deploy_mode", choices=["dev", "build"], default="dev",
                               help="Deployment mode: dev (development) or build (production)")
     deploy_parser.add_argument("--launch_mode", choices=["current", "separate", "tmux"], default="current",
                               help="Launch mode: current (same terminal), separate (separate terminals), tmux (tmux session)")
     deploy_parser.add_argument("--backend_port", type=int, default=9000, help="Backend port (default: 9000)")
     deploy_parser.add_argument("--frontend_port", type=int, default=5173, help="Frontend port (default: 5173)")
     deploy_parser.add_argument("--mcp_port", type=int, default=9001, help="MCP server port (default: 9001)")
-    deploy_parser.add_argument("--dev_login", action="store_true", help="Enable development mode")
+    deploy_parser.add_argument("--supabase_auth", action="store_true", help="Enable Supabase authentication (default: use dev login mode)")
     deploy_parser.add_argument("--public_url", help="Public URL for backend (e.g., http://yourdomain.com:9000).", default=None)
 
     # check command
@@ -572,15 +572,15 @@ def main():
                              frontend_url=args.frontend)
 
     elif args.cmd == "run_backend":
-        _run_backend(host=args.host, backend_port=args.backend_port, mcp_port=args.mcp_port, reload=args.reload, dev_login=args.dev_login, public_url=args.public_url)
+        _run_backend(host=args.host, backend_port=args.backend_port, mcp_port=args.mcp_port, reload=args.reload, supabase_auth=args.supabase_auth, public_url=args.public_url)
     elif args.cmd == "run_frontend":
-        _run_frontend(mode=args.mode, host=args.host, port=args.frontend_port, webapp_version=args.webapp_version, backend_url=args.backend_url, dev_login=args.dev_login)
+        _run_frontend(frontend_mode=args.frontend_mode, host=args.host, port=args.frontend_port, webapp_version=args.webapp_version, backend_url=args.backend_url, supabase_auth=args.supabase_auth)
     elif args.cmd == "install_frontend":
         _install_frontend(webapp_version=args.webapp_version)
     elif args.cmd == "deploy":
-        _run_deploy(mode=args.mode, backend_port=args.backend_port, 
+        _run_deploy(deploy_mode=args.deploy_mode, backend_port=args.backend_port, 
                    frontend_port=args.frontend_port, mcp_port=args.mcp_port, 
-                   launch_mode=args.launch_mode, dev_login=args.dev_login, public_url=args.public_url)
+                   launch_mode=args.launch_mode, supabase_auth=args.supabase_auth, public_url=args.public_url)
     
     elif args.cmd == "check":
         _check_environment()
