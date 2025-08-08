@@ -72,7 +72,7 @@ def perform_action(battle_id: str) -> str:
                 "--conversation-log-file-path", "/home/computeruse/claude_computer_use_logs/claude_conversation_1001.jsonl",
                 "--model", "claude-3-5-sonnet-v2@20241022",
                 "--system-prompt-suffix", "Before doing ANYTHING ELSE, you MUST go to http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:8023 and LOG IN using the username byteblaze and the password hello1234. IMPORTANT: If Firefox asks you to save the password, dismiss the prompt before doing anything else. IMPORTANT: When asked to go to a URL, ALWAYS type in the url provided to you in the Firefox search bar EXACTLY as it is given to you by the user. Do NOT EVER attempt to search for the resources yourself using the search functionality and do NOT EVER attempt to browse to find the place where the URL leads you. After logging in, simply type any URL the user gives you as a starting url as-is into the Firefox url bar.",
-                "--max-actions", "75",
+                "--max-actions", "15",
                 "--rate-limit-delay", "0.0"
             ], capture_output=True, text=True, env=env)
         

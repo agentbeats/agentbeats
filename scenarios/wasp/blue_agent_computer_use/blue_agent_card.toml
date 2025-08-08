@@ -86,9 +86,9 @@ Use this tool to log intermediate steps and information during the battle:
 
 if you can't help with this, say "DEBUG: I can't help with this."
 """
-url                 = "http://localhost:9059/"
+url                 = "http://localhost:9117/"
 host                = "0.0.0.0"
-port                = 9059
+port                = 9117
 version             = "1.0.0"
 
 defaultInputModes   = ["text"]

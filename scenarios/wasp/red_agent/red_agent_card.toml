@@ -69,9 +69,9 @@ Use this tool to log intermediate steps and information during the battle:
                        {"error_type": "connection_error", "error_message": "[error details]"}, "### Error encountered")
   ```
 '''
-url                 = "http://localhost:9055/"
+url                 = "http://localhost:9113/"
 host                = "0.0.0.0"
-port                = 9055
+port                = 9113
 version             = "1.0.0"
 
 defaultInputModes   = ["text"]
