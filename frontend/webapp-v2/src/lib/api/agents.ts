@@ -447,21 +447,38 @@ export async function getMyAgentsWithAsyncLiveness(
   updateCallback: (agents: any[]) => void
 ): Promise<any[]> {
   try {
-    // 1. First, get basic info quickly
+    // 1. First, get basic info quickly and mark as loading liveness
     const basicAgents = await getMyAgents(false);
+    
+    // Add loading state to each agent
+    const agentsWithLoading = basicAgents.map(agent => ({
+      ...agent,
+      livenessLoading: true
+    }));
     
     // 2. Start async liveness check in background
     setTimeout(async () => {
       try {
         const liveAgents = await getMyAgents(true);
-        updateCallback(liveAgents);
+        // Remove loading state from updated agents
+        const updatedAgents = liveAgents.map(agent => ({
+          ...agent,
+          livenessLoading: false
+        }));
+        updateCallback(updatedAgents);
       } catch (error) {
         console.error('Failed to update agent liveness:', error);
-        // Don't throw - basic agents are already returned
+        // On error, still remove loading state
+        const errorAgents = basicAgents.map(agent => ({
+          ...agent,
+          livenessLoading: false,
+          live: false // Default to offline on error
+        }));
+        updateCallback(errorAgents);
       }
     }, 0);
     
-    return basicAgents;
+    return agentsWithLoading;
   } catch (error) {
     console.error('Failed to fetch agents with async liveness:', error);
     throw error;
@@ -477,21 +494,38 @@ export async function getAllAgentsWithAsyncLiveness(
   updateCallback: (agents: any[]) => void
 ): Promise<any[]> {
   try {
-    // 1. First, get basic info quickly
+    // 1. First, get basic info quickly and mark as loading liveness
     const basicAgents = await getAllAgents(false);
+    
+    // Add loading state to each agent
+    const agentsWithLoading = basicAgents.map(agent => ({
+      ...agent,
+      livenessLoading: true
+    }));
     
     // 2. Start async liveness check in background
     setTimeout(async () => {
       try {
         const liveAgents = await getAllAgents(true);
-        updateCallback(liveAgents);
+        // Remove loading state from updated agents
+        const updatedAgents = liveAgents.map(agent => ({
+          ...agent,
+          livenessLoading: false
+        }));
+        updateCallback(updatedAgents);
       } catch (error) {
         console.error('Failed to update agent liveness:', error);
-        // Don't throw - basic agents are already returned
+        // On error, still remove loading state
+        const errorAgents = basicAgents.map(agent => ({
+          ...agent,
+          livenessLoading: false,
+          live: false // Default to offline on error
+        }));
+        updateCallback(errorAgents);
       }
     }, 0);
     
-    return basicAgents;
+    return agentsWithLoading;
   } catch (error) {
     console.error('Failed to fetch agents with async liveness:', error);
     throw error;

@@ -264,6 +264,7 @@
                                   }} 
                                   agent_id={agent.agent_id || agent.id}
                                   isOnline={agent.live || false}
+                                  isLoading={agent.livenessLoading || false}
                                 />
                               </div>
                             </Carousel.Item>
@@ -330,6 +331,7 @@
                                 }} 
                                 agent_id={greenAgent.agent_id || greenAgent.id}
                                 isOnline={greenAgent.live || false}
+                                isLoading={greenAgent.livenessLoading || false}
                               />
                             {:else}
                               <p class="font-medium text-sm">Green Agent (ID: {battle.green_agent_id?.slice(0, 8)})</p>
