@@ -17,6 +17,7 @@ from a2a.types import (
     TaskStatusUpdateEvent,
 )
 import subprocess
+import sys
 
 
 @ab.tool
@@ -41,8 +42,8 @@ def run_evaluator(battle_id: str) -> str:
             "--slow-mo", "0"
         ], capture_output=True, text=True, cwd=visualwebarena_dir)
         
-        print("STDOUT (EVALUATOR OF ATTACKER TASK): " + result.stdout)
-        print("STDERR (EVALUATOR OF ATTACKER TASK): " + result.stderr)
+        print("STDOUT (EVALUATOR OF ATTACKER TASK): " + result.stdout, file=sys.__stdout__, flush=True)
+        print("STDERR (EVALUATOR OF ATTACKER TASK): " + result.stderr, file=sys.__stdout__, flush=True)
 
         result_2 = subprocess.run([
             python_path,
@@ -53,19 +54,24 @@ def run_evaluator(battle_id: str) -> str:
             "--slow-mo", "0"
         ], capture_output=True, text=True, cwd=visualwebarena_dir)
 
-        print("STDOUT (EVALUATOR OF USER TASK): " + result_2.stdout)
-        print("STDERR (EVALUATOR OF USER TASK): " + result_2.stderr)
+        print("STDOUT (EVALUATOR OF USER TASK): " + result_2.stdout, file=sys.__stdout__, flush=True)
+        print("STDERR (EVALUATOR OF USER TASK): " + result_2.stderr, file=sys.__stdout__, flush=True)
         
         return result.stdout + result_2.stdout
     
     except Exception as e:
-        print(f"FAILED: The evaluator failed: {e}")
+        print(f"FAILED: The evaluator failed: {e}", file=sys.__stdout__, flush=True)
         return f"FAILED: The evaluator failed: {e}"
 
 @ab.tool
 def reset_battle(battle_id: str) -> str:
     try:
-        print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'))
+        # import logging, sys
+
+        print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'), file=sys.__stdout__, flush=True)
+        print("IS BATTLE ID A FUNCTION: ", callable(ab.get_battle_id), file=sys.__stdout__, flush=True)
+        print("SAVED BATTLE ID: ", ab.get_battle_id(), file=sys.__stdout__, flush=True)
+
         return "Battle reset successfully" # TODO: Remove this
 
         # Reset the server
@@ -74,7 +80,7 @@ def reset_battle(battle_id: str) -> str:
             "http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:5001/reset-server",
             headers={"Authorization": f"Bearer {os.environ.get('RESET_AUTH_TOKEN')}"},
         )
-        print("Reset server response:", response.text)
+        print("Reset server response:", response.text, file=sys.__stdout__, flush=True)
 
         print("Waiting for 80 seconds for gitlab docker to start up")
         # Wait for 80 seconds for gitlab docker to start up
@@ -83,10 +89,5 @@ def reset_battle(battle_id: str) -> str:
         return "Battle reset successfully"
     
     except Exception as e:
-        print(f"FAILED: The reset battle failed: {e}")
+        print(f"FAILED: The reset battle failed: {e}", file=sys.__stdout__, flush=True)
         return f"FAILED: The reset battle failed: {e}"
-
-if __name__ == "__main__":
-    battle_id = "b4d373ea-b5d7-47be-9182-b5812f563e83"
-    # run_evaluator(battle_id)
-    reset_battle(battle_id)
