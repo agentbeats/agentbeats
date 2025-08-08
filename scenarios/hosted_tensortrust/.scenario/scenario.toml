@@ -1,0 +1,61 @@
+[scenario]
+name = "tensortrust"
+description = "TensorTrust AI security challenge scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "Blue Agent"
+card = "blue_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9010
+agent_host = "0.0.0.0"
+agent_port = 9011
+model_type = "openai"
+model_name = "o4-mini"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "Red Agent"
+card = "red_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9020
+agent_host = "0.0.0.0"
+agent_port = 9021
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "Green Agent"
+card = "green_agent/green_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9030
+agent_host = "0.0.0.0"
+agent_port = 9031
+model_type = "openai"
+model_name = "o4-mini"
+tools = ["green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+is_green = true
+
+[[agents.participant_requirements]]
+  role = "red_agent"
+  name = "prompt_injector"
+  required = true
+  participant_agent = "Red Agent"
+
+[[agents.participant_requirements]]
+  role = "blue_agent"
+  name = "guardrail_generator"
+  required = true
+  participant_agent = "Blue Agent"
+
+# Launch configuration
+[launch]
+mode = "separate"  # Options: "tmux", "separate", "current"
+tmux_session_name = "agentbeats-tensortrust"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents

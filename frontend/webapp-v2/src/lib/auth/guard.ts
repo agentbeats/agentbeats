@@ -2,8 +2,17 @@ import { goto } from '$app/navigation';
 import { user, loading } from '$lib/stores/auth';
 import { supabase } from '$lib/auth/supabase';
 
+const isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+
 export function requireAuth() {
   return new Promise<void>((resolve, reject) => {
+    // In dev mode, always allow access
+    if (isDevMode) {
+      console.log('Auth guard: Dev mode enabled, allowing access');
+      resolve();
+      return;
+    }
+    
     const unsubscribe = loading.subscribe(($loading) => {
       if (!$loading) {
         unsubscribe();
@@ -31,6 +40,12 @@ export function createAuthGuard() {
   let unsubscribe: (() => void) | null = null;
   
   const startGuard = () => {
+    // In dev mode, do nothing
+    if (isDevMode) {
+      console.log('Auth guard: Dev mode enabled, skipping guard');
+      return;
+    }
+    
     // Clean up existing subscription
     if (unsubscribe) {
       unsubscribe();
@@ -65,7 +80,15 @@ export function createAuthGuard() {
 
 // Simple auth guard for use in Svelte components
 export function useAuthGuard() {
-  let isAuthenticated = false;
+  let isAuthenticated = isDevMode; // Always authenticated in dev mode
+  
+  // In dev mode, skip user subscription
+  if (isDevMode) {
+    return {
+      isAuthenticated: true,
+      unsubscribe: () => {}
+    };
+  }
   
   // Subscribe to user store
   const unsubscribe = user.subscribe(($user) => {
@@ -83,6 +106,15 @@ export function useAuthGuard() {
 }
 
 export async function getCurrentUser() {
+  // In dev mode, return mock user
+  if (isDevMode) {
+    return {
+      id: 'dev-user-id',
+      email: 'dev@agentbeats.org',
+      user_metadata: { name: 'Dev User' }
+    };
+  }
+  
   try {
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     return currentUser;
@@ -93,6 +125,11 @@ export async function getCurrentUser() {
 }
 
 export async function isUserAuthenticated(): Promise<boolean> {
+  // In dev mode, always return true
+  if (isDevMode) {
+    return true;
+  }
+  
   try {
     const { data: { session } } = await supabase.auth.getSession();
     return !!session;
