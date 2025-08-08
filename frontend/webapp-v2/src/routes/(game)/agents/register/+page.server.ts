@@ -37,37 +37,46 @@ export const actions: Actions = {
     }
 
     try {
-      // Get the session from the request cookies
-      const sessionCookie = event.cookies.get('agentbeats-auth');
-      console.log('Session cookie found:', !!sessionCookie);
-      console.log('Available cookies:', Array.from(event.cookies.getAll()).map(c => c.name));
-      
-      if (!sessionCookie) {
-        return fail(401, {
-          form,
-          error: 'No session found'
-        });
-      }
-
-      // Parse the session data to get the access token
+      // Check if we're in dev_login mode
+      const isDevMode = process.env.VITE_DEV_LOGIN === "true";
       let accessToken: string | null = null;
-      try {
-        const sessionData = JSON.parse(sessionCookie);
-        accessToken = sessionData.access_token;
-        console.log('Access token extracted:', !!accessToken);
-      } catch (error) {
-        console.error('Failed to parse session data:', error);
-        return fail(401, {
-          form,
-          error: 'Invalid session data'
-        });
-      }
+      
+      if (isDevMode) {
+        // In dev mode, use mock access token
+        accessToken = 'dev-access-token';
+        console.log('Dev mode enabled, using mock access token');
+      } else {
+        // Production mode: Get the session from the request cookies
+        const sessionCookie = event.cookies.get('agentbeats-auth');
+        console.log('Session cookie found:', !!sessionCookie);
+        console.log('Available cookies:', Array.from(event.cookies.getAll()).map(c => c.name));
+        
+        if (!sessionCookie) {
+          return fail(401, {
+            form,
+            error: 'No session found'
+          });
+        }
 
-      if (!accessToken) {
-        return fail(401, {
-          form,
-          error: 'No access token found in session'
-        });
+        // Parse the session data to get the access token
+        try {
+          const sessionData = JSON.parse(sessionCookie);
+          accessToken = sessionData.access_token;
+          console.log('Access token extracted:', !!accessToken);
+        } catch (error) {
+          console.error('Failed to parse session data:', error);
+          return fail(401, {
+            form,
+            error: 'Invalid session data'
+          });
+        }
+
+        if (!accessToken) {
+          return fail(401, {
+            form,
+            error: 'No access token found in session'
+          });
+        }
       }
 
       const requestBody = {

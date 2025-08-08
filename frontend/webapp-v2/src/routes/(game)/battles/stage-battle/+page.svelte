@@ -11,6 +11,7 @@
   import { toast } from 'svelte-sonner';
   import { onMount, onDestroy } from 'svelte';
   import { supabase } from '$lib/auth/supabase';
+  import { getAllAgentsWithAsyncLiveness } from '$lib/api/agents';
 
   onMount(() => {
     const prev = document.body.style.overflow;
@@ -97,43 +98,40 @@
       agentsLoading = true;
       agentsError = null;
       
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-      
-      const response = await fetch('/api/agents', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
+      // Use layered loading for better performance
+      const rawAgents = await getAllAgentsWithAsyncLiveness((updatedAgents) => {
+        // This callback will be called when liveness data is ready
+        console.log('Stage battle agents liveness updated:', updatedAgents);
+        updateAgentsData(updatedAgents);
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch agents: ${response.statusText}`);
-      }
+      console.log('Stage battle loaded basic agent info:', rawAgents);
+      updateAgentsData(rawAgents);
       
-      const rawAgents = await response.json();
-      console.log('Raw agents from API:', rawAgents);
-      
-      // Transform the data to match expected format
-      agents = rawAgents.map((agent: any) => ({
-        agent_id: agent.agent_id || agent.id,
-        name: agent.register_info?.alias || agent.agent_card?.name || 'Unnamed Agent',
-        register_info: agent.register_info || {},
-        status: agent.status || 'unlocked',
-        agent_card: agent.agent_card || {},
-        live: agent.live || false
-      }));
-      
-      // Filter agents by type
-      greenAgents = agents.filter((agent: any) => agent.register_info.is_green);
-      opponentAgents = agents.filter((agent: any) => !agent.register_info.is_green);
-      
-      console.log('Loaded agents:', { agents, greenAgents, opponentAgents });
     } catch (error) {
       console.error('Error loading agents:', error);
       agentsError = error instanceof Error ? error.message : 'Failed to load agents';
     } finally {
       agentsLoading = false;
     }
+  }
+  
+  function updateAgentsData(rawAgents: any[]) {
+    // Transform the data to match expected format
+    agents = rawAgents.map((agent: any) => ({
+      agent_id: agent.agent_id || agent.id,
+      name: agent.register_info?.alias || agent.agent_card?.name || 'Unnamed Agent',
+      register_info: agent.register_info || {},
+      status: agent.status || 'unlocked',
+      agent_card: agent.agent_card || {},
+      live: agent.live || false
+    }));
+    
+    // Filter agents by type
+    greenAgents = agents.filter((agent: any) => agent.register_info.is_green);
+    opponentAgents = agents.filter((agent: any) => !agent.register_info.is_green);
+    
+    console.log('Updated agents data:', { agents, greenAgents, opponentAgents });
   }
 
   function handleRoleAssign(roleName: string, agentId: string) {

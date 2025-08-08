@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getAllAgents } from "$lib/api/agents";
+  import { getAllAgentsWithAsyncLiveness } from "$lib/api/agents";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Spinner } from "$lib/components/ui/spinner";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -101,34 +101,44 @@
       error = null;
       console.log('Loading agents...');
       
-      const apiAgents = await getAllAgents(true); // Include liveness check
-      console.log('Raw agents from API:', apiAgents);
+      // Use layered loading: get basic info first, then update with liveness
+      const apiAgents = await getAllAgentsWithAsyncLiveness((updatedAgents) => {
+        // This callback will be called when liveness data is ready
+        console.log('Directory agents liveness updated:', updatedAgents);
+        updateAgentsData(updatedAgents);
+      });
       
-      // Store raw agents for carousels
-      rawAgents = apiAgents;
-      
-      // Transform the data for the table
-      agents = apiAgents.map((agent: any) => ({
-        id: agent.agent_id || agent.id || 'unknown', // Use same pattern as original webapp
-        name: agent.register_info?.alias || agent.agent_card?.name || 'Unnamed Agent',
-        description: agent.agent_card?.description || 'No description available',
-        elo_rating: agent.elo?.rating || 0,
-        win_rate: agent.elo?.stats?.win_rate || 0,
-        battles: agent.elo?.battle_history?.length || 0,
-        created_by: agent.created_by || 'Unknown',
-        is_green: agent.register_info?.is_green || false,
-        live: agent.live || false
-      }));
-      
-      console.log('Transformed agents:', agents);
+      console.log('Directory loaded basic agent info:', apiAgents);
+      updateAgentsData(apiAgents);
     } catch (err) {
       console.error('Failed to load agents:', err);
       error = err instanceof Error ? err.message : 'Failed to load agents';
       agents = [];
+      rawAgents = [];
     } finally {
       loading = false;
       console.log('Loading finished. Loading state:', loading);
     }
+  }
+  
+  function updateAgentsData(apiAgents: any[]) {
+    // Store raw agents for carousels
+    rawAgents = apiAgents;
+    
+    // Transform the data for the table
+    agents = apiAgents.map((agent: any) => ({
+      id: agent.agent_id || agent.id || 'unknown',
+      name: agent.register_info?.alias || agent.agent_card?.name || 'Unnamed Agent',
+      description: agent.agent_card?.description || 'No description available',
+      elo_rating: agent.elo?.rating || 0,
+      win_rate: agent.elo?.stats?.win_rate || 0,
+      battles: agent.elo?.battle_history?.length || 0,
+      created_by: agent.created_by || 'Unknown',
+      is_green: agent.register_info?.is_green || false,
+      live: agent.live || false
+    }));
+    
+    console.log('Updated agents data:', agents);
   }
 </script>
 
