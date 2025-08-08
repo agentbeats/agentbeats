@@ -14,6 +14,7 @@ services:
 
     ports:
       # TODO: only map necessary agent ports
+      # TODO: make port read from env/arg
       # TODO: make it configurable for more mcps
       - "9010-9099:9010-9099" # agents
       - "9000:9000" # backend
