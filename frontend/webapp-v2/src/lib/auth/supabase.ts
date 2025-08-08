@@ -2,16 +2,68 @@ import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient, User, Session, AuthError } from '@supabase/supabase-js'
 import { writable } from 'svelte/store'
 
+// Check if we're in dev mode first
+const isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+
+// Mock user data for dev mode
+const mockUser: User = {
+  id: 'dev-user-id',
+  email: 'dev@agentbeats.org',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  app_metadata: { provider: 'dev' },
+  user_metadata: { name: 'Dev User' },
+  aud: 'authenticated',
+  confirmed_at: new Date().toISOString(),
+  email_confirmed_at: new Date().toISOString()
+};
+
+const mockSession: Session = {
+  access_token: 'dev-access-token',
+  refresh_token: 'dev-refresh-token',
+  expires_in: 3600,
+  expires_at: Math.floor(Date.now() / 1000) + 3600,
+  token_type: 'bearer',
+  user: mockUser
+};
+
+// Create mock Supabase client for dev mode
+function createMockSupabaseClient(): SupabaseClient {
+  return {
+    auth: {
+      getSession: async () => ({ data: { session: mockSession }, error: null }),
+      getUser: async () => ({ data: { user: mockUser }, error: null }),
+      signInWithOAuth: async () => ({ data: { user: mockUser, session: mockSession }, error: null }),
+      signInWithPassword: async () => ({ data: { user: mockUser, session: mockSession }, error: null }),
+      signOut: async () => ({ error: null }),
+      refreshSession: async () => ({ data: { session: mockSession }, error: null }),
+      updateUser: async () => ({ data: { user: mockUser }, error: null }),
+      resetPasswordForEmail: async () => ({ error: null }),
+      signUp: async () => ({ data: { user: mockUser, session: mockSession }, error: null }),
+      signInWithOtp: async () => ({ error: null }),
+      verifyOtp: async () => ({ data: { user: mockUser, session: mockSession }, error: null }),
+      onAuthStateChange: () => {
+        // Immediately trigger signed in state
+        setTimeout(() => {
+          user.set(mockUser);
+          loading.set(false);
+        }, 100);
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      }
+    }
+  } as any;
+}
+
 // Environment variables with proper fallbacks
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!isDevMode && (!supabaseUrl || !supabaseAnonKey)) {
   throw new Error('Missing Supabase environment variables. Please check your .env file.')
 }
 
-// Create Supabase client with best practices
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+// Create Supabase client with best practices - or mock client in dev mode
+export const supabase: SupabaseClient = !isDevMode ? createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     // Auto refresh tokens
     autoRefreshToken: true,
@@ -38,7 +90,7 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
       }
     } : undefined
   }
-})
+}) : createMockSupabaseClient()
 
 // Auth store with proper typing
 export const user = writable<User | null>(null)
@@ -51,6 +103,14 @@ const initializeAuth = async () => {
     console.log('Initializing auth...')
     loading.set(true)
     error.set(null)
+    
+    // In dev mode, immediately set mock user
+    if (isDevMode) {
+      console.log('Dev mode enabled, setting mock user')
+      user.set(mockUser)
+      loading.set(false)
+      return
+    }
     
     // Add a timeout fallback to prevent infinite loading
     const timeoutPromise = new Promise((_, reject) => {
@@ -80,8 +140,9 @@ const initializeAuth = async () => {
   }
 }
 
-// Listen for auth changes with proper error handling
-supabase.auth.onAuthStateChange(async (event, session) => {
+// Listen for auth changes with proper error handling (skip in dev mode)
+if (!isDevMode) {
+  supabase.auth.onAuthStateChange(async (event, session) => {
   console.log('Auth state changed:', event, session?.user?.email)
   console.log('Full session data:', session)
   
@@ -128,7 +189,8 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     error.set(err as AuthError)
     loading.set(false)
   }
-})
+  })
+}
 
 // Initialize auth on module load
 initializeAuth()

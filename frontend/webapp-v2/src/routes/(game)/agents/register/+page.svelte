@@ -14,7 +14,7 @@
   } from "sveltekit-superforms";
   import { zodClient } from "sveltekit-superforms/adapters";
   import { fly } from 'svelte/transition';
-  import { fetchAgentCard } from "$lib/api/agents";
+  import { fetchAgentCard, analyzeAgentCard, checkLauncherStatus } from "$lib/api/agents";
   import AgentChip from "$lib/components/agent-chip.svelte";
   import { goto } from "$app/navigation";
   import { toast } from 'svelte-sonner';
@@ -71,6 +71,15 @@
   let agentCardError = $state<string | null>(null);
   let agentCard = $state<any>(null);
   
+  // Analysis state
+  let isAnalyzing = $state(false);
+  let analysisError = $state<string | null>(null);
+  
+  // Status indicators for URLs
+  let canRegister = $state(true);
+  let isCheckingLauncher = $state(false);
+  let launcherStatus = $state<'unknown' | 'checking' | 'online' | 'offline'>('unknown');
+  
   $effect(() => {
     if ($formData.green && !showGreenForm) {
       // Show green form: move original first, then show green
@@ -100,10 +109,32 @@
     }
   });
   
+  async function checkLauncherStatusAsync() {
+    if (!$formData.launcher_url?.trim()) {
+      launcherStatus = 'unknown';
+      return;
+    }
+
+    try {
+      isCheckingLauncher = true;
+      launcherStatus = 'checking';
+
+      // Use the backend API to check launcher status
+      const result = await checkLauncherStatus($formData.launcher_url);
+      launcherStatus = result.online ? 'online' : 'offline';
+    } catch (err) {
+      launcherStatus = 'offline';
+      console.error("Launcher status check failed:", err);
+    } finally {
+      isCheckingLauncher = false;
+    }
+  }
+
   async function loadAgentCard() {
     if (!$formData.agent_url?.trim()) {
       agentCard = null;
       agentCardError = null;
+      canRegister = true;
       showThirdCard = false;
       return;
     }
@@ -112,6 +143,7 @@
       isLoadingAgentCard = true;
       agentCardError = null;
       agentCard = await fetchAgentCard($formData.agent_url);
+      canRegister = true;
       
       // Delay showing the card to let forms move down first
       setTimeout(() => {
@@ -123,17 +155,47 @@
         console.log('Setting alias to:', agentCard.name);
         $formData.alias = agentCard.name;
       }
+
+      // Automatically analyze the agent card
+      await analyzeAgentCardAutomatically();
     } catch (err) {
       agentCardError = err instanceof Error ? err.message : "Failed to load agent card";
       agentCard = null;
+      canRegister = false;
       showThirdCard = false;
     } finally {
       isLoadingAgentCard = false;
     }
   }
 
+  async function analyzeAgentCardAutomatically() {
+    if (!agentCard) return;
+
+    try {
+      isAnalyzing = true;
+      analysisError = null;
+
+      const analysis = await analyzeAgentCard(agentCard);
+
+      if (analysis.is_green) {
+        $formData.green = true;
+        $formData.participant_requirements = analysis.participant_requirements || [];
+        $formData.battle_timeout = analysis.battle_timeout || 300;
+      }
+    } catch (err) {
+      analysisError = err instanceof Error ? err.message : "Failed to analyze agent card";
+      console.error("Agent card analysis failed:", err);
+    } finally {
+      isAnalyzing = false;
+    }
+  }
+
   function handleAgentUrlBlur() {
     loadAgentCard();
+  }
+
+  function handleLauncherUrlBlur() {
+    checkLauncherStatusAsync();
   }
   
   function toggleThirdCard() {
@@ -210,10 +272,30 @@
                 <Form.Control>
                   {#snippet children({ props })}
                     <Form.Label>Agent URL</Form.Label>
-                    <Input {...props} bind:value={$formData.agent_url} placeholder="URL at which your agent is hosted" onblur={handleAgentUrlBlur} />
+                    <div class="flex items-center gap-2">
+                      <Input {...props} bind:value={$formData.agent_url} placeholder="URL at which your agent is hosted" onblur={handleAgentUrlBlur} class="flex-1" />
+                      <div class="flex-shrink-0 w-6 h-6">
+                        {#if $formData.agent_url?.trim()}
+                          {#if isLoadingAgentCard}
+                            <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          {:else if canRegister}
+                            <div class="w-4 h-4 bg-green-500 rounded-full" title="Agent URL is accessible"></div>
+                          {:else}
+                            <div class="w-4 h-4 bg-red-500 rounded-full" title="Agent URL is not accessible"></div>
+                          {/if}
+                        {:else}
+                          <div class="w-4 h-4 bg-gray-300 rounded-full" title="No URL entered"></div>
+                        {/if}
+                      </div>
+                    </div>
                   {/snippet}
                 </Form.Control>
                 <Form.FieldErrors />
+                {#if isLoadingAgentCard}
+                  <div class="text-sm text-muted-foreground">
+                    Loading agent card...
+                  </div>
+                {/if}
               </Form.Field>
 
               <!-- Hidden alias field that gets auto-filled -->
@@ -247,7 +329,24 @@
                 <Form.Control>
                   {#snippet children({ props })}
                     <Form.Label>Launcher URL</Form.Label>
-                    <Input {...props} bind:value={$formData.launcher_url} placeholder="URL at which your agent launcher is hosted" />
+                    <div class="flex items-center gap-2">
+                      <Input {...props} bind:value={$formData.launcher_url} placeholder="URL at which your agent launcher is hosted" onblur={handleLauncherUrlBlur} class="flex-1" />
+                      <div class="flex-shrink-0 w-6 h-6">
+                        {#if $formData.launcher_url?.trim()}
+                          {#if launcherStatus === 'checking'}
+                            <div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          {:else if launcherStatus === 'online'}
+                            <div class="w-4 h-4 bg-green-500 rounded-full" title="Launcher server is running"></div>
+                          {:else if launcherStatus === 'offline'}
+                            <div class="w-4 h-4 bg-red-500 rounded-full" title="Launcher server is not accessible"></div>
+                          {:else}
+                            <div class="w-4 h-4 bg-gray-300 rounded-full" title="Status unknown"></div>
+                          {/if}
+                        {:else}
+                          <div class="w-4 h-4 bg-gray-300 rounded-full" title="No URL entered"></div>
+                        {/if}
+                      </div>
+                    </div>
                   {/snippet}
                 </Form.Control>
                 <Form.FieldErrors />
@@ -266,7 +365,7 @@
               </Form.Field>
 
               <div class="flex gap-2 pt-4">
-                <Button type="submit" class="flex-1 btn-primary">Register Agent</Button>
+                <Button type="submit" class="flex-1 btn-primary" disabled={!canRegister}>Register Agent</Button>
                 <Button type="button" class="flex-1 btn-primary" onclick={() => goto('/agents')}>Cancel</Button>
               </div>
             </form>
@@ -280,10 +379,28 @@
           <Card.Root class="w-full transition-all duration-300 ease-in-out">
             <Card.Header>
               <Card.Title>Green Agent Setup</Card.Title>
+              <Card.Description>
+                {#if isAnalyzing}
+                  Analyzing agent card and suggesting configuration...
+                {:else}
+                  Configure agent type and participant requirements
+                {/if}
+              </Card.Description>
             </Card.Header>
             <Card.Content>
-              <div class="space-y-4">
+              {#if isAnalyzing}
+                <div class="flex items-center justify-center py-8">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span class="ml-2 text-muted-foreground">Analyzing agent card...</span>
+                </div>
+              {:else}
                 <div class="space-y-4">
+                  {#if analysisError}
+                    <div class="text-destructive text-sm p-2 bg-destructive/10 rounded">
+                      AI Analysis Error: {analysisError}
+                    </div>
+                  {/if}
+                  <div class="space-y-4">
                   <div class="border-t pt-4">
                     <div class="flex items-center gap-2 mb-2">
                       <h4 class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Participant Requirements</h4>
@@ -340,8 +457,9 @@
                       />
                     </div>
                   </div>
+                  </div>
                 </div>
-              </div>
+              {/if}
             </Card.Content>
           </Card.Root>
         </div>

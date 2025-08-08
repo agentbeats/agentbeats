@@ -2,7 +2,7 @@
 
 import requests
 import datetime
-from typing import Callable, List, Optional
+from typing import Callable, List, Dict
 
 from .agent_executor import *
 from .agent_launcher import *
@@ -18,6 +18,8 @@ from .utils.commands import (
 from .logging import (
     BattleContext, log_ready, log_error, log_startup, log_shutdown,
     record_battle_event, record_battle_result, record_agent_action, 
+    set_battle_context, get_battle_context, 
+    get_frontend_agent_name, get_backend_url, get_battle_id, get_agent_id
 )
 
 # dynamically registered variables for each run
