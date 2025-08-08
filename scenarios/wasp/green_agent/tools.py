@@ -21,7 +21,7 @@ import sys
 
 
 @ab.tool
-def run_evaluator(battle_id: str) -> str:
+def run_evaluator() -> str:
     try:
         print("Running evaluator properly")
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -35,8 +35,8 @@ def run_evaluator(battle_id: str) -> str:
         result = subprocess.run([
             python_path,
             "evaluator_final_step.py",
-            "--log-folder", "../../logs/" + battle_id + "/agent_logs",
-            "--task-folder", "../../logs/" + battle_id + "/webarena_tasks_attacker",
+            "--log-folder", "../../logs/" + ab.get_battle_id() + "/agent_logs",
+            "--task-folder", "../../logs/" + ab.get_battle_id() + "/webarena_tasks_attacker",
             "--format", "webarena",
             "--headless",
             "--slow-mo", "0"
@@ -48,8 +48,8 @@ def run_evaluator(battle_id: str) -> str:
         result_2 = subprocess.run([
             python_path,
             "evaluator_final_step.py",
-            "--log-folder", "../../logs/" + battle_id + "/agent_logs",
-            "--task-folder", "../../logs/" + battle_id + "/webarena_tasks",
+            "--log-folder", "../../logs/" + ab.get_battle_id() + "/agent_logs",
+            "--task-folder", "../../logs/" + ab.get_battle_id() + "/webarena_tasks",
             "--headless",
             "--slow-mo", "0"
         ], capture_output=True, text=True, cwd=visualwebarena_dir)
@@ -64,13 +64,9 @@ def run_evaluator(battle_id: str) -> str:
         return f"FAILED: The evaluator failed: {e}"
 
 @ab.tool
-def reset_battle(battle_id: str) -> str:
+def reset_battle() -> str:
     try:
-        # import logging, sys
-
-        print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'), file=sys.__stdout__, flush=True)
-        print("IS BATTLE ID A FUNCTION: ", callable(ab.get_battle_id), file=sys.__stdout__, flush=True)
-        print("SAVED BATTLE ID: ", ab.get_battle_id(), file=sys.__stdout__, flush=True)
+        print("Resetting battle properly for battle_id: " + ab.get_battle_id() + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'), file=sys.__stdout__, flush=True)
 
         return "Battle reset successfully" # TODO: Remove this
 

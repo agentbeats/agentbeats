@@ -11,7 +11,7 @@ from agentbeats.utils import static_expose
 import sys
 
 @ab.tool
-def perform_action(battle_id: str) -> str:
+def perform_action() -> str:
     try:
         print("Performing action properly")
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -43,7 +43,7 @@ def perform_action(battle_id: str) -> str:
             "--instruction_path", "../webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
             "--parsing_failure_th", "3",
             "--repeating_action_failure_th", "5",
-            "--test_config_base_dir", "../../logs/" + battle_id + "/webarena_tasks",
+            "--test_config_base_dir", "../../logs/" + ab.get_battle_id() + "/webarena_tasks",
             "--eval_captioning_model_device", "cpu",
             "--eval_captioning_model", "Salesforce/blip2-flan-t5-xl",
             "--captioning_model", "Salesforce/blip2-flan-t5-xl",
@@ -58,7 +58,7 @@ def perform_action(battle_id: str) -> str:
             "--max_obs_length", "3840",
             "--test_start_idx", "1000",
             "--test_end_idx", "1001",
-            "--result_dir", "../../logs/" + battle_id + "/agent_logs"
+            "--result_dir", "../../logs/" + ab.get_battle_id() + "/agent_logs"
         ], capture_output=True, text=True, cwd=visualwebarena_dir, env=env)
 
         print("STDOUT: " + result.stdout, file=sys.__stdout__, flush=True)
@@ -71,7 +71,7 @@ def perform_action(battle_id: str) -> str:
         return f"FAILED: The action failed: {e}"
 
 @ab.tool
-def create_gif(battle_id: str) -> str:
+def create_gif() -> str:
     """
     Extract all base64-encoded images from render_1000.html and create a GIF or video.
     
@@ -82,12 +82,12 @@ def create_gif(battle_id: str) -> str:
         str: The filename of the created GIF/video
     """
     try:
-        print(f"Extracting images and creating GIF for battle_id: {battle_id}", file=sys.__stdout__, flush=True)
+        print(f"Extracting images and creating GIF for battle_id: {ab.get_battle_id()}", file=sys.__stdout__, flush=True)
         
         # Compute paths
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs", "render_1000.html")
+        html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", ab.get_battle_id(), "agent_logs", "render_1000.html")
         
         # Check if HTML file exists
         if not os.path.exists(html_path):
@@ -122,13 +122,13 @@ def create_gif(battle_id: str) -> str:
         print("Creating GIF", file=sys.__stdout__, flush=True)
         
         # Create battle logs directory path
-        battle_logs_dir = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs")
+        battle_logs_dir = os.path.join(root_folder, "scenarios", "wasp", "logs", ab.get_battle_id(), "agent_logs")
         
         # Ensure battle logs directory exists
         os.makedirs(battle_logs_dir, exist_ok=True)
         
         # Save GIF in battle logs
-        local_filename = f'blue_agent_gif_{battle_id}.gif'
+        local_filename = f'blue_agent_gif_{ab.get_battle_id()}.gif'
         local_path = os.path.join(battle_logs_dir, local_filename)
         
         # Save as GIF
@@ -149,7 +149,7 @@ def create_gif(battle_id: str) -> str:
         
         # Upload to GCP using static_expose
         try:
-            gcp_url = static_expose(local_path, f"blue_agent_gif_{battle_id}.gif")
+            gcp_url = static_expose(local_path, f"blue_agent_gif_{ab.get_battle_id()}.gif")
             print(f"GIF uploaded to GCP: {gcp_url}", file=sys.__stdout__, flush=True)
             
             return gcp_url

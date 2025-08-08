@@ -10,7 +10,7 @@ from agentbeats.utils import static_expose
 import sys
 
 @ab.tool
-def perform_action(battle_id: str) -> str:
+def perform_action() -> str:
     """
     Perform an action on the computer.
     """
@@ -51,7 +51,7 @@ def perform_action(battle_id: str) -> str:
     
     # Build absolute paths for the wasp directories
     computer_use_demo_path = os.path.join(root_folder, "wasp/claude-35-computer-use-demo/computer_use_demo")
-    agent_logs_path = os.path.join(root_folder, "logs", battle_id)
+    agent_logs_path = os.path.join(root_folder, "logs", ab.get_battle_id())
     
     # All checks passed, execute the command
     try:
@@ -88,7 +88,7 @@ def perform_action(battle_id: str) -> str:
         return f"Error: Failed to execute command: {str(e)}"
 
 @ab.tool
-def create_gif(battle_id: str) -> str:
+def create_gif() -> str:
     """
     Create a GIF from images extracted from the battle's conversation log file.
     Automatically looks for logs/battle_id/claude_conversation_1001.jsonl and creates logs/battle_id.gif
@@ -97,8 +97,8 @@ def create_gif(battle_id: str) -> str:
     root_folder = os.path.abspath(os.path.join(current_dir, ".."))
     
     # Construct input and output paths
-    input_file = os.path.join(root_folder, "logs", battle_id, "claude_conversation_1001.jsonl")
-    output_file = os.path.join(root_folder, "logs", battle_id, f"computer_use_gif_{battle_id}.gif")
+    input_file = os.path.join(root_folder, "logs", ab.get_battle_id(), "claude_conversation_1001.jsonl")
+    output_file = os.path.join(root_folder, "logs", ab.get_battle_id(), f"computer_use_gif_{ab.get_battle_id()}.gif")
     
     # Check if input file exists
     if not os.path.exists(input_file):
@@ -260,7 +260,7 @@ def create_gif(battle_id: str) -> str:
         
         # Upload to GCP using static_expose
         try:
-            gcp_url = static_expose(output_file, f"computer_use_gif_{battle_id}.gif")
+            gcp_url = static_expose(output_file, f"computer_use_gif_{ab.get_battle_id()}.gif")
             print(f"GIF uploaded to GCP: {gcp_url}", file=sys.__stdout__, flush=True)
             
             return gcp_url

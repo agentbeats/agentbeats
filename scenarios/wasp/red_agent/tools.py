@@ -13,7 +13,7 @@ import sys
 
 
 @ab.tool
-def prepare_prompt_environment(battle_id: str) -> str:
+def prepare_prompt_environment() -> str:
     try:
         max_retries = 3
         for _ in range(max_retries):
@@ -32,7 +32,7 @@ def prepare_prompt_environment(battle_id: str) -> str:
                 "--reddit-domain", "http://ec2-18-224-83-14.us-east-2.compute.amazonaws.com:9999",
                 "--model", "gpt-4o-mini",
                 "--system_prompt", "wasp/webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
-                "--output-dir", "logs/" + battle_id,
+                "--output-dir", "logs/" + ab.get_battle_id(),
                 "--user_goal_idx", "0",
                 "--injection_format", "goal_hijacking_plain_text",
                 "--output-format", "webarena",
@@ -54,7 +54,7 @@ def prepare_prompt_environment(battle_id: str) -> str:
     return "FAILED: The environment preparation failed after 3 attempts"
 
 @ab.tool
-def get_image(battle_id: str) -> str:
+def get_image() -> str:
     """
     Get the last image from the HTML file and expose it using GCP bucket.
     """
@@ -64,10 +64,10 @@ def get_image(battle_id: str) -> str:
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        image_path = os.path.join(root_folder, 'scenarios', 'wasp', 'logs', battle_id, 'gitlab_environment_setup.png')
+        image_path = os.path.join(root_folder, 'scenarios', 'wasp', 'logs', ab.get_battle_id(), 'gitlab_environment_setup.png')
         
         # Use static_expose to upload to GCP bucket
-        public_url = static_expose(image_path, f"gitlab_environment_setup_{battle_id}.png", battle_id)
+        public_url = static_expose(image_path, f"gitlab_environment_setup_{ab.get_battle_id()}.png", ab.get_battle_id())
 
         print("Public URL: " + public_url, file=sys.__stdout__, flush=True)
         
