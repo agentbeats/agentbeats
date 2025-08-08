@@ -20,12 +20,10 @@ docker compose logs -f tensortrust
 
 # tensortrust-1  | [notice] A new release of pip is available: 24.0 -> 25.2
 # tensortrust-1  | [notice] To update, run: pip install --upgrade pip    
-# tensortrust-1  | Starting scenario: tensortrust
+# tensortrust-1  | Starting scenario: tensortrust red agent
 # tensortrust-1  |
-# tensortrust-1  | Starting 3 agents...
-# tensortrust-1  | Starting Blue Agent...
+# tensortrust-1  | Starting 1 agents...
 # tensortrust-1  | Starting Red Agent...
-# tensortrust-1  | Starting Green Agent...
 # tensortrust-1  | ✅ All agents started in background!
 # tensortrust-1  | Press Ctrl+C to stop all agents
 # ... (This will be automatically updated)
@@ -52,8 +50,8 @@ Dockerfile
 docker-compose.yml
 entrypoint.sh
 requirements.txt
-.scenario/
-└─ scenarios.toml
+scenario/
+└─ scenario.toml
 └─ red_agent_card.toml
 └─ blue_agent_card.toml
 └─ green_agent/
