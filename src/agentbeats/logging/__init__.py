@@ -4,7 +4,15 @@ Logging utilities for AgentBeats scenarios.
 """
 
 # Context management
-from .context import BattleContext
+from .context import (
+    BattleContext,
+    set_battle_context,
+    get_battle_context,
+    get_battle_id,
+    get_agent_id,
+    get_frontend_agent_name,
+    get_backend_url,
+)
 
 # System logging functions
 from .logging import (
@@ -12,7 +20,7 @@ from .logging import (
     log_error,
     log_startup,
     log_shutdown,
-    update_battle_process
+    update_battle_process, 
 )
 
 # Interaction history functions
@@ -37,4 +45,12 @@ __all__ = [
     'record_battle_event',
     'record_battle_result',
     'record_agent_action',
-] 
+
+    # Battle context management
+    'set_battle_context',
+    'get_battle_context',
+    'get_battle_id',
+    'get_agent_id',
+    'get_frontend_agent_name',
+    'get_backend_url',
+]
