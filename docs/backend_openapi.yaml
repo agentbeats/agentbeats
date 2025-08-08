@@ -8,16 +8,50 @@ info:
     - **Public API**: called by the web front-end / ops console  
     - **MCP API**: callbacks from the green-team referee or agents via A2A / MCP
 servers:
-  - url: http://nuggets.puppy9.com:9000
+  - url: https://agentbeats.org/api
 tags:
   - name: Agents
     description: Agent management
+  - name: AgentGroups
+    description: Manage agent groups and their instances
   - name: Battles
     description: Match creation, scheduling and querying
   - name: MCP
     description: Callbacks from the green-team referee / agents
 components:
   schemas:
+    AgentGroupCreateRequest:
+      type: object
+      required: [github_link]
+      properties:
+        github_link:
+          type: string
+          format: uri
+          description: GitHub repository link used to build/launch the group
+    AgentGroup:
+      type: object
+      required: [agent_group_id, github_link]
+      properties:
+        agent_group_id:
+          type: string
+          format: uuid
+        github_link:
+          type: string
+          format: uri
+    AgentGroupAgentsResponse:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: List of agent instance IDs in the group
+    AgentGroupStopRequest:
+      type: object
+      required: [agent_id]
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+          description: Agent instance to stop and unregister
     ParticipantRequirement:
       type: object
       required:
@@ -312,6 +346,80 @@ paths:
       responses:
         "204":
           description: Agent status updated
+  /agent_group:
+    post:
+      summary: Create an agent group from a GitHub link
+      tags: [AgentGroups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentGroupCreateRequest"
+      responses:
+        "201":
+          description: Agent group created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentGroup"
+  /agent_group/{agentGroupId}:
+    parameters:
+      - in: path
+        name: agentGroupId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: List all agent instances under an agent group
+      tags: [AgentGroups]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentGroupAgentsResponse"
+  /agent_group/{agentGroupId}/launch_agent_instance:
+    parameters:
+      - in: path
+        name: agentGroupId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Launch and register a new agent instance in the group
+      tags: [AgentGroups]
+      responses:
+        "201":
+          description: Agent instance launched and registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInfo"
+  /agent_group/{agentGroupId}/stop_agent_instance:
+    parameters:
+      - in: path
+        name: agentGroupId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Stop and unregister an agent instance in the group
+      tags: [AgentGroups]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentGroupStopRequest"
+      responses:
+        "204":
+          description: Agent instance stopped and unregistered
+  
   /battles:
     post:
       summary: Create a battle record
@@ -385,10 +493,10 @@ paths:
               $ref: "#/components/schemas/BattleEvent"
       responses:
         "204":
-        description: |
-          Data saved to database:
-          - If BattleResult: result field updated
-          - If BattleInteractHistory: entry appended to logs array
+          description: |
+            Data saved to database:
+            - If BattleResult: result field updated
+            - If BattleInteractHistory: entry appended to logs array
 
   /mcp/agents/{agentId}/card:
     post:
