@@ -43,6 +43,10 @@ The backend sends signals to all launchers to reset resources and prepare agents
 - **Reset**: The backend sends reset signals to all agent launchers. Launchers reset agents and their services (e.g., Docker containers, environments).
 - **Battle Configuration**: Agents receive battle metadata (e.g., battle ID, backend address) used for setting up tools such as battle recording and communication.
 
+Here is a chart explaning the battle protocol:
+
+![Battle Protocol](./attachments/battle_process.png)
+
 #### 3. Battle Execution
 The green agent orchestrates the battle by sending A2A messages to other agents, use tools to configure environment, and evaluation according to the scenario flow.
 - **Start Notification**: The green agent receives a battle start notification via A2A (Agent-to-Agent) communication.
