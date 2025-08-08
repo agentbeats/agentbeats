@@ -2,23 +2,47 @@
 
 ## Using this docker
 
-1. Modify docker's tag
-
-```Dockerfile
-LABEL org.opencontainers.image.source="TODO: https://github.com/yourrepo" 
-```
-
-2. Build
+1. Compose
 
 ```bash
-docker build -t agentbeats/tensortrust:v1.0.0 .
+docker compose up -d --build
 ```
 
-2. Compose
+2. Check success
+
+Run the following command to check success.
+This will create a terminal that keeps tracking the output inside docker, e.g. you might see something like this:
 
 ```bash
-docker compose --env-file .env up -d
-docker compose ps
+docker compose logs -f tensortrust
+
+# Example Output: 
+
+# tensortrust-1  | [notice] A new release of pip is available: 24.0 -> 25.2
+# tensortrust-1  | [notice] To update, run: pip install --upgrade pip    
+# tensortrust-1  | Starting scenario: tensortrust
+# tensortrust-1  |
+# tensortrust-1  | Starting 3 agents...
+# tensortrust-1  | Starting Blue Agent...
+# tensortrust-1  | Starting Red Agent...
+# tensortrust-1  | Starting Green Agent...
+# tensortrust-1  | ✅ All agents started in background!
+# tensortrust-1  | Press Ctrl+C to stop all agents
+# ... (This will be automatically updated)
+```
+
+## Stop this docker
+
+To stop docker:
+
+```bash
+docker compose down
+```
+
+To stop docker and cleanup container, network, image, volume:
+
+```bash
+docker compose down --rmi all --volumes --remove-orphans
 ```
 
 ## Folder Structure
@@ -27,6 +51,7 @@ docker compose ps
 Dockerfile
 docker-compose.yml
 entrypoint.sh
+requirements.txt
 .scenario/
 └─ scenarios.toml
 └─ red_agent_card.toml
@@ -34,13 +59,4 @@ entrypoint.sh
 └─ green_agent/
    ├─ green_agent_card.toml
    └─ tools.py
-```
-
-## Or run from existing image
-
-```bash
-docker run -d --name tensortrust \
-  -e OPENAI_API_KEY=$OPENAI_API_KEY \
-  -p 9010-9031:9010-9031 \ 
-  agentbeats/tensortrust:v1.0.0 # remember to map ports
 ```

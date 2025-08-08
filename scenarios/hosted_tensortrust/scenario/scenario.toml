@@ -55,7 +55,7 @@ is_green = true
 
 # Launch configuration
 [launch]
-mode = "separate"  # Options: "tmux", "separate", "current"
+mode = "current"  # Options: "tmux", "separate", "current"
 tmux_session_name = "agentbeats-tensortrust"
 startup_interval = 1  # seconds between launching each component
 wait_for_services = true  # wait for services to be healthy before starting agents
