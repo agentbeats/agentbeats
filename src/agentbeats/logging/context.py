@@ -15,6 +15,7 @@ def set_battle_context(context: Dict):
     """
     Set the global battle context.
     """
+    global _BATTLE_CONTEXT
     _BATTLE_CONTEXT = context
 
 
