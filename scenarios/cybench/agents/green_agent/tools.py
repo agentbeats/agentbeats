@@ -17,7 +17,7 @@ from uuid import uuid4
 import time
 import docker
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import logging
 import httpx
 from collections import defaultdict
@@ -41,6 +41,8 @@ from agentbeats import tool
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+cybench_dir = Path(__file__).resolve().parents[2] / "resources" / "cybench"
+
 
 ########################################################
 # Agent communication tools
@@ -63,6 +65,25 @@ async def _make_client(base_url: str) -> A2AClient:
     if card is None:
         raise RuntimeError(f"Failed to resolve agent card from {base_url}")
     return A2AClient(httpx_client=httpx_client, agent_card=card)
+
+
+@tool
+def get_task_dir(task_index: int) -> str:
+    """
+    Get the task directory (task_dir) for the given task index.
+    """
+    # read the list from "task_list.txt" with readlines()
+    try:
+        with open("agents/green_agent/task_list.txt", "r") as f:
+            task_list = f.readlines()
+    except FileNotFoundError:
+        logger.error("Task list file not found")
+        logger.error(f"Current directory: {Path.cwd()}")
+        return None
+    # return the task description for the given task index
+    logger.info(f"Task index: {task_index}")
+    logger.info(f"Task list: {task_list}")
+    return task_list[task_index]
 
 
 @tool
@@ -280,7 +301,6 @@ def parse_json_output(output: str) -> Optional[Dict[Any, Any]]:
 
 def run_container(task_dir: str, battle_id: str = None) -> str:
     """Run the Docker container for the given task_dir and battle_id"""
-    cybench_dir = Path(__file__).resolve().parents[2] / "resources" / "cybench"
     logger.info(f"cybench_dir: {cybench_dir}/setup_cybench_env.py")
     volumes = {
         str(cybench_dir / "agent"): {"bind": "/app/agent", "mode": "ro"},
@@ -300,7 +320,7 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
                     env_vars[key] = value
     if "DOCKER_NETWORK_DRIVER" not in env_vars:
         env_vars["DOCKER_NETWORK_DRIVER"] = "bridge"
-    logger.info("Running Docker container for task_dir.")
+    logger.info(f"Running Docker container for task_dir: {task_dir}")
     container_name = _get_container_name(battle_id)
     # Build the command to run inside the container
     command = [
@@ -333,6 +353,10 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
             f.write(logs)
 
         if result["StatusCode"] != 0:
+            logger.error(
+                f"Container setup failed with status code {result['StatusCode']}"
+            )
+            logger.error(f"Logs: {logs}")
             raise RuntimeError(
                 f"Container setup failed with status code {result['StatusCode']}"
             )
@@ -381,7 +405,6 @@ def setup_cybench_task(task_dir: str, battle_id: str = None) -> Dict[Any, Any]:
                 "name": str,
                 "path": str,
                 "easy_prompt": str,
-                "challenging_prompt": str,
                 "subtasks": List[Dict[Any, Any]],
             },
             "task_objective": str,
@@ -401,7 +424,7 @@ def setup_cybench_task(task_dir: str, battle_id: str = None) -> Dict[Any, Any]:
     logger.info(f"Setting up cybench task: {task_dir}")
     cleanup_existing_container(battle_id)
     create_network_if_needed()
-    start_script = os.path.join(task_dir, "start_docker.sh")
+    start_script = os.path.join(cybench_dir, task_dir, "start_docker.sh")
     execute_task_script(start_script, "start_docker.sh")
     try:
         output = run_container(task_dir, battle_id)

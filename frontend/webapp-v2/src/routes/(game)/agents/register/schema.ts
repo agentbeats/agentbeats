@@ -11,7 +11,8 @@ export const formSchema = z.object({
     name: z.string().default(""),
     required: z.boolean().default(false)
   })).default([]),
-  battle_timeout: z.number().min(1).default(300)
+  battle_timeout: z.number().min(1).default(300),
+  task_config: z.string().optional().default("")
 });
  
 export type FormSchema = typeof formSchema;

@@ -15,6 +15,7 @@ export const load: PageServerLoad = async () => {
     alias: "",
     green: false,
     participant_requirements: [],
+    task_config: "",
     battle_timeout: 300
   };
   
@@ -73,10 +74,11 @@ export const actions: Actions = {
       const requestBody = {
         agent_url: form.data.agent_url,
         launcher_url: form.data.launcher_url,
-        alias: form.data.alias || 'Unnamed Agent', // Ensure alias is always provided
+        alias: form.data.alias,
         is_green: form.data.green,
         participant_requirements: form.data.participant_requirements,
-        battle_timeout: form.data.battle_timeout
+        battle_timeout: form.data.battle_timeout,
+        task_config: form.data.task_config
       };
       
       console.log('Form data alias:', form.data.alias);

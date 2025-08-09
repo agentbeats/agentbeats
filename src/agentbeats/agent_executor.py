@@ -292,7 +292,7 @@ class AgentBeatsExecutor(AgentExecutor):
         self.mcp_list = [
             MCPServerSse(
                 params={"url": url},
-                client_session_timeout_seconds=60,  # @luke: set it dynamically in the future
+                client_session_timeout_seconds=120,  # @luke: set it dynamically in the future
             )
             for url in self.mcp_url_list
         ]

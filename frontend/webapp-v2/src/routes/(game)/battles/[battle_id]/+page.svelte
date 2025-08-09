@@ -7,6 +7,7 @@
   let loading = true;
   let error = '';
   let greenAgentName = '';
+  let battle_timeout = 0;
   let opponentNames: string[] = [];
   let ws: WebSocket | null = null;
   let greenAgentInfo: any = null;
@@ -22,7 +23,7 @@
       const res = await fetch(`/api/agents/${agentId}`);
       if (!res.ok) return agentId;
       const agent = await res.json();
-      return agent.register_info?.name || agent.registerInfo?.name || agent.agent_card?.name || agent.agentCard?.name || agentId;
+      return agent.register_info?.alias || agent.registerInfo?.name || agent.agent_card?.name || agent.agentCard?.name || agentId;
     } catch {
       return agentId;
     }
@@ -180,6 +181,7 @@
       if (battle.green_agent_id) {
         greenAgentName = await fetchAgentName(battle.green_agent_id);
         greenAgentInfo = await fetchGreenAgentInfo(battle.green_agent_id);
+        battle_timeout = greenAgentInfo.register_info.battle_timeout;
       }
       if (battle.opponents && Array.isArray(battle.opponents)) {
         opponentNames = await Promise.all(
@@ -273,6 +275,7 @@
         <div class="text-sm text-gray-600">State: <span class="font-semibold">{battle.state}</span></div>
         <div class="text-sm text-gray-600">Green Agent: <span class="font-semibold">{greenAgentName}</span></div>
         <div class="text-sm text-gray-600">Opponents: <span class="font-semibold">{opponentNames.join(', ')}</span></div>
+        <div class="text-sm text-gray-600">Battle Timeout: <span class="font-semibold">{battle_timeout} seconds</span></div>
         {#if battle.result && battle.state === 'finished'}
           <div class="text-green-700">Winner: <span class="font-semibold">{battle.result.winner}</span></div>
         {/if}

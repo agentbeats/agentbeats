@@ -26,6 +26,14 @@ def run_terminal_command_in_docker(
     This is for any Red, Blue, or Green agent.
     Logs the command input and output to battle_cmd_history_{battle_id}.json.
     Also, use another MCP server's tool "update_battle_process" to log the command input and the summary of the output.
+
+    Args:
+        battle_id: The ID of the battle (Battle ID)
+        command: The command to run in the container.
+        agent_name: The name of the agent.
+
+    Returns:
+        The output of the command.
     """
     logger.info(f"\033[34mExecuting command in container: {command}\033[0m")
     container_name = f"cybench_{battle_id}"

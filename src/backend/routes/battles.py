@@ -399,6 +399,11 @@ async def process_battle(battle_id: str):
             "alias", "green_agent"
         )
 
+        # Get task description from green agent
+        task_config = green_agent.get("register_info", {}).get(
+            "task_config", ""
+        )
+
         # Get actual agent names for red agents
         red_agent_names = {}
         for opponent_info in battle["opponents"]:
@@ -419,6 +424,7 @@ async def process_battle(battle_id: str):
             backend_url=default_backend_url,
             green_agent_name=green_agent_name,
             red_agent_names=red_agent_names,
+            task_config=task_config,
         )
 
         if not notify_success:
