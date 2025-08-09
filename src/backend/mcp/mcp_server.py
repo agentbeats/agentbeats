@@ -1,10 +1,28 @@
 # -*- coding: utf-8 -*-
-import argparse
+
+import httpx
 import logging
-import os
-from datetime import datetime
-from fastmcp import FastMCP
+import argparse
 import requests
+
+from uuid import uuid4
+from typing import List
+from fastmcp import FastMCP
+from datetime import datetime
+from a2a.types import Part, TextPart, AgentCard
+from a2a.client import A2AClient, A2ACardResolver
+from a2a.types import (
+    AgentCard,
+    Message,
+    Part,
+    TextPart,
+    Role,
+    SendStreamingMessageRequest,
+    SendStreamingMessageSuccessResponse,
+    MessageSendParams,
+    TaskArtifactUpdateEvent,
+    TaskStatusUpdateEvent,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -12,13 +30,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
 server = FastMCP("Open MCP for AgentBeast Battle Arena")
-
-SESSIONS: dict[str, dict[str, str]] = {}
-
-# Global variable to store backend URL
-BACKEND_URL = ""
+BACKEND_URL = ""  # will be set from command line argument
 
 
 @server.tool()
@@ -28,6 +41,51 @@ def echo(message: str) -> str:
     """
     logger.info("Echoing message: %s", message)
     return f"Echo: {message}"
+
+
+@server.tool()
+async def talk_to_agent(query: str, target_url: str) -> str:
+    """
+    Forward *query* to another A2A agent at *target_url* and stream back
+    the plain-text response.
+    """
+    httpx_client = httpx.AsyncClient()
+    resolver = A2ACardResolver(httpx_client=httpx_client, base_url=target_url)
+    card: AgentCard | None = await resolver.get_agent_card(
+        relative_card_path="/.well-known/agent.json"
+    )
+    if card is None:
+        raise RuntimeError(f"Failed to resolve agent card from {target_url}")
+
+    client = A2AClient(httpx_client=httpx_client, agent_card=card)
+
+    params = MessageSendParams(
+        message=Message(
+            role=Role.user,
+            parts=[Part(TextPart(text=query))],
+            messageId=uuid4().hex,
+            taskId=None,
+        )
+    )
+    req = SendStreamingMessageRequest(id=str(uuid4()), params=params)
+    chunks: List[str] = []
+
+    async for chunk in client.send_message_streaming(req):
+        if not isinstance(chunk.root, SendStreamingMessageSuccessResponse):
+            continue
+        event = chunk.root.result
+        if isinstance(event, TaskArtifactUpdateEvent):
+            for p in event.artifact.parts:
+                if isinstance(p.root, TextPart):
+                    chunks.append(p.root.text)
+        elif isinstance(event, TaskStatusUpdateEvent):
+            msg = event.status.message
+            if msg:
+                for p in msg.parts:
+                    if isinstance(p.root, TextPart):
+                        chunks.append(p.root.text)
+
+    return "".join(chunks).strip() or "No response from agent."
 
 
 @server.tool()
@@ -196,71 +254,6 @@ def report_on_battle_end(
             f.write(line)
         return "result logged locally (network error)"
 
-
-# @server.tool()
-# def test_markdown(battle_id: str) -> str:
-#     sample_markdown = """# Test Markdown Display
-
-# This is a **test** of the markdown rendering functionality.
-
-# ## Features Tested:
-# - **Bold text**
-# - *Italic text*
-# - `Inline code`
-# - [Links](https://example.com)
-
-# ### Code Block:
-# ```python
-# def hello_world():
-#     print("Hello, World!")
-#     return True
-# ```
-
-# ### Sample Table:
-# | Agent | Role | Status |
-# |-------|------|--------|
-# | Blue Agent | Defender | Active |
-# | Red Agent | Attacker | Ready |
-
-# ### Sample Image (placeholder):
-# ![Sample Image](https://kirkstrobeck.github.io/whatismarkdown.com/img/markdown.png)
-
-# > **Note**: This is a blockquote to test markdown styling.
-
-# ### List Example:
-# 1. First item
-# 2. Second item
-#    - Sub-item A
-#    - Sub-item B
-# 3. Third item
-
-# ---
-
-# *This markdown content tests various formatting elements.*
-# """
-
-#     event_data = {
-#         "is_result": False,
-#         "message": 'test markdown content',
-#         "reported_by": 'green_agent',
-#         "timestamp": datetime.utcnow().isoformat() + "Z",
-#         "markdown_content": sample_markdown
-#     }
-#     try:
-#         # Call backend API
-#         response = requests.post(
-#             f"{BACKEND_URL}/battles/{battle_id}",
-#             json=event_data,
-#             headers={"Content-Type": "application/json"},
-#             timeout=10
-#         )
-
-#         if response.status_code == 204:
-#             logger.info("Successfully logged to backend for battle %s", battle_id)
-#             return 'logged to backend'
-
-#     except requests.exceptions.RequestException as e:
-#         logger.error("Network error when logging to backend for battle %s: %s", battle_id, str(e))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

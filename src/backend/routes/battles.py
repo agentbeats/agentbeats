@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 import time
 import threading
 from datetime import datetime
-import json
+import os
 import logging
 
 from ..db.storage import db
@@ -21,7 +21,6 @@ router = APIRouter()
 # Configuration constants
 default_ready_timeout = 120
 default_battle_timeout = 300
-default_backend_url = "http://localhost:9000"
 
 # Global state management
 battle_queue = []
@@ -211,7 +210,7 @@ async def process_battle(battle_id: str):
         green_reset = await a2a_client.reset_agent_trigger(
             green_launcher,
             agent_id=battle["green_agent_id"],
-            backend_url=default_backend_url,
+            backend_url=os.getenv("PUBLIC_BACKEND_URL"),
             extra_args={},
         )
         if not green_reset:
@@ -237,7 +236,7 @@ async def process_battle(battle_id: str):
             op_reset = await a2a_client.reset_agent_trigger(
                 op_launcher,
                 agent_id=op_id,
-                backend_url=default_backend_url,
+                backend_url=os.getenv("PUBLIC_BACKEND_URL"),
                 extra_args={},
             )
             if not op_reset:
@@ -356,7 +355,7 @@ async def process_battle(battle_id: str):
                 battle_id=battle_id,
                 agent_name=agent_info["agent_name"],
                 agent_id=agent_info["agent_id"],
-                backend_url=default_backend_url,
+                backend_url=os.getenv("PUBLIC_BACKEND_URL"),
             )
             if not success:
                 battle = db.read("battles", battle_id)
@@ -421,7 +420,7 @@ async def process_battle(battle_id: str):
             green_agent_url,
             opponent_info_send_to_green,
             battle_id,
-            backend_url=default_backend_url,
+            backend_url=os.getenv("PUBLIC_BACKEND_URL"),
             green_agent_name=green_agent_name,
             red_agent_names=red_agent_names,
             task_config=task_config,

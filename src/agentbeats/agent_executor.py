@@ -8,6 +8,7 @@ import os
 import json
 import tomllib
 import uvicorn
+import functools
 from typing import *
 
 from agents import (
@@ -38,46 +39,31 @@ from a2a.server.events import EventQueue
 from a2a.utils import new_task, new_agent_text_message
 from a2a.types import Part, TextPart, TaskState, AgentCard
 
-from .logging import update_battle_process
+from .logging import (
+    update_battle_process,
+    set_battle_context,
+    get_battle_context,
+    get_battle_id,
+    get_agent_id,
+    get_frontend_agent_name,
+    get_backend_url,
+)
 
+# class AgentBeatsHook(RunHooks):
+#     """Custom hooks for AgentBeats to handle agent execution events."""
+#     def __init__(self, battle_context: Dict[str, Any]):
+#         super().__init__()
+#         self.battle_context = battle_context
 
-class AgentBeatsHook(RunHooks):
-    """Custom hooks for AgentBeats to handle agent execution events."""
-
-    def __init__(self, battle_context: Dict[str, Any]):
-        super().__init__()
-        self.battle_context = battle_context
-
-    def on_tool_start(self, context, agent, tool):
-        update_battle_process(
-            battle_id=self.battle_context["battle_id"],
-            backend_url=self.battle_context["backend_url"],
-            message=f"Agent {agent.name} finished using tool {tool.name}.",
-            # detail=tool.params_json_schema,
-            reported_by=agent.name + " (from agentbeats sdk toolcall hooks)",
-        )
-        return super().on_tool_start(context, agent, tool)
-
-
-from .logging import update_battle_process
-
-
-class AgentBeatsHook(RunHooks):
-    """Custom hooks for AgentBeats to handle agent execution events."""
-
-    def __init__(self, battle_context: Dict[str, Any]):
-        super().__init__()
-        self.battle_context = battle_context
-
-    def on_tool_start(self, context, agent, tool):
-        update_battle_process(
-            battle_id=self.battle_context["battle_id"],
-            backend_url=self.battle_context["backend_url"],
-            message=f"Agent {agent.name} finished using tool {tool.name}.",
-            # detail=tool.params_json_schema,
-            reported_by=agent.name + " (from agentbeats sdk toolcall hooks)",
-        )
-        return super().on_tool_start(context, agent, tool)
+#     def on_tool_start(self, context, agent, tool):
+#         update_battle_process(
+#             battle_id=self.battle_context["battle_id"],
+#             backend_url=self.battle_context["backend_url"],
+#             message=f"Agent {agent.name} finished using tool {tool.name}.",
+#             # detail=tool.params_json_schema,
+#             reported_by=agent.name + " (from agentbeats sdk toolcall hooks)"
+#         )
+#         return super().on_tool_start(context, agent, tool)
 
 
 __all__ = [
@@ -220,55 +206,29 @@ class BeatsAgent:
             ),
         ).build()
 
-    def tool(self, name: str = None):
-        """Decorator to register a function as a tool for the agent."""
+    def _register_tool(self, func: Callable, name: str | None = None):
+        """Register a tool function with the agent."""
+        self.tool_list.append(func)
+        return func
 
-        def decorator(func):
-            # Use function name if no name provided
-            tool_name = name or func.__name__
+    def tool(self, func: Callable | None = None, *, name: str | None = None):
+        """
+        Usage 1: @agent.tool                -> No-argument decorator
+        Usage 2: @agent.tool(name="Search") -> Argument decorator with name
+        Usage 3: agent.tool(func_obj)       -> Directly register a function
+        """
+        if func is None:
+            # @agent.tool(name="xxx"), a decorator with name argument
+            def decorator(f):
+                self._register_tool(f, name=name)
+                return f  # Keep the original function usable
 
-            # Apply the @function_tool decorator from agents library
-            # This creates the proper tool format for openai-agents
-            tool_func = function_tool(name_override=tool_name)(func)
+            return decorator
+        else:
+            # Supports both @agent.tool as a no-argument decorator and explicit call agent.tool(foo)
+            return self._register_tool(func, name=name)
 
-            # Add to the tool list
-            self.tool_list.append(tool_func)
-
-            return func
-
-        return decorator
-
-    def register_tool(self, func: Callable, *, name: str | None = None):
-        tool_name = name or func.__name__
-        wrapped_tool = function_tool(name_override=tool_name)(func)
-        self.tool_list.append(wrapped_tool)
-        return wrapped_tool
-
-    # Will update in next version
-    # def _register_tool(self, func: Callable, name: str | None = None):
-    #     """Register a tool function with the agent."""
-    #     tool_name = name or func.__name__
-    #     wrapped = function_tool(name_override=tool_name)(func)
-    #     self.tool_list.append(wrapped)
-    #     return wrapped
-
-    # def tool(self, func: Callable | None = None, *, name: str | None = None):
-    #     """
-    #     Usage 1: @agent.tool                -> No-argument decorator
-    #     Usage 2: @agent.tool(name="Search") -> Argument decorator with name
-    #     Usage 3: agent.tool(func_obj)       -> Directly register a function
-    #     """
-    #     if func is None:
-    #         # @agent.tool(name="xxx"), a decorator with name argument
-    #         def decorator(f):                   # noqa: D401
-    #             self._register_tool(f, name=name)
-    #             return f                        # Keep the original function usable
-    #         return decorator
-    #     else:
-    #         # Supports both @agent.tool as a no-argument decorator and explicit call agent.tool(foo)
-    #         return self._register_tool(func, name=name)
-
-    # register_tool = tool  # Alias for backward compatibility
+    register_tool = tool  # Alias for backward compatibility
 
 
 class AgentBeatsExecutor(AgentExecutor):
@@ -291,8 +251,9 @@ class AgentBeatsExecutor(AgentExecutor):
         self.mcp_url_list = mcp_url_list or []
         self.mcp_list = [
             MCPServerSse(
-                params={"url": url},
-                client_session_timeout_seconds=120,  # @luke: set it dynamically in the future
+                client_session_timeout_seconds=20,
+                cache_tools_list=True,
+                params={"url": url, "timeout": 5, "sse_read_timeout": 20},
             )
             for url in self.mcp_url_list
         ]
@@ -302,17 +263,72 @@ class AgentBeatsExecutor(AgentExecutor):
         self.AGENT_PROMPT = str(agent_card_json["description"])
         self.AGENT_PROMPT += "\n\n"
         if "skills" in agent_card_json:
-            self.AGENT_PROMPT += str(agent_card_json["skills"])
+            self.AGENT_PROMPT += (
+                "Here are your skills defined in your agent card:\n"
+            )
+            self.AGENT_PROMPT += json.dumps(
+                agent_card_json["skills"], indent=2
+            )
+            self.AGENT_PROMPT += "\n\n"
+            self.AGENT_PROMPT += (
+                "You should use these skills to help the user.\n"
+            )
+        self.AGENT_PROMPT += "Above is your system prompt. Please respond accordingly. The below will be your user input: \n"
 
         self.main_agent = None
-        self.battle_context = None
-        self.battle_context_hook = None
+
+    def _wrap_tool_with_logging(self, tool_fn):
+        """
+        Wrap tool_fn with logging:
+        - Extract battle_id and backend_url from battle_context
+        - Log function parameters only once before calling
+        - Return the result of tool_fn
+        """
+
+        def log(params_json: dict):
+            if not get_battle_context():  # if no battle context, skip logging
+                return
+            try:
+                update_battle_process(
+                    battle_id=get_battle_id(),
+                    backend_url=get_backend_url(),
+                    message=f"Calling tool {tool_fn.__name__}",
+                    detail=params_json,
+                    reported_by=(
+                        get_frontend_agent_name()
+                        + " (agentbeats sdk toolcall hooks)"
+                    ),
+                )
+            except Exception:
+                pass
+
+        @functools.wraps(tool_fn)
+        def wrapper(*args, **kwargs):
+            json_string = json.dumps(
+                {"args": args, "kwargs": kwargs}, default=str
+            )
+            json_body = json.loads(json_string)
+            log(json_body)
+            return tool_fn(*args, **kwargs)
+
+        return wrapper
 
     async def _init_agent_and_mcp(self):
         """Initialize the main agent with the provided tools and MCP servers."""
+
+        # Register tools
+        for tool_index in range(len(self.tool_list)):
+            tool = self.tool_list[tool_index]
+            tool_name = tool.__name__
+            logged_tool = self._wrap_tool_with_logging(tool)
+            wrapped = function_tool(name_override=tool_name)(logged_tool)
+            self.tool_list[tool_index] = wrapped
+
+        # Connect to all MCP servers
         for mcp_server in self.mcp_list:
             await mcp_server.connect()
 
+        # Create the main agent with the provided tools and MCP servers
         self.main_agent = create_agent(
             agent_name=self.agent_card_json["name"],
             model_type=self.model_type,
@@ -346,13 +362,9 @@ class AgentBeatsExecutor(AgentExecutor):
             }
         ]
 
-        result = await Runner.run(
-            self.main_agent,
-            query_ctx,
-            max_turns=30,
-            hooks=self.battle_context_hook,
-        )
+        result = await Runner.run(self.main_agent, query_ctx, max_turns=30)
         self.chat_history = result.to_input_list()
+        # print(self.chat_history)
 
         # print agent output
         print(
@@ -378,30 +390,35 @@ class AgentBeatsExecutor(AgentExecutor):
         # push "working now" status
         await updater.update_status(
             TaskState.working,
-            new_agent_text_message("working...", task.context_id, task.id),
+            new_agent_text_message("", task.context_id, task.id),
         )
 
         # try to parse battle_info from the request
         try:
             raw_input_str = context.get_user_input()
             raw_input_json = json.loads(raw_input_str)
-            self.battle_context = {
-                "frontend_agent_name": raw_input_json["agent_name"],
-                "agent_id": raw_input_json["agent_id"],
-                "battle_id": raw_input_json["battle_id"],
-                "backend_url": raw_input_json["backend_url"],
-            }
-            self.battle_context_hook = AgentBeatsHook(self.battle_context)
+
+            set_battle_context(
+                {
+                    "frontend_agent_name": raw_input_json["agent_name"],
+                    "agent_id": raw_input_json["agent_id"],
+                    "battle_id": raw_input_json["battle_id"],
+                    "backend_url": raw_input_json["backend_url"],
+                }
+            )
+            # self.battle_context_hook = AgentBeatsHook(self.battle_context)
             print(
                 "[AgentBeatsExecutor] Battle context parsed:",
-                self.battle_context,
+                get_battle_context(),
             )
 
-            reply_text = f"Agent {self.battle_context['frontend_agent_name']} is ready to battle!"
+            reply_text = (
+                f"Agent {get_frontend_agent_name()} is ready to battle!"
+            )
 
         # if battle_info is not provided (normal conversation),
         # use the agent output as the reply text
-        except Exception as e:
+        except Exception:
             reply_text = await self.invoke_agent(context)
 
         # push final response

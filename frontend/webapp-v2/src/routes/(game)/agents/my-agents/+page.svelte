@@ -6,7 +6,7 @@
   import GreenAgentCard from "../components/green-agent-card.svelte";
   import OpponentAgentCard from "../components/opponent-agent-card.svelte";
   import { goto } from "$app/navigation";
-  import { getMyAgents, deleteAgent } from "$lib/api/agents";
+  import { getMyAgentsWithAsyncLiveness, deleteAgent } from "$lib/api/agents";
   import { toast } from 'svelte-sonner';
   import PlusIcon from "@lucide/svelte/icons/plus";
   import { Spinner } from "$lib/components/ui/spinner";
@@ -27,9 +27,15 @@
     try {
       loading = true;
       error = null;
-      agents = await getMyAgents();
-      // Note: getMyAgents doesn't support liveness check, but the agents should have live field from backend
-      console.log('Loaded agents:', agents);
+      
+      // Use layered loading: get basic info first, then update with liveness
+      agents = await getMyAgentsWithAsyncLiveness((updatedAgents) => {
+        // This callback will be called when liveness data is ready
+        agents = updatedAgents;
+        console.log('My agents liveness updated:', agents);
+      });
+      
+      console.log('My agents loaded basic info:', agents);
       if (agents.length > 0) {
         console.log('First agent structure:', agents[0]);
       }

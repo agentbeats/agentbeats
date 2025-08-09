@@ -26,6 +26,9 @@
 	});
 
 	onMount(() => {
+		// Check if we're in dev mode
+		const isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+		
 		// Subscribe to auth state changes
 		unsubscribe = user.subscribe(async ($user) => {
 			// Check if we're on a public page that doesn't require auth
@@ -33,17 +36,18 @@
 			const currentPath = window.location.pathname;
 			const isDocsPage = currentPath.startsWith('/docs');
 			
-			console.log('Layout auth check:', { user: $user?.email, loading: $loading, currentPath });
+			console.log('Layout auth check:', { user: $user?.email, loading: $loading, currentPath, isDevMode });
 			
 			if (!publicPages.includes(currentPath) && !isDocsPage) {
 				// If user is not authenticated and not on a public page or docs page, redirect to login
-				if (!$user && !$loading) {
+				// Skip in dev mode
+				if (!isDevMode && !$user && !$loading) {
 					console.log('User not authenticated, redirecting to login');
 					goto('/login');
 				}
-			} else if (currentPath === '/login' && $user) {
-				// If user is authenticated and on login page, redirect to dashboard
-				console.log('User authenticated, redirecting to dashboard');
+			} else if (currentPath === '/login' && ($user || isDevMode)) {
+				// If user is authenticated (or dev mode) and on login page, redirect to dashboard
+				console.log('User authenticated (or dev mode), redirecting to dashboard');
 				try {
 					await goto('/dashboard');
 					console.log('goto completed successfully');
@@ -54,19 +58,21 @@
 			}
 		});
 
-		// Check for existing session on mount
-		const checkSession = async () => {
-			try {
-				const { data: { session } } = await supabase.auth.getSession();
-				if (session) {
-					console.log('Session found on mount:', session.user.email);
+		// Check for existing session on mount (skip in dev mode)
+		if (!isDevMode) {
+			const checkSession = async () => {
+				try {
+					const { data: { session } } = await supabase.auth.getSession();
+					if (session) {
+						console.log('Session found on mount:', session.user.email);
+					}
+				} catch (err) {
+					console.error('Error checking session on mount:', err);
 				}
-			} catch (err) {
-				console.error('Error checking session on mount:', err);
-			}
-		};
-		
-		checkSession();
+			};
+			
+			checkSession();
+		}
 	});
 
 	// Cleanup subscription

@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  tensortrust:
+    image: agentbeats/tensortrust:v1.0.0
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "9010-9031:9010-9031"   # or use "host" network to avoid mapping
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9010/health || exit 1"]
+      interval: 10s
+      retries: 5

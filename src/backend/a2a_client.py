@@ -118,6 +118,7 @@ class AgentBeatsA2AClient:
                         agent_name=agent_name,
                     )
 
+            # kickoff signal
             battle_info = {
                 "type": "battle_start",
                 "battle_id": battle_id,

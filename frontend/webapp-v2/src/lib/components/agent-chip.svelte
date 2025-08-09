@@ -9,6 +9,7 @@
     agent,
     agent_id,
     isOnline = false,
+    isLoading = false,
     clickable = true,
     onDragStart = null,
     onDragOver = null,
@@ -23,6 +24,7 @@
     };
     agent_id: string;
     isOnline?: boolean;
+    isLoading?: boolean;
     clickable?: boolean;
     onDragStart?: ((event: DragEvent) => void) | null;
     onDragOver?: ((event: DragEvent) => void) | null;
@@ -81,7 +83,11 @@
         </p>
       </div>
       <div class="flex items-center justify-center w-4 h-4 mr-1">
-        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}"></div>
+        {#if isLoading}
+          <div class="w-2 h-2 border border-blue-500 border-t-transparent rounded-full animate-spin" title="Checking status..."></div>
+        {:else}
+          <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}" title={isOnline ? 'Online' : 'Offline'}></div>
+        {/if}
       </div>
     </HoverCard.Trigger>
 
@@ -101,8 +107,13 @@
                   <div class="flex-1 min-w-0">
                     <h4 class="text-sm font-semibold truncate">@{agent.identifier}</h4>
                     <div class="flex items-center space-x-2 mt-1">
-                      <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}"></div>
-                      <span class="text-xs text-muted-foreground">{isOnline ? 'Online' : 'Offline'}</span>
+                      {#if isLoading}
+                        <div class="w-2 h-2 border border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs text-blue-600">Checking status...</span>
+                      {:else}
+                        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}"></div>
+                        <span class="text-xs text-muted-foreground">{isOnline ? 'Online' : 'Offline'}</span>
+                      {/if}
                     </div>
                   </div>
                 </div>

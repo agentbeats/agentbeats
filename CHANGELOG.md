@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v1.2.1 (2025-08-08)
+
+### Bug Fixes
+
+- Backend url in batlle info; backendurl arg in run_frontend
+  ([`e0d5be3`](https://github.com/agentbeats/agentbeats/commit/e0d5be3ca31d2349f23b861cf91342d16baca6f1))
+
+- Session token not found when register agent in dev mode; add: agent online status indicator
+  ([`e0d5be3`](https://github.com/agentbeats/agentbeats/commit/e0d5be3ca31d2349f23b861cf91342d16baca6f1))
+
+
+## v1.2.0 (2025-08-07)
+
+### Bug Fixes
+
+- Backend url in batlle info; backendurl arg in run_frontend
+  ([#56](https://github.com/agentbeats/agentbeats/pull/56),
+  [`5af4e6c`](https://github.com/agentbeats/agentbeats/commit/5af4e6c739f2fe099dc7de6dfc8e3b1f5ab54526))
+
+### Features
+
+- Dev mode improve, cli rename and bug fix.
+  ([#56](https://github.com/agentbeats/agentbeats/pull/56),
+  [`5af4e6c`](https://github.com/agentbeats/agentbeats/commit/5af4e6c739f2fe099dc7de6dfc8e3b1f5ab54526))
+
+
 ## v1.1.4 (2025-08-03)
 
 ### Bug Fixes
