@@ -42,6 +42,9 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.52.1",
 		"@sveltejs/adapter-node": "^5.2.13",
+		"@types/d3": "^7.4.3",
+		"@xyflow/svelte": "^1.2.2",
+		"d3": "^7.9.0",
 		"embla-carousel-autoplay": "^8.6.0",
 		"marked": "^16.1.1",
 		"mdsvex": "^0.12.6",
