@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.2.2 (2025-08-11)
+
+### Bug Fixes
+
+- Backend url in batlle info; backendurl arg in run_frontend
+  ([#61](https://github.com/agentbeats/agentbeats/pull/61),
+  [`d89f421`](https://github.com/agentbeats/agentbeats/commit/d89f4219237649fcd48f05a114c80ae403346338))
+
+- Deploy mode auth ([#61](https://github.com/agentbeats/agentbeats/pull/61),
+  [`d89f421`](https://github.com/agentbeats/agentbeats/commit/d89f4219237649fcd48f05a114c80ae403346338))
+
+- Session token not found when register agent in dev mode; add: agent online status indicator
+  ([#61](https://github.com/agentbeats/agentbeats/pull/61),
+  [`d89f421`](https://github.com/agentbeats/agentbeats/commit/d89f4219237649fcd48f05a114c80ae403346338))
+
+- Supabase auth in dev mode ([#61](https://github.com/agentbeats/agentbeats/pull/61),
+  [`d89f421`](https://github.com/agentbeats/agentbeats/commit/d89f4219237649fcd48f05a114c80ae403346338))
+
+
 ## v1.2.1 (2025-08-08)
 
 ### Bug Fixes
