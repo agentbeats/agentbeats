@@ -52,6 +52,128 @@ components:
           type: string
           format: uuid
           description: Agent instance to stop and unregister
+    RegisterAgentGroupRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          description: Name of the agent group
+        type:
+          type: string
+          enum: [remote, hosted]
+          description: Type of agent group - remote or hosted
+        github_link:
+          type: string
+          format: uri
+          description: GitHub repository link (required for remote type)
+        description:
+          type: string
+          description: Optional description of the agent group
+        config:
+          type: object
+          description: Additional configuration for the agent group
+    AgentGroupResponse:
+      type: object
+      properties:
+        agent_group_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [remote, hosted]
+        github_link:
+          type: string
+          format: uri
+        description:
+          type: string
+        config:
+          type: object
+        owner:
+          type: string
+          description: Owner identifier for the agent group
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateAgentInstanceRequest:
+      type: object
+      required: [alias]
+      properties:
+        alias:
+          type: string
+          description: Agent display alias
+        agent_url:
+          type: string
+          format: uri
+          description: Public A2A URL of the agent (for hosted type)
+        launcher_url:
+          type: string
+          format: uri
+          description: launcher service URL for this agent (for hosted type)
+        is_green:
+          type: boolean
+          description: Whether this agent is a green team agent
+          default: false
+        participant_requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParticipantRequirement"
+          description: Required only for green agents
+        battle_timeout:
+          type: integer
+          description: Timeout in seconds for the battle to complete
+          default: 300
+        config:
+          type: object
+          description: Additional configuration for the agent instance
+    AgentInstanceResponse:
+      type: object
+      properties:
+        agent_id:
+          type: string
+          format: uuid
+        agent_group_id:
+          type: string
+          format: uuid
+        alias:
+          type: string
+        agent_url:
+          type: string
+          format: uri
+        launcher_url:
+          type: string
+          format: uri
+        is_green:
+          type: boolean
+        participant_requirements:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParticipantRequirement"
+        battle_timeout:
+          type: integer
+        agent_card:
+          $ref: "#/components/schemas/AgentCard"
+        status:
+          type: string
+          enum: [unlocked, locked]
+          default: unlocked
+        ready:
+          type: boolean
+          description: Whether the agent is ready after reset
+          default: false
+        config:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     ParticipantRequirement:
       type: object
       required:
@@ -348,21 +470,42 @@ paths:
           description: Agent status updated
   /agent_group:
     post:
-      summary: Create an agent group from a GitHub link
+      summary: Register a new agent group
+      description: |
+        For remote type: automatically creates one agent instance
+        For hosted type: only creates agent group, no instances
       tags: [AgentGroups]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AgentGroupCreateRequest"
+              $ref: "#/components/schemas/RegisterAgentGroupRequest"
       responses:
         "201":
-          description: Agent group created
+          description: Agent group created successfully
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentGroup"
+                type: object
+                properties:
+                  agent_group:
+                    $ref: "#/components/schemas/AgentGroupResponse"
+                  agent_instance:
+                    $ref: "#/components/schemas/AgentInstanceResponse"
+                    description: Only present for remote type agent groups
+    get:
+      summary: List all agent groups (with ownership filtering)
+      tags: [AgentGroups]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentGroupResponse"
   /agent_group/{agentGroupId}:
     parameters:
       - in: path
@@ -372,7 +515,7 @@ paths:
           type: string
           format: uuid
     get:
-      summary: List all agent instances under an agent group
+      summary: Get specific agent group details
       tags: [AgentGroups]
       responses:
         "200":
@@ -380,8 +523,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentGroupAgentsResponse"
-  /agent_group/{agentGroupId}/launch_agent_instance:
+                $ref: "#/components/schemas/AgentGroupResponse"
+    delete:
+      summary: Delete agent group and all its instances
+      tags: [AgentGroups]
+      responses:
+        "204":
+          description: Agent group and all instances deleted successfully
+  /agent_group/{agentGroupId}/instances:
     parameters:
       - in: path
         name: agentGroupId
@@ -389,37 +538,34 @@ paths:
         schema:
           type: string
           format: uuid
-    post:
-      summary: Launch and register a new agent instance in the group
+    get:
+      summary: List all instances for a specific agent group
       tags: [AgentGroups]
       responses:
-        "201":
-          description: Agent instance launched and registered
+        "200":
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentInfo"
-  /agent_group/{agentGroupId}/stop_agent_instance:
-    parameters:
-      - in: path
-        name: agentGroupId
-        required: true
-        schema:
-          type: string
-          format: uuid
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentInstanceResponse"
     post:
-      summary: Stop and unregister an agent instance in the group
+      summary: Create new agent instance for hosted agent group
       tags: [AgentGroups]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AgentGroupStopRequest"
+              $ref: "#/components/schemas/CreateAgentInstanceRequest"
       responses:
-        "204":
-          description: Agent instance stopped and unregistered
-  
+        "201":
+          description: Agent instance created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInstanceResponse"
   /battles:
     post:
       summary: Create a battle record
