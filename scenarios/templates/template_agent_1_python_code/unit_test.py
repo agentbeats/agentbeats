@@ -66,8 +66,9 @@ async def stream_agent_response(
 async def test_plain_message() -> None:
     async with httpx.AsyncClient() as httpx_client:
         # Resolve agent card
-        resolver = A2ACardResolver(httpx_client=httpx_client, 
-                                   base_url=AGENT_URL)
+        resolver = A2ACardResolver(
+            httpx_client=httpx_client, base_url=AGENT_URL
+        )
         card = await resolver.get_agent_card()
         if card is None:
             raise RuntimeError("Failed to resolve agent card.")
@@ -75,14 +76,19 @@ async def test_plain_message() -> None:
         client = A2AClient(httpx_client=httpx_client, agent_card=card)
 
         # -------- Tooluse test --------
-        async for text in stream_agent_response(client, 
-            "please use helloworld_tool give me the greeting message string"):
+        async for text in stream_agent_response(
+            client,
+            "please use helloworld_tool give me the greeting message string",
+        ):
             print(text, end="", flush=True)
 
         # -------- MCP Server --------
-        async for text in stream_agent_response(client, 
-            "please use your mcp server to echo this test message: 'Hello world, beasts!'"):
+        async for text in stream_agent_response(
+            client,
+            "please use your mcp server to echo this test message: 'Hello world, beasts!'",
+        ):
             print(text, end="", flush=True)
+
 
 if __name__ == "__main__":
     asyncio.run(test_plain_message())

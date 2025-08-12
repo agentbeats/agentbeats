@@ -2,7 +2,9 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { marked } from 'marked';
-  
+  import AsciinemaPlayerView from '$lib/components/AsciinemaPlayerView.svelte';
+
+
   let battle: any = null;
   let loading = true;
   let error = '';
@@ -102,6 +104,19 @@
     
     const result = marked(content);
     return typeof result === 'string' ? result : '';
+  }
+
+  function getCastSrc(entry: any): string {
+    const url: string | undefined = entry?.asciinema_url;
+    console.log("Asciinema URL: ", url);
+    const path: string | undefined = entry?.asciinema_path;
+    if (url && typeof url === 'string') {
+      return url; // viewer handles .js embed for asciinema.org and raw .cast for local
+    }
+    if (path && typeof path === 'string') {
+      return path;
+    }
+    return '';
   }
   
   function scrollToBottom() {
@@ -299,7 +314,7 @@
       {#if battle.interact_history && battle.interact_history.length > 0}
         <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
           <h2 class="text-lg font-semibold text-gray-900 mb-2">Interact History</h2>
-          {#each battle.interact_history as entry, i (entry.timestamp + entry.message + i)}
+          {#each battle.interact_history as entry, i ((entry.timestamp || '') + (entry.asciinema_url || '') + (entry.asciinema_path || '') + i)}
             <div class="border rounded-lg p-3 {getEntryBackgroundClass(entry.reported_by)}">
               <div class="flex flex-row justify-between items-center mb-1">
                 <span class="text-xs text-gray-600">{new Date(entry.timestamp).toLocaleString()}</span>
@@ -312,6 +327,12 @@
               {#if entry.markdown_content}
                 <div class="markdown-content mt-2 bg-white p-3 rounded border text-sm">
                   {@html renderMarkdown(entry.markdown_content)}
+                </div>
+              {/if}
+              {#if entry.asciinema_url || entry.asciinema_path}
+                <!-- console log the URL here to the console -->
+                <div class="mt-2">
+                  <AsciinemaPlayerView src={getCastSrc(entry)} options={{ fit: 'width', autoplay: true, loop: false, speed: 0.8 }} />
                 </div>
               {/if}
               {#if entry.detail}

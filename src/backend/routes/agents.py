@@ -485,23 +485,12 @@ async def list_agents(
 
 @router.get("/agents/my")
 async def get_my_agents(
-    current_user: Dict[str, Any] = Depends(get_current_user),
-) -> List[Dict[str, Any]]:
-    """Get all agents owned by the current user."""
-
-
-async def get_my_agents(
     check_liveness: bool = False,
     current_user: Dict[str, Any] = Depends(get_current_user),
 ) -> List[Dict[str, Any]]:
     """Get all agents owned by the current user with optional liveness check."""
     try:
         agents = db.list("agents")
-        user_agents = [
-            agent
-            for agent in agents
-            if agent.get("user_id") == current_user["id"]
-        ]
         user_agents = [
             agent
             for agent in agents

@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 if not logger.hasHandlers():
     handler = logging.StreamHandler()
     handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('[%(levelname)s] %(message)s')
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
@@ -29,27 +29,36 @@ log_subscribers: Dict[str, list] = {}
 # Threadsafe broadcast fix
 MAIN_EVENT_LOOP = asyncio.get_event_loop()
 
+
 class WebSocketManager:
     """Manages WebSocket connections and broadcasting."""
-    
+
     @staticmethod
     async def broadcast_battles_update():
         """Send the full battles list to all connected /ws/battles clients."""
         try:
             battles = db.list("battles")
             msg = json.dumps({"type": "battles_update", "battles": battles})
-            logger.info(f"[battles_ws] Broadcasting battles update to {len(battles_ws_clients)} clients")
+            logger.info(
+                f"[battles_ws] Broadcasting battles update to {len(battles_ws_clients)} clients"
+            )
             for ws in list(battles_ws_clients):
                 try:
-                    asyncio.run_coroutine_threadsafe(ws.send_text(msg), MAIN_EVENT_LOOP)
+                    asyncio.run_coroutine_threadsafe(
+                        ws.send_text(msg), MAIN_EVENT_LOOP
+                    )
                 except Exception as e:
-                    logger.warning(f"[battles_ws] Failed to send to client: {e}")
+                    logger.warning(
+                        f"[battles_ws] Failed to send to client: {e}"
+                    )
                     try:
                         battles_ws_clients.remove(ws)
                     except Exception:
                         pass
         except Exception as e:
-            logger.error(f"[battles_ws] Error in broadcast_battles_update: {e}")
+            logger.error(
+                f"[battles_ws] Error in broadcast_battles_update: {e}"
+            )
 
     @staticmethod
     async def broadcast_battle_update(battle: Optional[Dict[str, Any]]):
@@ -58,12 +67,18 @@ class WebSocketManager:
             if battle is None:
                 return
             msg = json.dumps({"type": "battle_update", "battle": battle})
-            logger.info(f"[battles_ws] Broadcasting single battle update to {len(battles_ws_clients)} clients")
+            logger.info(
+                f"[battles_ws] Broadcasting single battle update to {len(battles_ws_clients)} clients"
+            )
             for ws in list(battles_ws_clients):
                 try:
-                    asyncio.run_coroutine_threadsafe(ws.send_text(msg), MAIN_EVENT_LOOP)
+                    asyncio.run_coroutine_threadsafe(
+                        ws.send_text(msg), MAIN_EVENT_LOOP
+                    )
                 except Exception as e:
-                    logger.warning(f"[battles_ws] Failed to send to client: {e}")
+                    logger.warning(
+                        f"[battles_ws] Failed to send to client: {e}"
+                    )
                     try:
                         battles_ws_clients.remove(ws)
                     except Exception:
@@ -71,8 +86,10 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"[battles_ws] Error in broadcast_battle_update: {e}")
 
+
 # Create global instance
 websocket_manager = WebSocketManager()
+
 
 @router.websocket("/ws/battles")
 async def battles_ws(websocket: WebSocket):
@@ -82,8 +99,12 @@ async def battles_ws(websocket: WebSocket):
     battles_ws_clients.add(websocket)
     try:
         battles = db.list("battles")
-        await websocket.send_text(json.dumps({"type": "battles_update", "battles": battles}))
-        logger.info(f"[battles_ws] Client connected. Total clients: {len(battles_ws_clients)}")
+        await websocket.send_text(
+            json.dumps({"type": "battles_update", "battles": battles})
+        )
+        logger.info(
+            f"[battles_ws] Client connected. Total clients: {len(battles_ws_clients)}"
+        )
         while True:
             await asyncio.sleep(1)
     except WebSocketDisconnect:
@@ -92,6 +113,7 @@ async def battles_ws(websocket: WebSocket):
     except Exception as e:
         logger.warning(f"[battles_ws] Exception: {e}")
         battles_ws_clients.remove(websocket)
+
 
 @router.websocket("/ws/battles/{battle_id}/logs")
 async def battle_logs_ws(websocket: WebSocket, battle_id: str):
@@ -118,4 +140,4 @@ async def battle_logs_ws(websocket: WebSocket, battle_id: str):
         log_subscribers[battle_id].remove(websocket)
     except Exception as e:
         logger.warning(f"[logs_ws] Exception for battle {battle_id}: {e}")
-        log_subscribers[battle_id].remove(websocket) 
+        log_subscribers[battle_id].remove(websocket)

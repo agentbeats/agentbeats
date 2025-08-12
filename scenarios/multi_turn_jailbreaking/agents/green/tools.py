@@ -199,7 +199,8 @@ async def reset_battle_timing(battle_id: str) -> str:
 async def read_conversation_history(battle_id: str) -> str:
     """Read the conversation history between the red agent and the blue agent."""
     history_path = (
-        Path(__file__).parent.parent.parent / f"logs/conversation_{battle_id}.jsonl"
+        Path(__file__).parent.parent.parent
+        / f"logs/conversation_{battle_id}.jsonl"
     )
     logger.info(f"Reading conversation history from {history_path}")
 

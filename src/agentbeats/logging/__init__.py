@@ -20,7 +20,7 @@ from .logging import (
     log_error,
     log_startup,
     log_shutdown,
-    update_battle_process, 
+    update_battle_process,
 )
 
 # Interaction history functions
@@ -32,25 +32,22 @@ from .interaction_history import (
 
 __all__ = [
     # Context management
-    'BattleContext',
-    
+    "BattleContext",
     # System logs
-    'log_ready',
-    'log_error',
-    'log_startup',
-    'log_shutdown',
-    'update_battle_process',
-    
+    "log_ready",
+    "log_error",
+    "log_startup",
+    "log_shutdown",
+    "update_battle_process",
     # Interaction history
-    'record_battle_event',
-    'record_battle_result',
-    'record_agent_action',
-
+    "record_battle_event",
+    "record_battle_result",
+    "record_agent_action",
     # Battle context management
-    'set_battle_context',
-    'get_battle_context',
-    'get_battle_id',
-    'get_agent_id',
-    'get_frontend_agent_name',
-    'get_backend_url',
+    "set_battle_context",
+    "get_battle_context",
+    "get_battle_id",
+    "get_agent_id",
+    "get_frontend_agent_name",
+    "get_backend_url",
 ]

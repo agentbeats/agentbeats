@@ -425,9 +425,9 @@ def _run_backend(
             if public_url and public_url != "None":
                 os.environ["PUBLIC_BACKEND_URL"] = public_url
             else:
-                os.environ["PUBLIC_BACKEND_URL"] = (
-                    f"http://{host}:{backend_port}"
-                )
+                os.environ[
+                    "PUBLIC_BACKEND_URL"
+                ] = f"http://{host}:{backend_port}"
 
             print(
                 f"Backend public URL configured as: {os.getenv('PUBLIC_BACKEND_URL')}"

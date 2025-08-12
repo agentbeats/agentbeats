@@ -9,6 +9,7 @@ import requests
 import subprocess
 from pathlib import Path
 from typing import List, Optional
+import os
 
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
@@ -27,9 +28,9 @@ class BeatsAgentLauncher:
     """
     Agent Launcher for AgentBeats.
     Use a separate server to manage agent processes.
-    When reset signal is received, it will restart the agent process 
+    When reset signal is received, it will restart the agent process
     and notify the backend when the agent is ready.
-    E.g. 
+    E.g.
         Launcher serves on http://localhost:8000
         Agent runs on http://localhost:8001
         Post to http://localhost:8000/reset with JSON
@@ -51,7 +52,7 @@ class BeatsAgentLauncher:
         model_type: str,
         model_name: str,
         mcp_list: List[str],
-        tool_list: List[str]
+        tool_list: List[str],
     ) -> None:
         # agent settings
         self.agent_card = Path(agent_card).expanduser().resolve()
@@ -84,22 +85,29 @@ class BeatsAgentLauncher:
             "agentbeats",
             "run_agent",
             str(self.agent_card),
-            "--agent_host", self.agent_host,
-            "--agent_port", str(self.agent_port),
-            "--model_type", self.model_type,
-            "--model_name", self.model_name,
+            "--agent_host",
+            self.agent_host,
+            "--agent_port",
+            str(self.agent_port),
+            "--model_type",
+            self.model_type,
+            "--model_name",
+            self.model_name,
         ]
 
         for url in self.mcp_list:
             cmd.extend(["--mcp", url])
-        
+
         for tool in self.tool_file:
             cmd.extend(["--tool", tool])
 
         return cmd
 
     def _start_agent(self) -> subprocess.Popen:
-        print("[Launcher] Starting agent with command:", " ".join(self._agent_cmd()))
+        print(
+            "[Launcher] Starting agent with command:",
+            " ".join(self._agent_cmd()),
+        )
         return subprocess.Popen(self._agent_cmd())
 
     def _terminate_agent(self) -> None:
@@ -120,7 +128,7 @@ class BeatsAgentLauncher:
             self._terminate_agent()
             self._agent_proc = self._start_agent()
 
-            time.sleep(2) # wait for agent to start, TODO: use a better impl
+            time.sleep(2)  # wait for agent to start, TODO: use a better impl
 
             try:
                 requests.put(
@@ -133,7 +141,6 @@ class BeatsAgentLauncher:
 
             return {"status": "restarted", "pid": self._agent_proc.pid}
 
-    
     def _build_app(self) -> FastAPI:
         app = FastAPI(title="Agent Launcher", version="1.0.0")
 
@@ -144,8 +151,10 @@ class BeatsAgentLauncher:
         @app.get("/status")
         async def _status():
             if self._agent_proc and self._agent_proc.poll() is None:
-                return {"status":   "server up, with agent running", 
-                        "pid":      self._agent_proc.pid}
+                return {
+                    "status": "server up, with agent running",
+                    "pid": self._agent_proc.pid,
+                }
             else:
                 return {"status": "server up, no agents running"}
 
@@ -162,7 +171,9 @@ class BeatsAgentLauncher:
             host=self.launcher_host,
             port=self.launcher_port,
             reload=reload,
-            log_level="debug" if reload else "info",
+            log_level=os.getenv(
+                "AGENTBEATS_UVICORN_LOG_LEVEL", "debug" if reload else "info"
+            ),
         )
 
     def shutdown(self) -> None:

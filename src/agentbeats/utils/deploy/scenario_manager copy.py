@@ -592,9 +592,9 @@ class ScenarioManager:
 
                 # Add participant_requirements for green agents
                 if agent.is_green and agent.participant_requirements:
-                    register_data["participant_requirements"] = (
-                        agent.participant_requirements
-                    )
+                    register_data[
+                        "participant_requirements"
+                    ] = agent.participant_requirements
 
                 # Register agent
                 response = requests.post(
@@ -699,9 +699,7 @@ class ScenarioManager:
             if not agent.is_green:
                 agent_id = self.register_agent_to_backend(agent, backend_url)
                 if not agent_id:
-                    print(
-                        f"❌ Failed to register non-green agent {agent.name}"
-                    )
+                    print(f"❌ Failed to register non-green agent {agent.name}")
                     return None
                 agent_id_map[agent.name] = agent_id
 

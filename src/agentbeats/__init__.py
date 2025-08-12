@@ -7,23 +7,36 @@ from typing import Callable, List, Dict
 from .agent_executor import *
 from .agent_launcher import *
 from .utils.agents import (
-    create_a2a_client, send_message_to_agent, send_message_to_agents, send_messages_to_agents
+    create_a2a_client,
+    send_message_to_agent,
+    send_message_to_agents,
+    send_messages_to_agents,
 )
 from .utils.environment import (
-    setup_container, cleanup_container, check_container_health
+    setup_container,
+    cleanup_container,
+    check_container_health,
 )
-from .utils.commands import (
-    SSHClient, create_ssh_connect_tool
-)
+from .utils.commands import SSHClient, create_ssh_connect_tool
 from .logging import (
-    BattleContext, log_ready, log_error, log_startup, log_shutdown,
-    record_battle_event, record_battle_result, record_agent_action, 
-    set_battle_context, get_battle_context, 
-    get_frontend_agent_name, get_backend_url, get_battle_id, get_agent_id
+    BattleContext,
+    log_ready,
+    log_error,
+    log_startup,
+    log_shutdown,
+    record_battle_event,
+    record_battle_result,
+    record_agent_action,
+    set_battle_context,
+    get_battle_context,
+    get_frontend_agent_name,
+    get_backend_url,
+    get_battle_id,
+    get_agent_id,
 )
 
 # dynamically registered variables for each run
-_TOOL_REGISTRY: List[Callable]  = []        # global register for tools
+_TOOL_REGISTRY: List[Callable] = []  # global register for tools
 
 
 def tool(func=None):
@@ -31,6 +44,7 @@ def tool(func=None):
     Usage: @agentbeats.tool() or @agentbeats.tool
     Registers a function and wraps it so foo() is called on invocation.
     """
+
     def _decorator(func):
         _TOOL_REGISTRY.append(func)
 
@@ -38,7 +52,7 @@ def tool(func=None):
             return func(*args, **kwargs)
 
         wrapper.__name__ = func.__name__  # keep function name
-        wrapper.__doc__ = func.__doc__    # keep docstring
+        wrapper.__doc__ = func.__doc__  # keep docstring
         wrapper.__module__ = func.__module__  # preserve module info
 
         return wrapper

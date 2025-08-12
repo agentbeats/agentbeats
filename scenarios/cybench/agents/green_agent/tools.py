@@ -21,6 +21,8 @@ from typing import Optional, Dict, Any, List
 import logging
 import httpx
 from collections import defaultdict
+
+
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     Message,
@@ -90,9 +92,16 @@ def get_task_dir(task_index: int) -> str:
 async def talk_to_red_agent(
     query: str, target_url: str, battle_id: str, timeout_seconds: float = 120.0
 ) -> str:
-    """Talk to a red or blue agent at the given URL with a query. Tracks cumulative time for the battle."""
+    """
+    Talk to a red or blue agent at the given URL with a query. Tracks cumulative time for the battle.
+
+    Args:
+        query: The query to send to the agent.
+        target_url: The URL of the agent to talk to.
+        battle_id: The ID of the battle.
+    """
     logging.info(
-        f"Talking to agent at {target_url} with query: {query} for battle {battle_id}"
+        f"\033[32mTalking to agent at {target_url} with query: {query} for battle {battle_id}\033[0m"
     )
     logging.info(f"Timeout: {timeout_seconds}")
 
@@ -221,6 +230,86 @@ async def reset_battle_timing(battle_id: str) -> str:
 
 
 ########################################################
+# Asciinema functions
+########################################################
+
+import re
+
+CSI = re.compile(
+    r"\x1b\[[0-9;?]*[ -/]*[@-~]"
+)  # ANSI CSI (colors, cursor moves)
+OSC = re.compile(r"\x1b\][^\x07]*(?:\x07|\x1b\\)")  # OSC (title set, etc.)
+CTRL = re.compile(
+    r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]"
+)  # other control chars (keep \n & \t)
+
+
+def extract_output_from_cast(cast_text: str, cmd: str | None = None) -> str:
+    """
+    Return clean stdout/terminal text from an asciinema v2 cast.
+    If `cmd` is provided, the echoed '$ <cmd>' line is removed explicitly.
+    """
+    if not cast_text:
+        return ""
+
+    lines = cast_text.splitlines()
+    if not lines:
+        return ""
+
+    # 1) Collect all "output" events
+    chunks = []
+    for line in lines[1:]:  # skip header JSON
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if (
+            isinstance(ev, list)
+            and len(ev) >= 3
+            and ev[1] == "o"
+            and isinstance(ev[2], str)
+        ):
+            chunks.append(ev[2])
+
+    raw = "".join(chunks)
+
+    # 2) Strip ANSI/OSC/control noise and normalize newlines
+    text = CSI.sub("", raw)
+    text = OSC.sub("", text)
+    text = text.replace("\r", "")
+    text = CTRL.sub("", text)
+
+    # 3) Drop prompts, echoed command, and boilerplate like "exit"
+    out_lines = []
+    cmd_line = f"$ {cmd}".strip() if cmd else None
+    for ln in text.split("\n"):
+        s = ln.strip()
+
+        # skip empty
+        if s == "":
+            continue
+
+        # skip the shell’s fancy two-line prompt (common in Kali-like images)
+        if s.startswith("┌──(") or s.startswith("└─"):
+            continue
+
+        # skip generic prompt lines and echoed command
+        if s == "$" or s.startswith("$ "):
+            if cmd_line and s == cmd_line:
+                continue
+            # if you want to drop *all* "$ something" lines, keep the next line:
+            continue
+
+        # skip our termination line, if it slipped in
+        if s == "exit":
+            continue
+
+        out_lines.append(ln)
+
+    return "\n".join(out_lines).strip()
+
+
+########################################################
 # Cybench tools
 ########################################################
 
@@ -229,15 +318,6 @@ client = docker.from_env()
 image_name = "cybench/cybench:latest"
 network_name = "shared_net"
 containers = {}  # Maps container_name to container object
-
-
-def validate_current_directory():
-    """Validate that we're running from the cybench directory"""
-    current_dir = Path.cwd().name
-    if current_dir != "cybench":
-        raise ValueError(
-            "Error: Please run this script from the cybench directory."
-        )
 
 
 def cleanup_existing_container(battle_id: str = None):
@@ -299,18 +379,19 @@ def parse_json_output(output: str) -> Optional[Dict[Any, Any]]:
     return None
 
 
+@tool
 def run_container(task_dir: str, battle_id: str = None) -> str:
     """Run the Docker container for the given task_dir and battle_id"""
-    logger.info(f"cybench_dir: {cybench_dir}/setup_cybench_env.py")
+    current_dir = cybench_dir
     volumes = {
-        str(cybench_dir / "agent"): {"bind": "/app/agent", "mode": "ro"},
-        str(cybench_dir / "setup_cybench_env.py"): {
+        str(current_dir / "agent"): {"bind": "/app/agent", "mode": "ro"},
+        str(current_dir / "setup_cybench_env.py"): {
             "bind": "/app/run_task.py",
             "mode": "ro",
         },
     }
     env_vars = {}
-    env_file = cybench_dir / ".env"
+    env_file = current_dir / ".env"
     if env_file.exists():
         with open(env_file, "r") as f:
             for line in f:
@@ -320,16 +401,19 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
                     env_vars[key] = value
     if "DOCKER_NETWORK_DRIVER" not in env_vars:
         env_vars["DOCKER_NETWORK_DRIVER"] = "bridge"
-    logger.info(f"Running Docker container for task_dir: {task_dir}")
+    print("Running Docker container for task_dir:", task_dir)
     container_name = _get_container_name(battle_id)
     # Build the command to run inside the container
     command = [
         "--task_dir",
         task_dir,
+        # Add other default arguments here if needed
     ]
     try:
-        logger.info("Pulling latest image...")
+        print(f"Pulling {image_name} image...")
         client.images.pull(image_name)
+        print("Image pulled successfully")
+        print(f"Running container {container_name}...")
         container = client.containers.run(
             image=image_name,
             command=command,
@@ -345,37 +429,19 @@ def run_container(task_dir: str, battle_id: str = None) -> str:
             cgroupns="host",
         )
         containers[container_name] = container
-
-        # Wait for the setup process to complete and get the IMPORTANT logs
         result = container.wait()
         logs = container.logs(stdout=True, stderr=True).decode("utf-8")
         with open("/tmp/benchmark-latest.log", "w") as f:
             f.write(logs)
+        # print("=" * 50)
+        # print("CONTAINER LOGS:")
+        # print(logs)
+        # print("=" * 50)
 
         if result["StatusCode"] != 0:
-            logger.error(
-                f"Container setup failed with status code {result['StatusCode']}"
-            )
-            logger.error(f"Logs: {logs}")
             raise RuntimeError(
-                f"Container setup failed with status code {result['StatusCode']}"
+                f"Container exited with status code {result['StatusCode']}"
             )
-
-        # Now restart the container with a command that keeps it alive
-        logger.info(
-            "Setup completed successfully. Restarting container to keep it alive..."
-        )
-        container.restart()
-
-        # Execute a command to keep the container running indefinitely
-        import time
-
-        time.sleep(2)  # Give restart a moment
-        container.exec_run(["sh", "-c", "tail -f /dev/null"], detach=True)
-
-        logger.info(
-            f"Container {container_name} setup complete and staying alive for commands"
-        )
         return logs
     except Exception as e:
         try:
@@ -420,7 +486,6 @@ def setup_cybench_task(task_dir: str, battle_id: str = None) -> Dict[Any, Any]:
             "commands": List[str],
         }
     """
-    # self.validate_current_directory()
     logger.info(f"Setting up cybench task: {task_dir}")
     cleanup_existing_container(battle_id)
     create_network_if_needed()
@@ -443,44 +508,223 @@ def setup_cybench_task(task_dir: str, battle_id: str = None) -> Dict[Any, Any]:
 
 
 @tool
-def execute_command_in_container(command: str, battle_id: str = None) -> str:
+def execute_command_in_container(
+    command: str,
+    battle_id: str = None,
+    show_asciinema: bool = False,
+    timeout_seconds: int = 120,
+) -> Any:
     """
-    This tool is used to execute a command in the running container and return the output.
-    command: The command to execute in the container.
-    battle_id: The battle_id for the container to execute the command in.
-
-    Example:
-    ```
-    command: ls -la /tmp/cyber-bench
-    battle_id: example123
-    ```
+    Execute a command in the container and return the output.
+    If show_asciinema is True, return the asciinema v2 JSON cast (inputs + outputs).
 
     Returns:
-        str: The output of the command.
+        Dict[Any, Any]: The results of the task.
+        {
+            "output_text": str, # this is the output of the command that an agent should focus on
+            "cast_text": str, # agent can ignore this
+            "asciinema_path": str, # agent can ignore this
+        }
     """
-    logger.info(f"\033[34mExecuting command in container: {command}\033[0m")
+    import shlex
+    import socket as pysocket
+
     container_name = _get_container_name(battle_id)
     try:
         container = client.containers.get(container_name)
-
-        # Check if container is running
+        container.reload()
         if container.status != "running":
-            logger.warning(
-                f"Container {container_name} is not running, restarting it..."
-            )
             container.start()
 
-        # Execute command in the running container
-        exec_result = container.exec_run(command, stdout=True, stderr=True)
-        output = exec_result.output.decode("utf-8")
-        logger.info(f"Output: {output}")
-        return output
+        # Fast path (no recording)
+        if not show_asciinema:
+            exec_result = container.exec_run(
+                ["/bin/sh", "-lc", command], stdout=True, stderr=True
+            )
+            return exec_result.output.decode("utf-8", errors="replace")
+
+        # Ensure asciinema is available (pip first; apt fallback)
+        bootstrap_cmd = r"""
+set -e
+if ! command -v asciinema >/dev/null 2>&1; then
+(python3 -m pip install --no-input --upgrade pip >/dev/null 2>&1 || true)
+(python3 -m pip install --no-input asciinema >/dev/null 2>&1 || true)
+fi
+if ! command -v asciinema >/dev/null 2>&1; then
+export DEBIAN_FRONTEND=noninteractive
+(apt-get update -y >/dev/null 2>&1 && apt-get install -y asciinema >/dev/null 2>&1) || true
+fi
+command -v asciinema >/dev/null 2>&1 && echo OK || echo MISSING
+""".strip()
+        chk = container.exec_run(["/bin/sh", "-lc", bootstrap_cmd])
+        if b"MISSING" in chk.output:
+            exec_result = container.exec_run(
+                ["/bin/sh", "-lc", command], stdout=True, stderr=True
+            )
+            return {
+                "output_text": exec_result.output.decode(
+                    "utf-8", errors="replace"
+                ),
+                "cast_text": None,
+            }
+
+        # Prefer bash if available (nicer prompts/line editing), fallback to sh
+        has_bash = (
+            container.exec_run(
+                [
+                    "/bin/sh",
+                    "-lc",
+                    "command -v bash >/dev/null 2>&1 && echo YES || echo NO",
+                ]
+            )
+            .output.decode()
+            .strip()
+            == "YES"
+        )
+        shell = "/bin/bash" if has_bash else "/bin/sh"
+
+        # Unique cast path
+        cast_path = f"/tmp/agentbeats_{int(time.time()*1000)}.cast"
+
+        # Start asciinema in interactive mode (no -c). It will spawn $SHELL.
+        # We pass TERM/size, and set SHELL explicitly so asciinema uses it.
+        run_rec = (
+            f'export PS1="$ "; '
+            f"TERM=xterm SHELL={shlex.quote(shell)} "
+            f"asciinema rec {shlex.quote(cast_path)} "
+            f"--overwrite -y -q --cols 120 --rows 30 --idle-time-limit 1"
+        )
+
+        api = client.api
+        exec_id = api.exec_create(
+            container.id,
+            cmd=["/bin/sh", "-lc", run_rec],
+            tty=True,
+            stdin=True,  # IMPORTANT: we will type into the TTY
+            environment={"TERM": "xterm", "COLUMNS": "120", "LINES": "30"},
+        )["Id"]
+
+        # Attach socket (PTY) and interact: type the command, then Ctrl-D to end
+        sock = api.exec_start(exec_id, tty=True, stream=False, socket=True)
+        sock._sock.settimeout(timeout_seconds)
+
+        # Helper to send bytes safely
+        def send(data: bytes):
+            if not data:
+                return
+            sock._sock.sendall(data)
+
+        try:
+            # Small delay to let shell start
+            import time as _t
+
+            _t.sleep(0.15)
+
+            # Optional: set a clean prompt (this input will be recorded as typed)
+            # Comment out if you don't want this line in the cast.
+            send(b'export PS1="$ "\n')
+            _t.sleep(0.05)
+
+            # Type the user's command exactly so it shows in the recording
+            send(command.encode("utf-8", "replace") + b"\n")
+
+            # Wait a bit for command to finish; you can tune this or
+            # loop-read until you detect a prompt. We keep it simple:
+            _t.sleep(0.2)
+
+            # End the interactive shell & stop the recording
+            # (Ctrl-D = EOT; works for bash/sh)
+            send(b"\x04")
+        except Exception:
+            pass
+        finally:
+            # Ensure remote exec is finished so Docker closes its end
+            try:
+                for _ in range(40):
+                    info = api.exec_inspect(exec_id)
+                    if not info.get("Running", False):
+                        break
+                    _t.sleep(0.05)
+            except Exception:
+                pass
+            # Graceful shutdown of local socket/response to avoid warnings
+            try:
+                sock._sock.shutdown(pysocket.SHUT_RDWR)
+            except Exception:
+                pass
+            try:
+                sock._sock.close()
+            except Exception:
+                pass
+            try:
+                sock.close()
+            except Exception:
+                pass
+            try:
+                resp = getattr(sock, "_response", None)
+                if resp is not None:
+                    resp.close()
+            except Exception:
+                pass
+
+        # Poll for the cast file and read it
+        cast_text = ""
+        loops = max(4, int(timeout_seconds / 0.25))
+        for _ in range(loops):
+            size_res = container.exec_run(
+                [
+                    "/bin/sh",
+                    "-lc",
+                    f"test -f {shlex.quote(cast_path)} && wc -c < {shlex.quote(cast_path)} || echo 0",
+                ]
+            )
+            try:
+                size = int(
+                    size_res.output.decode("utf-8", errors="replace").strip()
+                    or "0"
+                )
+            except Exception:
+                size = 0
+            if size > 0:
+                cat_res = container.exec_run(
+                    ["/bin/sh", "-lc", f"cat {shlex.quote(cast_path)}"]
+                )
+                cast_text = cat_res.output.decode("utf-8", errors="replace")
+                if cast_text:
+                    break
+            _t.sleep(0.25)
+
+        # Cleanup best-effort
+        container.exec_run(
+            [
+                "/bin/sh",
+                "-lc",
+                f"rm -f {shlex.quote(cast_path)} >/dev/null 2>&1 || true",
+            ]
+        )
+
+        #
+        # Replace all non-alphanumeric, dot, underscore, dash with underscores
+        safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", command).strip("_")
+        with open(f"{safe_name}.cast", "w", encoding="utf-8") as f:
+            f.write(cast_text)
+        absolute_path = os.path.abspath(f"{safe_name}.cast")
+        logger.info(f"Saved cast to: {absolute_path}")
+        output_text = extract_output_from_cast(cast_text)
+
+        return {
+            "output_text": output_text,
+            "cast_text": cast_text,
+            "asciinema_path": absolute_path,
+        }
 
     except docker.errors.NotFound:
-        print(f"Container {container_name} not found, please run a task first")
+        logger.warning(
+            f"Container {container_name} not found, please run a task first"
+        )
         return ""
     except Exception as e:
-        print(f"Error executing command in container: {e}")
+        logger.error(f"Error executing command in container: {e}")
         return ""
 
 

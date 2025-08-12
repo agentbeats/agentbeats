@@ -625,9 +625,9 @@ class ScenarioManager:
 
                 # Add participant_requirements for green agents
                 if agent.is_green and agent.participant_requirements:
-                    register_data["participant_requirements"] = (
-                        agent.participant_requirements
-                    )
+                    register_data[
+                        "participant_requirements"
+                    ] = agent.participant_requirements
 
                 # Register agent
                 response = requests.post(

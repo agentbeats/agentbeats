@@ -7,13 +7,18 @@ from uuid import uuid4
 from typing import List
 from a2a.client import A2AClient, A2ACardResolver
 from a2a.types import (
-    AgentCard, Message, Part, TextPart, Role, 
+    AgentCard,
+    Message,
+    Part,
+    TextPart,
+    Role,
     SendStreamingMessageRequest,
     SendStreamingMessageSuccessResponse,
     MessageSendParams,
     TaskArtifactUpdateEvent,
     TaskStatusUpdateEvent,
 )
+
 
 @ab.tool
 async def talk_to_agent(query: str, target_url: str) -> str:

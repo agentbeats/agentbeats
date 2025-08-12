@@ -14,10 +14,11 @@ logger = logging.getLogger(__name__)
 # Import context management
 from .context import BattleContext
 
+
 def record_battle_event(
     context: BattleContext,
     message: str,
-    detail: Optional[Dict[str, Any]] = None
+    detail: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Record a battle event to the backend server."""
     event_data = {
@@ -32,24 +33,35 @@ def record_battle_event(
             f"{context.backend_url}/battles/{context.battle_id}",
             json=event_data,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 204:
-            logger.info("Successfully recorded battle event to backend for battle %s", context.battle_id)
-            return 'event recorded to backend'
+            logger.info(
+                "Successfully recorded battle event to backend for battle %s",
+                context.battle_id,
+            )
+            return "event recorded to backend"
         else:
-            logger.error("Failed to record battle event to backend for battle %s: %s", context.battle_id, response.text)
-            return 'event recording to backend failed'
+            logger.error(
+                "Failed to record battle event to backend for battle %s: %s",
+                context.battle_id,
+                response.text,
+            )
+            return "event recording to backend failed"
     except Exception as e:
-        logger.error("Exception recording battle event to backend for battle %s: %s", context.battle_id, str(e))
-        return 'event recording to backend failed'
+        logger.error(
+            "Exception recording battle event to backend for battle %s: %s",
+            context.battle_id,
+            str(e),
+        )
+        return "event recording to backend failed"
 
 
 def record_battle_result(
     context: BattleContext,
     message: str,
     winner: str,
-    detail: Optional[Dict[str, Any]] = None
+    detail: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Record the final battle result to the backend server."""
     result_data = {
@@ -65,24 +77,35 @@ def record_battle_result(
             f"{context.backend_url}/battles/{context.battle_id}",
             json=result_data,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 204:
-            logger.info("Successfully recorded battle result to backend for battle %s", context.battle_id)
-            return f'battle result recorded to backend: winner={winner}'
+            logger.info(
+                "Successfully recorded battle result to backend for battle %s",
+                context.battle_id,
+            )
+            return f"battle result recorded to backend: winner={winner}"
         else:
-            logger.error("Failed to record battle result to backend for battle %s: %s", context.battle_id, response.text)
-            return 'result recording to backend failed'
+            logger.error(
+                "Failed to record battle result to backend for battle %s: %s",
+                context.battle_id,
+                response.text,
+            )
+            return "result recording to backend failed"
     except Exception as e:
-        logger.error("Exception recording battle result to backend for battle %s: %s", context.battle_id, str(e))
-        return 'result recording to backend failed'
+        logger.error(
+            "Exception recording battle result to backend for battle %s: %s",
+            context.battle_id,
+            str(e),
+        )
+        return "result recording to backend failed"
 
 
 def record_agent_action(
     context: BattleContext,
     action: str,
     detail: Optional[Dict[str, Any]] = None,
-    interaction_details: Optional[Dict[str, Any]] = None
+    interaction_details: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Record an agent action to the backend server."""
     event_data = {
@@ -98,14 +121,25 @@ def record_agent_action(
             f"{context.backend_url}/battles/{context.battle_id}",
             json=event_data,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=10,
         )
         if response.status_code == 204:
-            logger.info("Successfully recorded agent action to backend for battle %s", context.battle_id)
-            return 'action recorded to backend'
+            logger.info(
+                "Successfully recorded agent action to backend for battle %s",
+                context.battle_id,
+            )
+            return "action recorded to backend"
         else:
-            logger.error("Failed to record agent action to backend for battle %s: %s", context.battle_id, response.text)
-            return 'action recording to backend failed'
+            logger.error(
+                "Failed to record agent action to backend for battle %s: %s",
+                context.battle_id,
+                response.text,
+            )
+            return "action recording to backend failed"
     except Exception as e:
-        logger.error("Exception recording agent action to backend for battle %s: %s", context.battle_id, str(e))
-        return 'action recording to backend failed' 
+        logger.error(
+            "Exception recording agent action to backend for battle %s: %s",
+            context.battle_id,
+            str(e),
+        )
+        return "action recording to backend failed"

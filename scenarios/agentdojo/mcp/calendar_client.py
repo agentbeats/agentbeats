@@ -7,7 +7,11 @@ from pydantic import BaseModel, EmailStr, model_validator
 from typing_extensions import Self
 
 from agentdojo.default_suites.v1.tools.email_client import Inbox
-from agentdojo.default_suites.v1.tools.types import CalendarEvent, CalendarEventID, EvenStatus
+from agentdojo.default_suites.v1.tools.types import (
+    CalendarEvent,
+    CalendarEventID,
+    EvenStatus,
+)
 from agentdojo.functions_runtime import Depends
 
 __all__ = [
@@ -29,8 +33,9 @@ class Calendar(BaseModel):
     events: dict[CalendarEventID, CalendarEvent] = {}
 
     @classmethod
-    def init_from_yaml_and_injection(cls, yaml_path: str, 
-                                     injection: dict[str, str]) -> "Calendar":
+    def init_from_yaml_and_injection(
+        cls, yaml_path: str, injection: dict[str, str]
+    ) -> "Calendar":
         """
         Initialize Calendar from YAML file.
         :param injection: A dictionary containing placeholders and their replacements. For example, {"calendar_introductory_meeting_injection": "Introductory meeting details"}.
@@ -38,45 +43,47 @@ class Calendar(BaseModel):
         """
         try:
             # First read the file as string
-            with open(yaml_path, 'r', encoding='utf-8') as f:
+            with open(yaml_path, "r", encoding="utf-8") as f:
                 yaml_content = f.read()
-            
+
             # Perform string replacements to clean up placeholders
             for key, value in injection.items():
                 yaml_content = yaml_content.replace("{" + key + "}", value)
 
             # Parse the modified content as YAML
             calendar_data = yaml.safe_load(yaml_content)
-            
+
             # Create events from the YAML data
             initial_events = []
-            for event_data in calendar_data['initial_events']:
+            for event_data in calendar_data["initial_events"]:
                 # Create CalendarEvent object from the YAML data
                 calendar_event = CalendarEvent(
-                    id_=CalendarEventID(event_data['id_']),
-                    title=event_data['title'],
-                    description=event_data.get('description', ''),
-                    start_time=event_data['start_time'],
-                    end_time=event_data['end_time'],
-                    location=event_data.get('location'),
-                    participants=event_data['participants'],
-                    all_day=event_data.get('all_day', False),
-                    status=EvenStatus(event_data.get('status', 'confirmed'))
+                    id_=CalendarEventID(event_data["id_"]),
+                    title=event_data["title"],
+                    description=event_data.get("description", ""),
+                    start_time=event_data["start_time"],
+                    end_time=event_data["end_time"],
+                    location=event_data.get("location"),
+                    participants=event_data["participants"],
+                    all_day=event_data.get("all_day", False),
+                    status=EvenStatus(event_data.get("status", "confirmed")),
                 )
                 initial_events.append(calendar_event)
-            
+
             # Parse current_day if it's a string
-            current_day = calendar_data['current_day']
+            current_day = calendar_data["current_day"]
             if isinstance(current_day, str):
-                current_day = datetime.datetime.strptime(current_day, "%Y-%m-%d").date()
-            
+                current_day = datetime.datetime.strptime(
+                    current_day, "%Y-%m-%d"
+                ).date()
+
             # Create the calendar with the loaded data
             return cls(
                 current_day=current_day,
-                account_email=calendar_data['account_email'],
-                initial_events=initial_events
+                account_email=calendar_data["account_email"],
+                initial_events=initial_events,
             )
-            
+
         except FileNotFoundError:
             raise FileNotFoundError(f"YAML file not found at {yaml_path}")
         except Exception as e:
@@ -87,7 +94,9 @@ class Calendar(BaseModel):
         all_ids = [event.id_ for event in self.initial_events]
         if len(all_ids) != len(set(all_ids)):
             duplicate_ids = [id_ for id_ in all_ids if all_ids.count(id_) > 1]
-            raise ValueError(f"Event IDs must be unique. Duplicates: {duplicate_ids}")
+            raise ValueError(
+                f"Event IDs must be unique. Duplicates: {duplicate_ids}"
+            )
         self.events = {event.id_: event for event in self.initial_events}
         return self
 
@@ -96,7 +105,11 @@ class Calendar(BaseModel):
         return CalendarEventID(largest_id + 1)
 
     def get_by_day(self, day: datetime.date) -> list[CalendarEvent]:
-        return [event for event in self.events.values() if event.start_time.date() == day]
+        return [
+            event
+            for event in self.events.values()
+            if event.start_time.date() == day
+        ]
 
     def create_event(
         self,
@@ -133,7 +146,9 @@ class Calendar(BaseModel):
             attachments=[self.events[event_id]],
         )
 
-    def search_events(self, query: str, date: datetime.date | None = None) -> list[CalendarEvent]:
+    def search_events(
+        self, query: str, date: datetime.date | None = None
+    ) -> list[CalendarEvent]:
         if date is not None:
             events = self.get_by_day(date)
         else:
@@ -141,7 +156,8 @@ class Calendar(BaseModel):
         return [
             event
             for event in events
-            if query.lower() in event.title.lower() or query.lower() in event.description.lower()
+            if query.lower() in event.title.lower()
+            or query.lower() in event.description.lower()
         ]
 
     def day_has_conflicts(self, day: datetime.date) -> bool:
@@ -150,7 +166,9 @@ class Calendar(BaseModel):
             for other_event in events[i + 1 :]:
                 if (
                     event.start_time <= other_event.start_time < event.end_time
-                    or event.start_time < other_event.end_time <= event.end_time
+                    or event.start_time
+                    < other_event.end_time
+                    <= event.end_time
                 ):
                     return True
         return False
@@ -184,7 +202,9 @@ class Calendar(BaseModel):
         )
         return event
 
-    def add_participants(self, event_id: CalendarEventID, participants: list[EmailStr]) -> CalendarEvent:
+    def add_participants(
+        self, event_id: CalendarEventID, participants: list[EmailStr]
+    ) -> CalendarEvent:
         if event_id not in self.events:
             raise ValueError(f"Event with ID '{event_id}' not found.")
         event = self.events[event_id]
@@ -192,7 +212,9 @@ class Calendar(BaseModel):
         return event
 
 
-def _get_day_calendar_events(calendar: Annotated[Calendar, Depends("calendar")], day: str) -> list[CalendarEvent]:
+def _get_day_calendar_events(
+    calendar: Annotated[Calendar, Depends("calendar")], day: str
+) -> list[CalendarEvent]:
     """Returns the appointments for the given `day`. Returns a list of dictionaries with informations about each meeting.
 
     :param day: The day for which to return the appointments. Must be in format YYYY-MM-DD.
@@ -221,11 +243,20 @@ def _create_calendar_event(
     :param participants: The list of participants' email addresses. If `null`, no participants are set. The calendar owner's email address is always included..
     :param location: The location of the event. If `null`, no location is set.
     """
-    parsed_start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+    parsed_start_time = datetime.datetime.strptime(
+        start_time, "%Y-%m-%d %H:%M"
+    )
     parsed_end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M")
     if participants is None:
         participants = []
-    new_event = calendar.create_event(title, description, parsed_start_time, parsed_end_time, location, participants)
+    new_event = calendar.create_event(
+        title,
+        description,
+        parsed_start_time,
+        parsed_end_time,
+        location,
+        participants,
+    )
     inbox.send_email(
         recipients=participants,
         subject=f"Invitation: {title}",
@@ -294,7 +325,9 @@ def _reschedule_calendar_event(
     If `null`, the end time will be computed based on the new start time to keep the event duration the same.
     """
     if new_end_time is not None:
-        parsed_new_end_time = datetime.datetime.strptime(new_end_time, "%Y-%m-%d %H:%M")
+        parsed_new_end_time = datetime.datetime.strptime(
+            new_end_time, "%Y-%m-%d %H:%M"
+        )
     else:
         parsed_new_end_time = None
     calendar_event = calendar.reschedule_event(
@@ -317,46 +350,41 @@ def _add_calendar_event_participants(
     :param event_id: The ID of the event to add participants to.
     :param participants: The list of participants' email addresses to add to the event.
     """
-    calendar_event = calendar.add_participants(CalendarEventID(event_id), participants)
+    calendar_event = calendar.add_participants(
+        CalendarEventID(event_id), participants
+    )
     return calendar_event
 
 
 if __name__ == "__main__":
     calendar = Calendar.init_from_yaml_and_injection(
-        yaml_path=os.path.join(os.path.dirname(__file__), "suites", "workspace", "include", "calendar.yaml"),
-        injection={}
+        yaml_path=os.path.join(
+            os.path.dirname(__file__),
+            "suites",
+            "workspace",
+            "include",
+            "calendar.yaml",
+        ),
+        injection={},
     )
 
     print("Calendar initialized with current day:", calendar.current_day)
-    
+
     result = _get_day_calendar_events(calendar, "2024-05-15")
     print("Events on 2024-05-15:", result)
 
     inbox = Inbox(
         account_email="user@example.com",
-        initial_emails=[], 
-        emails={}, 
-        contact_list=[], 
-        trash={}
+        initial_emails=[],
+        emails={},
+        contact_list=[],
+        trash={},
     )
 
-    _cancel_calendar_event(
-        calendar=calendar,
-        inbox=inbox,
-        event_id="6"
-    )
-    _cancel_calendar_event(
-        calendar=calendar,
-        inbox=inbox,
-        event_id="9"
-    )
-    _cancel_calendar_event(
-        calendar=calendar,
-        inbox=inbox,
-        event_id="24"
-    )
+    _cancel_calendar_event(calendar=calendar, inbox=inbox, event_id="6")
+    _cancel_calendar_event(calendar=calendar, inbox=inbox, event_id="9")
+    _cancel_calendar_event(calendar=calendar, inbox=inbox, event_id="24")
 
     result = _get_day_calendar_events(calendar, "2024-05-15")
     for res in result:
         print("Event:", res, "Status:", res.status)
-

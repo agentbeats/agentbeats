@@ -11,6 +11,8 @@ import threading
 from datetime import datetime
 import os
 import logging
+import subprocess
+import re
 
 from ..db.storage import db
 from ..a2a_client import a2a_client
@@ -243,9 +245,9 @@ async def process_battle(battle_id: str):
                 battle = db.read("battles", battle_id)
                 if battle:
                     battle["state"] = "error"
-                    battle["error"] = (
-                        f"Failed to reset {battle['opponents'][idx].get('name')}: {op_id}"
-                    )
+                    battle[
+                        "error"
+                    ] = f"Failed to reset {battle['opponents'][idx].get('name')}: {op_id}"
                     db.update("battles", battle_id, battle)
                     add_system_log(
                         battle_id,
@@ -300,9 +302,9 @@ async def process_battle(battle_id: str):
             battle = db.read("battles", battle_id)
             if battle:
                 battle["state"] = "error"
-                battle["error"] = (
-                    f"Not all agents ready after {ready_timeout} seconds"
-                )
+                battle[
+                    "error"
+                ] = f"Not all agents ready after {ready_timeout} seconds"
                 db.update("battles", battle_id, battle)
                 add_system_log(
                     battle_id,
@@ -854,6 +856,27 @@ def update_battle_event(battle_id: str, event: Dict[str, Any]):
                 status_code=400,
                 detail=f"Battle {battle_id} is not in a valid state for updates: {battle_state}",
             )
+
+        asciinema_path = event.get("asciinema_path", None)
+        if asciinema_path:
+            # Upload the asciinema file and capture both stdout and stderr
+            result = subprocess.run(
+                ["asciinema", "upload", asciinema_path],
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+            combined_output = f"{result.stdout}\n{result.stderr}".strip()
+
+            logger.info(f"Asciinema upload result: {combined_output}")
+
+            # Extract and print only the first URL
+            match = re.search(r"(https?://[^\s]+)", combined_output)
+            if match:
+                event["asciinema_url"] = match.group(1) + ".cast"
+                logger.info(f"Asciinema URL: {event['asciinema_url']}")
 
         is_result = event.get("is_result", None)
         if is_result is None:

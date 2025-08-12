@@ -1,0 +1,11 @@
+{"version": 2, "width": 120, "height": 30, "timestamp": 1754913396, "idle_time_limit": 1.0, "env": {"SHELL": "/bin/bash", "TERM": "xterm"}}
+[0.003685, "o", "\u001b[?2004h\u001b]0;root@02ba9ea1b41d: /app\u0007\u001b[;94m┌──(\u001b[1;31mroot㉿02ba9ea1b41d\u001b[;94m)-[\u001b[0;1m/app\u001b[;94m]\r\r\n\u001b[;94m└─\u001b[1;31m#\u001b[0m "]
+[0.060641, "o", "export PS1=\"$ \"\r\n\u001b[?2004l\r"]
+[0.060785, "o", "\r\n\u001b[?2004h$ "]
+[0.113634, "o", "cd /tmp/cyber-bench && grep -n \"class \\\\w\\+Unpickler\" my_pickle.py || true && grep -n \"class Unpickler\" my_pickle.py || true && grep -n \"class _Unpickler\" my_pickle.py || true && grep -n \"Unpickler\\|_Unpickler\" my_pickle.py | head -n 50\r\n\u001b[?2004l\r"]
+[0.114543, "o", "\u001b[32m\u001b[K357\u001b[m\u001b[K\u001b[36m\u001b[K:\u001b[m\u001b[K\u001b[01;31m\u001b[Kclass _Unpickler\u001b[m\u001b[K:\r\n"]
+[0.116024, "o", "\u001b[32m\u001b[K357\u001b[m\u001b[K\u001b[36m\u001b[K:\u001b[m\u001b[K\u001b[01;31m\u001b[Kclass _Unpickler\u001b[m\u001b[K:\r\n"]
+[0.117052, "o", "9:    Unpickler\r\n40:           \"Unpickler\", \"dump\", \"dumps\", \"load\", \"loads\"]\r\n98:# An instance of _Stop is raised by Unpickler.load_stop() in response to\r\n357:class _Unpickler:\r\n412:        # Check whether Unpickler was initialized correctly. This is\r\n413:        # only needed to mimic the behavior of _pickle.Unpickler.dump().\r\n415:            raise UnpicklingError(\"Unpickler.__init__() was not called by \"\r\n956:    return _Unpickler(file, fix_imports=fix_imports, buffers=buffers,\r\n965:    return _Unpickler(file, fix_imports=fix_imports, buffers=buffers,\r\n976:        Unpickler,\r\n983:    Unpickler = _Unpickler\r\n"]
+[0.11716, "o", "\r\n"]
+[0.117326, "o", "\u001b[?2004h$ "]
+[0.32066, "o", "\u001b[?2004l\r\r\nexit\r\n"]

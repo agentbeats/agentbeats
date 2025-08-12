@@ -9,7 +9,11 @@ import json
 import tomllib
 import uvicorn
 import functools
+import inspect
 from typing import *
+import logging
+import inspect
+
 
 from agents import (
     Agent,
@@ -72,6 +76,9 @@ __all__ = [
 ]
 
 
+logger = logging.getLogger(__name__)
+
+
 def create_agent(
     agent_name: str,
     instructions: str,
@@ -97,7 +104,7 @@ def create_agent(
         if not OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is not set")
 
-        print("[AgentBeats] Using OpenAI model:", model_name)
+        logger.info("[AgentBeats] Using OpenAI model: %s", model_name)
         return Agent(**agent_args, model=model_name)
 
     # openrouter agents, e.g. "anthropic/claude-3.5-sonnet"
@@ -108,7 +115,7 @@ def create_agent(
         if not OPENROUTER_API_KEY:
             raise ValueError("OPENROUTER_API_KEY is not set")
 
-        print("[AgentBeats] Using OpenRouter model:", model_name)
+        logger.info("[AgentBeats] Using OpenRouter model: %s", model_name)
         set_tracing_disabled(True)  # Disable tracing for OpenRouter models
         os.environ["OPENAI_TRACING_V2"] = "false"
         openrouter_client = AsyncOpenAI(
@@ -184,6 +191,7 @@ class BeatsAgent:
             self.app,
             host=self.agent_host,
             port=self.agent_port,
+            log_level=os.getenv("AGENTBEATS_UVICORN_LOG_LEVEL", "info"),
         )
 
     def get_app(self) -> Optional[A2AStarletteApplication]:
@@ -285,8 +293,14 @@ class AgentBeatsExecutor(AgentExecutor):
         - Return the result of tool_fn
         """
 
+        logger.debug("Battle context: %s", get_battle_context())
+
         def log(params_json: dict):
             if not get_battle_context():  # if no battle context, skip logging
+                logger.info(
+                    "No battle context, skipping logging for tool %s",
+                    tool_fn.__name__,
+                )
                 return
             try:
                 update_battle_process(
@@ -302,16 +316,61 @@ class AgentBeatsExecutor(AgentExecutor):
             except Exception:
                 pass
 
-        @functools.wraps(tool_fn)
-        def wrapper(*args, **kwargs):
-            json_string = json.dumps(
-                {"args": args, "kwargs": kwargs}, default=str
-            )
-            json_body = json.loads(json_string)
-            log(json_body)
-            return tool_fn(*args, **kwargs)
+        # Preserve metadata on the wrapped function
+        if inspect.iscoroutinefunction(tool_fn):
 
-        return wrapper
+            @functools.wraps(tool_fn)
+            async def async_wrapper(*args, **kwargs):
+                sig = inspect.signature(tool_fn)
+                bound = sig.bind(*args, **kwargs)
+                bound.apply_defaults()
+                # bound.arguments is an OrderedDict of param_name -> value
+                json_body = json.loads(
+                    json.dumps(bound.arguments, default=str)
+                )
+                log(json_body)
+                return await tool_fn(*args, **kwargs)
+
+            return async_wrapper
+        else:
+
+            @functools.wraps(tool_fn)
+            def sync_wrapper(*args, **kwargs):
+                sig = inspect.signature(tool_fn)
+                bound = sig.bind(*args, **kwargs)
+                bound.apply_defaults()
+                # bound.arguments is an OrderedDict of param_name -> value
+                json_body = json.loads(
+                    json.dumps(bound.arguments, default=str)
+                )
+                log(json_body)
+                result = tool_fn(*args, **kwargs)
+
+                logger.debug("Tool %s args: %s", tool_fn.__name__, args)
+                logger.debug("Tool %s kwargs: %s", tool_fn.__name__, kwargs)
+                logger.debug("Tool %s result: %s", tool_fn.__name__, result)
+
+                if (
+                    "show_asciinema" in json_body
+                    and json_body["show_asciinema"]
+                ):
+                    asciinema_path = result["asciinema_path"]
+                    logger.info("Showing asciinema: %s", asciinema_path)
+                    # log the asciinema to the battle process
+                    update_battle_process(
+                        battle_id=get_battle_id(),
+                        backend_url=get_backend_url(),
+                        message=f"Showing asciinema: {asciinema_path}",
+                        asciinema_path=asciinema_path,
+                        reported_by=(
+                            get_frontend_agent_name()
+                            + " (agentbeats sdk toolcall hooks)"
+                        ),
+                    )
+
+                return result
+
+            return sync_wrapper
 
     async def _init_agent_and_mcp(self):
         """Initialize the main agent with the provided tools and MCP servers."""
@@ -339,10 +398,15 @@ class AgentBeatsExecutor(AgentExecutor):
         )
 
         # Print agent instructions for debugging
-        print(
-            f"[AgentBeatsExecutor] Initializing agent: {self.main_agent.name} with {len(self.tool_list)} tools and {len(self.mcp_list)} MCP servers."
+        logger.info(
+            "[AgentBeatsExecutor] Initializing agent: %s with %d tools and %d MCP servers.",
+            self.main_agent.name,
+            len(self.tool_list),
+            len(self.mcp_list),
         )
-        print(f"[AgentBeatsExecutor] Agent instructions: {self.AGENT_PROMPT}")
+        logger.debug(
+            "[AgentBeatsExecutor] Agent instructions: %s", self.AGENT_PROMPT
+        )
 
     async def invoke_agent(self, context: RequestContext) -> str:
         """Run a single turn of conversation through *self.main_agent*."""
@@ -352,7 +416,9 @@ class AgentBeatsExecutor(AgentExecutor):
             await self._init_agent_and_mcp()
 
         # print agent input
-        print(f"[AgentBeatsExecutor] Agent input: {context.get_user_input()}")
+        logger.info(
+            "[AgentBeatsExecutor] Agent input: %s", context.get_user_input()
+        )
 
         # Build contextual chat input for the runner
         query_ctx = self.chat_history + [
@@ -367,8 +433,8 @@ class AgentBeatsExecutor(AgentExecutor):
         # print(self.chat_history)
 
         # print agent output
-        print(
-            f"\033[33m[AgentBeatsExecutor] Agent output: {result.final_output}\033[0m"
+        logger.info(
+            "[AgentBeatsExecutor] Agent output: %s", result.final_output
         )
 
         return result.final_output
@@ -407,8 +473,8 @@ class AgentBeatsExecutor(AgentExecutor):
                 }
             )
             # self.battle_context_hook = AgentBeatsHook(self.battle_context)
-            print(
-                "[AgentBeatsExecutor] Battle context parsed:",
+            logger.info(
+                "[AgentBeatsExecutor] Battle context parsed: %s",
                 get_battle_context(),
             )
 
@@ -441,4 +507,4 @@ class AgentBeatsExecutor(AgentExecutor):
                 try:
                     await mcp_server.close()
                 except Exception as e:
-                    print(f"Warning: Error closing MCP server: {e}")
+                    logger.warning("Error closing MCP server: %s", e)

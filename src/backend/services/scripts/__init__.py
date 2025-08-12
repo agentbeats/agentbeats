@@ -6,4 +6,4 @@ This package contains scripts for:
 - Populating role matches for existing agents
 """
 
-__version__ = "1.0.0" 
+__version__ = "1.0.0"

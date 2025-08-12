@@ -1,23 +1,34 @@
-import docker
-from fastmcp import FastMCP
-import logging
-import time
+#!/usr/bin/env python3
+"""
+This file contains the tools for the green agent to interact with the cybench task.
+
+Available tools:
+- setup_cybench_task: Setup the cybench task by starting the cybench server and generating the task.
+- execute_command_in_container: Execute a command in the running container and return the output.
+- destroy_container: Destroy the container and optionally remove the network.
+"""
+
 import os
+import sys
 import json
-from typing import Any
+import subprocess
+import time
+import docker
+from pathlib import Path
+from typing import Optional, Dict, Any, List
+import logging
+import uuid
+
+from agentbeats import tool
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+cybench_dir = Path(__file__).resolve().parents[2] / "resources" / "cybench"
 
-server = FastMCP(
-    "Open MCP for Cybench CTF game",
-    host="0.0.0.0",
-    port=9003,
-)
-
-client = docker.from_env()
-
+########################################################
+# Asciinema functions
+########################################################
 
 import re
 
@@ -95,8 +106,53 @@ def extract_output_from_cast(cast_text: str, cmd: str | None = None) -> str:
     return "\n".join(out_lines).strip()
 
 
-@server.tool()
-def execute_command_in_container_with_asciinema(
+########################################################
+# Cybench tools
+########################################################
+
+
+client = docker.from_env()
+image_name = "cybench/cybench:latest"
+network_name = "shared_net"
+containers = {}  # Maps container_name to container object
+
+
+def cleanup_existing_container(battle_id: str = None):
+    """Remove existing container if it exists"""
+    container_name = _get_container_name(battle_id)
+    try:
+        container = client.containers.get(container_name)
+        container.remove(force=True)
+        logger.info(f"Removed existing container: {container_name}")
+        if container_name in containers:
+            del containers[container_name]
+    except docker.errors.NotFound:
+        pass  # Container doesn't exist, which is fine
+
+
+def create_network_if_needed():
+    """Create shared network if it doesn't exist"""
+    try:
+        client.networks.get(network_name)
+    except docker.errors.NotFound:
+        logger.info(f"Creating Docker network: {network_name}")
+        client.networks.create(network_name)
+
+
+def execute_task_script(script_path: str, script_name: str):
+    """Execute start_docker.sh or stop_docker.sh if they exist"""
+    if os.path.isfile(script_path):
+        logger.info(f"Executing {script_name} script for the task")
+        try:
+            subprocess.run([script_path], check=True, shell=True)
+        except subprocess.CalledProcessError as e:
+            logger.warning(
+                f"Warning: {script_name} script failed with exit code {e.returncode}"
+            )
+
+
+@tool
+def execute_command_in_container(
     command: str,
     battle_id: str = None,
     show_asciinema: bool = True,
@@ -105,7 +161,7 @@ def execute_command_in_container_with_asciinema(
     """
     Execute a command in the container and return the output.
     If show_asciinema is True, return the asciinema v2 JSON cast (inputs + outputs).
-    show_asciinema should always be True.
+    Always set it true.
 
     Returns:
         Dict[Any, Any]: The results of the task.
@@ -118,7 +174,7 @@ def execute_command_in_container_with_asciinema(
     import shlex
     import socket as pysocket
 
-    container_name = f"cybench_{battle_id}"
+    container_name = _get_container_name(battle_id)
     try:
         container = client.containers.get(container_name)
         container.reload()
@@ -294,10 +350,10 @@ command -v asciinema >/dev/null 2>&1 && echo OK || echo MISSING
 
         #
         # Replace all non-alphanumeric, dot, underscore, dash with underscores
-        safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", command).strip("_")
-        with open(f"{safe_name}.cast", "w", encoding="utf-8") as f:
+        cast_filename = str(uuid.uuid4())
+        with open(f"{cast_filename}.cast", "w", encoding="utf-8") as f:
             f.write(cast_text)
-        absolute_path = os.path.abspath(f"{safe_name}.cast")
+        absolute_path = os.path.abspath(f"{cast_filename}.cast")
         logger.info(f"Saved cast to: {absolute_path}")
         output_text = extract_output_from_cast(cast_text)
 
@@ -317,68 +373,5 @@ command -v asciinema >/dev/null 2>&1 && echo OK || echo MISSING
         return ""
 
 
-# @server.tool()
-# def run_terminal_command_in_docker(
-#     battle_id: str,
-#     command: str,
-#     agent_name: str,
-# ) -> str:
-#     """
-#     Run a terminal command in the specified docker container for the given battle_id.
-#     This is for any Red, Blue, or Green agent.
-#     Logs the command input and output to battle_cmd_history_{battle_id}.json.
-#     Also, use another MCP server's tool "update_battle_process" to log the command input and the summary of the output.
-
-#     Args:
-#         battle_id: The ID of the battle (Battle ID)
-#         command: The command to run in the container.
-#         agent_name: The name of the agent.
-
-#     Returns:
-#         The output of the command.
-#     """
-#     logger.info(f"\033[34mExecuting command in container: {command}\033[0m")
-#     container_name = f"cybench_{battle_id}"
-#     try:
-#         container = client.containers.get(container_name)
-
-#         # Check if container is running
-#         if container.status != "running":
-#             logger.warning(
-#                 f"\033[31mContainer {container_name} is not running, restarting it...\033[0m"
-#             )
-#             container.start()
-
-#         # Execute command in the running container
-#         exec_result = container.exec_run(
-#             ["sh", "-c", command], stdout=True, stderr=True
-#         )
-#         output = exec_result.output.decode("utf-8")
-#         logger.info(f"Output: {output}")
-#         return output
-
-#     except docker.errors.NotFound:
-#         print(f"Container {container_name} not found, please run a task first")
-#         return ""
-#     except Exception as e:
-#         print(f"Error executing command in container: {e}")
-#         return ""
-
-
-if __name__ == "__main__":
-    import argparse
-
-    # parse args
-    parser = argparse.ArgumentParser(
-        description="Run the Sec-Bench MCP server with a configurable port.",
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=9003,
-        help="TCP port for the HTTP server to listen on (default: 9003)",
-    )
-    args = parser.parse_args()
-    server.run(
-        transport="sse", host="0.0.0.0", port=args.port, log_level="ERROR"
-    )
+def _get_container_name(battle_id: str = None) -> str:
+    return f"cybench_{battle_id}" if battle_id else "cybench"
