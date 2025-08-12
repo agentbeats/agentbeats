@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.3 (2025-08-12)
+
+### Bug Fixes
+
+- Launcher reset deley; green agent talk tool prompt
+  ([`0bf1698`](https://github.com/agentbeats/agentbeats/commit/0bf16987506a9415381de90e3be3cd39dba261c9))
+
+
 ## v1.2.2 (2025-08-11)
 
 ### Bug Fixes
