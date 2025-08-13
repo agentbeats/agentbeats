@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agentbeats"
 # Version set to initial; this will be updated by semantic-release
-version = "1.2.1"
+version = "1.2.3"
 description = "AgentBeats SDK for building security-contest AI agents"
 requires-python = ">=3.11"
 authors = [{ "name" = "Simon Xie", "email" = "simonxie2004@outlook.com" }]
