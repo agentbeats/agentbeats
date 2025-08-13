@@ -74,6 +74,7 @@
           }}
           agent_id={selectedOption.value}
           isOnline={selectedOption.agent.live || false}
+          isLoading={selectedOption.agent.livenessLoading || false}
         />
       {:else if selectedOption}
         <span class="text-gray-900">{selectedOption.label}</span>
@@ -118,6 +119,7 @@
                               }}
                               agent_id={option.value}
                               isOnline={option.agent.live || false}
+                              isLoading={option.agent.livenessLoading || false}
                             />
                           {:else}
                             <span class="text-gray-900">{option.label}</span>
