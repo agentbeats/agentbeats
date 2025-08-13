@@ -5,7 +5,7 @@ version = "1.0.0"
 
 [[agents]]
 name = "Red Agent"
-card = "red_agent_card.toml"
+card = "agent_card.toml"
 launcher_host = "0.0.0.0"
 launcher_port = 9020
 agent_host = "0.0.0.0"
