@@ -19,10 +19,59 @@ from a2a.types import (
 import subprocess
 import sys
 
+def auto_login() -> str:
+    """
+    Auto logins the user to the gitlab instance.
+    """
+    
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        root_folder = os.path.abspath(os.path.join(current_dir, ".."))
+        visualwebarena_dir = os.path.join(root_folder, "wasp", "visualwebarena")
+        
+        # Get the absolute path to the Python interpreter in the virtual environment
+        python_path = os.path.join(visualwebarena_dir, "venv", "bin", "python")
+        
+        # Set environment variables for the subprocess
+        env = os.environ.copy()
+
+        os.chdir(visualwebarena_dir)
+        
+        subprocess.run([
+            "mkdir",
+            "-p",
+            "./.auth"
+        ])
+        
+        # Run auto_login.py
+        result = subprocess.run([
+            python_path,
+            "browser_env/auto_login.py",
+        ], capture_output=True, text=True, cwd=visualwebarena_dir, env=env)
+        
+        print("STDOUT (AUTO LOGIN): " + result.stdout, file=sys.__stdout__, flush=True)
+        print("STDERR (AUTO LOGIN): " + result.stderr, file=sys.__stdout__, flush=True)
+        
+        # Check if the command failed
+        if result.returncode != 0:
+            return f"FAILED: Auto login command failed with return code {result.returncode}. Error: {result.stderr}"
+        
+        return "Auto login completed"
+        
+    except Exception as e:
+        print(f"FAILED: The auto login failed: {e}", file=sys.__stdout__, flush=True)
+        print("STDERR (AUTO LOGIN): " + result.stderr, file=sys.__stdout__, flush=True)
+        return f"FAILED: The auto login failed: {e}"
+
 
 @ab.tool
 def run_evaluator() -> str:
     try:
+        # first we auto login
+        auto_login()
+        
+        battle_id = ab.get_battle_id()
+        
         print("Running evaluator properly")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_folder = os.path.abspath(os.path.join(current_dir, ".."))
@@ -35,8 +84,8 @@ def run_evaluator() -> str:
         result = subprocess.run([
             python_path,
             "evaluator_final_step.py",
-            "--log-folder", "../../logs/" + ab.get_battle_id() + "/agent_logs",
-            "--task-folder", "../../logs/" + ab.get_battle_id() + "/webarena_tasks_attacker",
+            "--log-folder", "../../logs/" + battle_id + "/agent_logs",
+            "--task-folder", "../../logs/" + battle_id + "/webarena_tasks_attacker",
             "--format", "webarena",
             "--headless",
             "--slow-mo", "0"
@@ -48,8 +97,8 @@ def run_evaluator() -> str:
         result_2 = subprocess.run([
             python_path,
             "evaluator_final_step.py",
-            "--log-folder", "../../logs/" + ab.get_battle_id() + "/agent_logs",
-            "--task-folder", "../../logs/" + ab.get_battle_id() + "/webarena_tasks",
+            "--log-folder", "../../logs/" + battle_id + "/agent_logs",
+            "--task-folder", "../../logs/" + battle_id + "/webarena_tasks",
             "--headless",
             "--slow-mo", "0"
         ], capture_output=True, text=True, cwd=visualwebarena_dir)
@@ -60,15 +109,20 @@ def run_evaluator() -> str:
         return result.stdout + result_2.stdout
     
     except Exception as e:
+        print("STDOUT (EVALUATOR OF USER TASK): " + result_2.stdout, file=sys.__stdout__, flush=True)
+        print("STDERR (EVALUATOR OF USER TASK): " + result_2.stderr, file=sys.__stdout__, flush=True)
+
         print(f"FAILED: The evaluator failed: {e}", file=sys.__stdout__, flush=True)
         return f"FAILED: The evaluator failed: {e}"
 
 @ab.tool
 def reset_battle() -> str:
     try:
-        print("Resetting battle properly for battle_id: " + ab.get_battle_id() + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'), file=sys.__stdout__, flush=True)
+        battle_id = ab.get_battle_id()
 
-        return "Battle reset successfully" # TODO: Remove this
+        print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'), file=sys.__stdout__, flush=True)
+
+        # return "Battle reset successfully" # TODO: Remove this
 
         # Reset the server
         import requests
