@@ -5,62 +5,44 @@ AgentInstance models for AgentBeats API.
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from enum import Enum
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
-class InstanceStatus(str, Enum):
-    ONLINE = "online"
-    OFFLINE = "offline"
-    BUSY = "busy"
-    ERROR = "error"
-
-
-# Agent Instance Models
+# Base Agent Instance Models
 class AgentInstanceBase(BaseModel):
-    name: str = Field(..., description="Instance name")
-    agent_id: str = Field(..., description="Parent agent group ID")
-    launcher_config: Optional[Dict[str, Any]] = Field(None, description="Launcher configuration")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Instance metadata")
+    agent_id: str = Field(..., description="Parent agent ID")
+    agent_url: str = Field(..., description="Agent URL endpoint")
+    launcher_url: str = Field(..., description="Launcher URL endpoint")
 
 
 class AgentInstanceCreateRequest(AgentInstanceBase):
+    """Request model for creating a new agent instance"""
     pass
 
 
 class AgentInstanceUpdateRequest(BaseModel):
-    name: Optional[str] = Field(None, description="Instance name")
-    status: Optional[InstanceStatus] = Field(None, description="Instance status")
-    launcher_config: Optional[Dict[str, Any]] = Field(None, description="Launcher configuration")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Instance metadata")
-
-
-class AgentInstanceUpdateResponse(AgentInstanceBase):
-    id: str = Field(..., description="Instance ID")
-    status: InstanceStatus = Field(..., description="Instance status")
-    endpoint_url: Optional[str] = Field(None, description="Instance endpoint URL")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-    last_seen: Optional[datetime] = Field(None, description="Last activity timestamp")
-
-    class Config:
-        from_attributes = True
+    """Request model for updating an agent instance"""
+    agent_url: Optional[str] = Field(None, description="Agent URL endpoint")
+    launcher_url: Optional[str] = Field(None, description="Launcher URL endpoint")
+    is_locked: Optional[bool] = Field(None, description="Whether instance is locked for battle")
+    ready: Optional[bool] = Field(None, description="Whether instance is ready")
 
 
 class AgentInstanceResponse(AgentInstanceBase):
-    id: str = Field(..., description="Instance ID")
-    status: InstanceStatus = Field(..., description="Instance status")
-    endpoint_url: Optional[str] = Field(None, description="Instance endpoint URL")
+    """Response model for agent instance data"""
+    agent_instance_id: str = Field(..., description="Unique agent instance identifier")
+    is_locked: bool = Field(False, description="Whether instance is locked for battle")
+    ready: bool = Field(False, description="Whether instance is ready")
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-    last_seen: Optional[datetime] = Field(None, description="Last activity timestamp")
-
-    class Config:
-        from_attributes = True
 
 
-# Response Models
+class AgentInstanceUpdateResponse(BaseModel):
+    """Response model for agent instance updates"""
+    agent_instance_id: str = Field(..., description="Updated agent instance ID")
+    message: str = Field(..., description="Update status message")
+
+
 class AgentInstanceListResponse(BaseModel):
+    """Response model for listing agent instances"""
     instances: List[AgentInstanceResponse]
-    total: int

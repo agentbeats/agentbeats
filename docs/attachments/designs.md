@@ -59,3 +59,20 @@ Remark: Only show name/description/skills in GET [/agents]
 + TEXT  created_at
 
 Remark: Will use agent_instance_id as docker_name, to find container
+
+### Battles
+
++ TEXT  battle_id
++ TEXT  user_id                  # Which user created this battle
++ TEXT  green_agent_id
++ TEXT  participants_id          # Is json array
++ TEXT  created_at               # Timestamp
++ TEXT  state                    # pending/queued/running/finished/error
++ TEXT  interact_history         # Is json array -> reported by update_battle_process
++ TEXT  finished_at              # Timestamp
++ TEXT  result                   # Is json {"winner": str, "detail": dict}
+                                    -> reported by update_battle_result
++ TEXT  error                    # Error message if battle failed
+
+Remark:
++ INT queue_position = Position in battle queue (runtime only, not stored)

@@ -1,51 +1,39 @@
 # -*- coding: utf-8 -*-
 
 """
-Agent and AgentInstance models for AgentBeats API.
+Agent models for AgentBeats API.
 """
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class AgentType(str, Enum):
-    HOSTED = "hosted"
-    EXTERNAL = "external"
-
-
-class AgentStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    DELETED = "deleted"
-
-
-# Agent Models
+# Base Agent Models
 class AgentBase(BaseModel):
-    name: str = Field(..., description="Agent group name")
-    description: Optional[str] = Field(None, description="Agent description")
-    agent_type: AgentType = Field(..., description="Type of agent (hosted/external)")
-    config: Optional[Dict[str, Any]] = Field(None, description="Agent configuration")
+    alias: str = Field(..., description="Agent alias/name")
+    is_hosted: bool = Field(..., description="Whether this is a hosted agent")
+    is_green: bool = Field(..., description="Whether this is a green agent (judge/coordinator)")
+    battle_description: Optional[str] = Field(None, description="Battle description for selection UI")
+    participant_requirements: Optional[List[Dict[str, Any]]] = Field(None, description="Participant requirements (JSON)")
 
 
 class AgentCreateRequest(AgentBase):
+    """Request model for creating a new agent"""
     pass
 
 
 class AgentResponse(AgentBase):
-    id: str = Field(..., description="Agent group ID")
-    status: AgentStatus = Field(..., description="Agent status")
-    owner_id: Optional[str] = Field(None, description="Owner user ID")
+    """Response model for agent data"""
+    agent_id: str = Field(..., description="Unique agent identifier")
+    user_id: str = Field(..., description="Owner user ID")
+    elo: Optional[Dict[str, Any]] = Field(None, description="ELO rating data (JSON)")
     created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
-    instance_count: int = Field(0, description="Number of instances")
 
     class Config:
         from_attributes = True
 
 
-# Response Models
 class AgentListResponse(BaseModel):
+    """Response model for listing agents"""
     agents: List[AgentResponse]
-    total: int

@@ -3,38 +3,60 @@
 """
 models/battles.py - Defines the data models for battles in the backend.
 """
-
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class BattleCreateRequest(BaseModel):
+class BattleState(str, Enum):
+    PENDING = "pending"
+    QUEUED = "queued"
+    RUNNING = "running"
+    FINISHED = "finished"
+    ERROR = "error"
+
+
+# Base Battle Models
+class BattleBase(BaseModel):
+    green_agent_id: str = Field(..., description="Green agent (judge/coordinator) ID")
+    participants_id: List[str] = Field(..., description="List of participant agent IDs")
+
+
+class BattleCreateRequest(BattleBase):
     """Request model for creating a new battle"""
-    name: str = Field(..., description="Name of the battle")
-    description: str = Field(None, description="Description of the battle")
-    user_id: str = Field(..., description="ID of the user creating the battle")
-
-
-class BattleResponse(BaseModel):
-    """Response model for a battle"""
-    id: str = Field(..., description="Unique identifier for the battle")
-    name: str = Field(..., description="Name of the battle")
-    description: str = Field(None, description="Description of the battle")
-    user_id: str = Field(..., description="ID of the user who created the battle")
-
-
-class BattleListResponse(BaseModel):
-    """Response model for listing battles"""
-    battles: list[BattleResponse] = Field(..., description="List of battles")
-    total: int = Field(..., description="Total number of battles")
+    pass
 
 
 class BattleUpdateRequest(BaseModel):
     """Request model for updating a battle"""
-    name: str = Field(None, description="Updated name of the battle")
-    description: str = Field(None, description="Updated description of the battle")
+    state: Optional[BattleState] = Field(None, description="Battle state")
+    interact_history: Optional[List[Dict[str, Any]]] = Field(None, description="Interaction history (JSON)")
+    result: Optional[Dict[str, Any]] = Field(None, description="Battle result (JSON)")
+    error: Optional[str] = Field(None, description="Error message if battle failed")
+    finished_at: Optional[datetime] = Field(None, description="Battle finish timestamp")
 
 
-class BattleUpdateResponse(BattleResponse):
-    """Response model for updating a battle"""
-    updated_at: str = Field(..., description="Timestamp of the last update to the battle")
-    user_id: str = Field(..., description="ID of the user who updated the battle")
+class BattleResponse(BattleBase):
+    """Response model for battle data"""
+    battle_id: str = Field(..., description="Unique battle identifier")
+    user_id: str = Field(..., description="User who created this battle")
+    created_at: datetime = Field(..., description="Battle creation timestamp")
+    state: BattleState = Field(BattleState.PENDING, description="Current battle state")
+    interact_history: Optional[List[Dict[str, Any]]] = Field(None, description="Interaction history (JSON)")
+    finished_at: Optional[datetime] = Field(None, description="Battle finish timestamp")
+    result: Optional[Dict[str, Any]] = Field(None, description="Battle result (JSON)")
+    error: Optional[str] = Field(None, description="Error message if battle failed")
+    queue_position: Optional[int] = Field(None, description="Position in battle queue (runtime only)")
+
+
+class BattleUpdateResponse(BaseModel):
+    """Response model for battle updates"""
+    battle_id: str = Field(..., description="Updated battle ID")
+    message: str = Field(..., description="Update status message")
+    state: BattleState = Field(..., description="Current battle state")
+
+
+class BattleListResponse(BaseModel):
+    """Response model for listing battles"""
+    battles: List[BattleResponse]
