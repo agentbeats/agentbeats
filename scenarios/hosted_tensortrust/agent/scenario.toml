@@ -1,0 +1,23 @@
+[scenario]
+name = "tensortrust red agent"
+description = "TensorTrust red agent scenario"
+version = "1.0.0"
+
+[[agents]]
+name = "Red Agent"
+card = "agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 9020
+agent_host = "0.0.0.0"
+agent_port = 9021
+model_type = "openai"
+model_name = "gpt-4o-mini"
+tools = []
+mcp_servers = []
+
+# Launch configuration
+[launch]
+mode = "current"  # Options: "tmux", "separate", "current"
+# tmux_session_name = "agentbeats-tensortrust"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents

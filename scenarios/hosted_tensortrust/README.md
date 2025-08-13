@@ -50,11 +50,7 @@ Dockerfile
 docker-compose.yml
 entrypoint.sh
 requirements.txt
-scenario/
+agent/
 └─ scenario.toml
-└─ red_agent_card.toml
-└─ blue_agent_card.toml
-└─ green_agent/
-   ├─ green_agent_card.toml
-   └─ tools.py
+└─ agent_card.toml
 ```

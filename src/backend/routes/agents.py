@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import Literal
 from agents import Agent, Runner
+import httpx
 
 from ..db.storage import db
 from ..a2a_client import a2a_client
@@ -235,6 +236,77 @@ async def register_agent(agent_info: Dict[str, Any], current_user: Dict[str, Any
         )
 
 
+async def check_agents_liveness(agents: List[Dict[str, Any]], max_concurrent: int = 10) -> List[Dict[str, Any]]:
+    """Check liveness for a list of agents and add 'live' field to each agent."""
+    async def check_agent_liveness(agent):
+        """Check liveness for a single agent."""
+        agent_url = agent.get("register_info", {}).get("agent_url")
+        launcher_url = agent.get("register_info", {}).get("launcher_url")
+        
+        async def check_agent_card():
+            """Check if agent URL is accessible and can return agent card."""
+            if not agent_url:
+                return False
+            try:
+                # Use asyncio.wait_for to add additional timeout layer
+                agent_card = await asyncio.wait_for(
+                    a2a_client.get_agent_card(agent_url), 
+                    timeout=1.5
+                )
+                return bool(agent_card)
+            except (asyncio.TimeoutError, Exception):
+                return False
+        
+        async def check_launcher():
+            """Check if launcher is alive."""
+            if not launcher_url:
+                return False
+            try:
+                # Use asyncio.wait_for to add additional timeout layer
+                launcher_status = await asyncio.wait_for(
+                    check_launcher_status({"launcher_url": launcher_url}),
+                    timeout=1.5
+                )
+                return launcher_status.get("online", False)
+            except (asyncio.TimeoutError, Exception):
+                return False
+        
+        # Run both checks concurrently for this agent
+        try:
+            agent_card_accessible, launcher_alive = await asyncio.gather(
+                check_agent_card(),
+                check_launcher(),
+                return_exceptions=False
+            )
+            agent["live"] = agent_card_accessible and launcher_alive
+        except Exception:
+            agent["live"] = False
+        return agent
+    
+    # Use semaphore to limit concurrent checks
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    async def check_with_semaphore(agent):
+        async with semaphore:
+            return await check_agent_liveness(agent)
+    
+    # Run all liveness checks with concurrency limit
+    checked_agents = await asyncio.gather(
+        *[check_with_semaphore(agent) for agent in agents],
+        return_exceptions=True
+    )
+    
+    # Handle any exceptions during liveness checks
+    for i, result in enumerate(checked_agents):
+        if isinstance(result, Exception):
+            # If exception, mark agent as not live
+            agents[i]["live"] = False
+        else:
+            agents[i] = result
+    
+    return agents
+
+
 @router.get("/agents")
 async def list_agents(check_liveness: bool = False, current_user: Dict[str, Any] = Depends(get_optional_user)) -> List[Dict[str, Any]]:
     """List all agents with optional liveness check."""
@@ -246,56 +318,14 @@ async def list_agents(check_liveness: bool = False, current_user: Dict[str, Any]
             # Show user's own agents first, then public agents (no user_id)
             user_agents = [agent for agent in agents if agent.get("user_id") == current_user["id"]]
             public_agents = [agent for agent in agents if not agent.get("user_id")]
-            agents = user_agents + public_agents
+            dev_agents = [agent for agent in agents if agent.get("user_id") == "dev-user-id"]
+            agents = user_agents + public_agents + dev_agents
         else:
             # If not authenticated, only show public agents
             agents = [agent for agent in agents if not agent.get("user_id")]
         
         if check_liveness:
-            async def check_agent_liveness(agent):
-                """Check liveness for a single agent."""
-                agent_url = agent.get("register_info", {}).get("agent_url")
-                launcher_url = agent.get("register_info", {}).get("launcher_url")
-                
-                async def check_agent_card():
-                    """Check if agent URL is accessible and can return agent card."""
-                    if not agent_url:
-                        return False
-                    try:
-                        agent_card = await a2a_client.get_agent_card(agent_url)
-                        return bool(agent_card)
-                    except Exception:
-                        return False
-                
-                async def check_launcher():
-                    """Check if launcher is alive."""
-                    if not launcher_url:
-                        return False
-                    try:
-                        launcher_status = await check_launcher_status({"launcher_url": launcher_url})
-                        return launcher_status.get("online", False)
-                    except Exception:
-                        return False
-                
-                # Run both checks concurrently for this agent
-                agent_card_accessible, launcher_alive = await asyncio.gather(
-                    check_agent_card(),
-                    check_launcher(),
-                    return_exceptions=False
-                )
-                agent["live"] = agent_card_accessible and launcher_alive
-                return agent
-            
-            # Run all liveness checks concurrently
-            agents = await asyncio.gather(
-                *[check_agent_liveness(agent) for agent in agents],
-                return_exceptions=True
-            )
-            
-            for i, result in enumerate(agents):
-                if isinstance(result, Exception):
-                    # If exception, agent not live
-                    agents[i]["live"] = False
+            agents = await check_agents_liveness(agents)
         
         return agents
     except Exception as e:
@@ -303,11 +333,15 @@ async def list_agents(check_liveness: bool = False, current_user: Dict[str, Any]
 
 
 @router.get("/agents/my")
-async def get_my_agents(current_user: Dict[str, Any] = Depends(get_current_user)) -> List[Dict[str, Any]]:
-    """Get all agents owned by the current user."""
+async def get_my_agents(check_liveness: bool = False, current_user: Dict[str, Any] = Depends(get_current_user)) -> List[Dict[str, Any]]:
+    """Get all agents owned by the current user with optional liveness check."""
     try:
         agents = db.list("agents")
         user_agents = [agent for agent in agents if agent.get("user_id") == current_user["id"]]
+        
+        if check_liveness:
+            user_agents = await check_agents_liveness(user_agents)
+        
         return user_agents
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving user agents: {str(e)}")
@@ -552,11 +586,9 @@ async def check_launcher_status(request: Dict[str, Any]):
         if not launcher_url:
             raise HTTPException(status_code=400, detail="launcher_url cannot be empty")
             
-        import httpx
-        
         launcher_url_clean = launcher_url.rstrip('/')
         
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=1.0) as client:
             response = await client.get(f"{launcher_url_clean}/status")
             
             if response.status_code == 200:

@@ -37,6 +37,7 @@
       }} 
       agent_id={agent.agent_id || agent.id}
       isOnline={agent.live || false}
+      isLoading={agent.livenessLoading || false}
     />
   </CardHeader>
   <CardContent class="pt-0 pb-3">

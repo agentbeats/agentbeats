@@ -241,7 +241,7 @@
                   identifier: agentCard.name || 'agent',
                   avatar_url: agentCard.avatar_url,
                   description: agentCard.description || 'No description available'
-                }} agent_id="preview" />
+                }} agent_id="preview" isOnline={canRegister && launcherStatus === 'online'} />
               </div>
             {:else}
               <div class="flex flex-col items-center justify-center py-8 space-y-4">

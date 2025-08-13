@@ -210,6 +210,8 @@ def _deploy_separate_terminals(deploy_mode: str, backend_port: int, frontend_por
             
             # Build first, then start with PM2
             build_cmd = f"{sys.executable} -m agentbeats run_frontend --frontend_mode build"
+            if supabase_auth:
+                build_cmd += " --supabase_auth"
             frontend_dir = current_dir / "frontend" / "webapp-v2"
             if system == "Windows":
                 pm2_cmd = f"pm2 delete agentbeats-ssr 2>nul || echo Cleaned && pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
@@ -344,6 +346,8 @@ def _deploy_tmux(deploy_mode: str, backend_port: int, frontend_port: int, mcp_po
                 
                 # Build first, then start with PM2
                 build_cmd = f"{sys.executable} -m agentbeats run_frontend --frontend_mode build"
+                if supabase_auth:
+                    build_cmd += " --supabase_auth"
                 frontend_dir = current_dir / "frontend" / "webapp-v2"
                 pm2_cmd = f"npx pm2 delete agentbeats-ssr 2>/dev/null || true && npx pm2 start {frontend_dir / 'build' / 'index.js'} --name agentbeats-ssr --no-daemon"
                 frontend_cmd = f"echo 'Building frontend...' && {build_cmd} && echo 'Starting with PM2...' && {pm2_cmd} && echo 'Frontend started with PM2. Use pm2 logs agentbeats-ssr to see logs.'"
@@ -352,8 +356,8 @@ def _deploy_tmux(deploy_mode: str, backend_port: int, frontend_port: int, mcp_po
                 print("[Warning] PM2 not found in tmux mode, using preview mode...")
                 frontend_cmd = f"{sys.executable} -m agentbeats run_frontend --frontend_mode preview --host localhost --frontend_port {frontend_port} --backend_url http://localhost:{backend_port}"
 
-        if supabase_auth:
-            frontend_cmd += " --supabase_auth"
+                if supabase_auth:
+                    frontend_cmd += " --supabase_auth"
     
         # Start services in each pane
         subprocess.run([

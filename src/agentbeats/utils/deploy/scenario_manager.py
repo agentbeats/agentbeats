@@ -289,7 +289,7 @@ class ScenarioManager:
                 raise ValueError(f"Unknown launch mode: {mode}")
     
     def _start_agents_tmux(self, config: Dict[str, Any]):
-        """Start agents in tmux panes"""
+        """Start agents in tmux, each agent in a separate window of the same session"""
         if not shutil.which("tmux"):
             print("❌ tmux is not installed. Falling back to separate terminals.")
             self._start_agents_terminals()
@@ -297,55 +297,31 @@ class ScenarioManager:
 
         launch_config = self.config.get("launch", {})
         session_name = launch_config.get("tmux_session_name", f"agentbeats-{self.config['scenario']['name']}")
-        
+
         # Kill existing session if it exists
         subprocess.run(['tmux', 'kill-session', '-t', session_name], 
                       capture_output=True, check=False)
-        
-        # Create new session with first agent
+
+        # Create new session with first agent in first window
         first_agent = self.agents[0]
         cmd = f"cd '{first_agent.scenario_dir}' && {first_agent.get_command()}"
-        
         subprocess.run([
             'tmux', 'new-session', '-d', '-s', session_name,
-            '-x', '120', '-y', '30',
+            '-n', first_agent.name,
             'bash', '-c', cmd
         ], check=True, env=os.environ.copy())
-        
-        subprocess.run([
-            'tmux', 'rename-window', '-t', f"{session_name}:0", 
-            first_agent.name
-        ], check=True)
-        for i, agent in enumerate(self.agents[1:], 1):
+
+        # Create a new window for each subsequent agent
+        for agent in self.agents[1:]:
             cmd = f"cd '{agent.scenario_dir}' && {agent.get_command()}"
-            if i == 1:
-                subprocess.run([
-                    'tmux', 'split-window', '-t', session_name, '-h',
-                    'bash', '-c', cmd
-                ], check=True, env=os.environ.copy())
-            else:
-                subprocess.run([
-                    'tmux', 'split-window', '-t', session_name, '-v',
-                    'bash', '-c', cmd
-                ], check=True, env=os.environ.copy())
             subprocess.run([
-                'tmux', 'select-pane', '-t', session_name, '-T', agent.name
-            ], check=True)
-        
-        subprocess.run([
-            'tmux', 'set', '-t', session_name, 'pane-border-status', 'top'
-        ], check=True)
-        
-        subprocess.run([
-            'tmux', 'set', '-t', session_name, 'pane-border-format', 
-            '#{pane_title}'
-        ], check=True)
-        
-        subprocess.run([
-            'tmux', 'select-layout', '-t', session_name, 'tiled'
-        ], check=True)
-        
+                'tmux', 'new-window', '-t', session_name,
+                '-n', agent.name,
+                'bash', '-c', cmd
+            ], check=True, env=os.environ.copy())
+
         print(f"✅ Tmux session '{session_name}' created!")
+        print(f"Each agent is running in a separate window of the session.")
         print(f"To attach: tmux attach -t {session_name}")
         print(f"To stop: tmux kill-session -t {session_name}")
     

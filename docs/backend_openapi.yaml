@@ -11,9 +11,9 @@ servers:
   - url: https://agentbeats.org/api
 tags:
   - name: Agents
-    description: Agent management
-  - name: AgentGroups
-    description: Manage agent groups and their instances
+    description: Manage agents and their instances
+  - name: AgentInstances
+    description: Agent instance management
   - name: Battles
     description: Match creation, scheduling and querying
   - name: MCP
@@ -131,7 +131,7 @@ components:
         config:
           type: object
           description: Additional configuration for the agent instance
-    AgentInstanceResponse:
+    AgentInstancesResponse:
       type: object
       properties:
         agent_id:
@@ -399,11 +399,11 @@ components:
           true: "#/components/schemas/BattleResult"
           false: "#/components/schemas/BattleInteractHistory"
 paths:
-  /agents:
+  /agent_instances:
     post:
-      summary: Register an agent and its launcher
+      summary: Register an agent instance and its launcher
       tags:
-        - Agents
+        - AgentInstances
       requestBody:
         required: true
         content:
@@ -413,16 +413,16 @@ paths:
       responses:
         "201":
           description: >-
-            Received register info, fetched agent card and created agent on
+            Received register info, fetched agent card and created agent instance on
             server
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentInfo"
     get:
-      summary: List all agents
+      summary: List all agent instances
       tags:
-        - Agents
+        - AgentInstances
       responses:
         "200":
           description: OK
@@ -432,18 +432,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AgentInfo"
-  /agents/{agentId}:
+  /agent_instances/{agentInstanceId}:
     parameters:
       - in: path
-        name: agentId
+        name: agentInstanceId
         required: true
         schema:
           type: string
           format: uuid
     get:
-      summary: Retrieve a single agent
+      summary: Retrieve a single agent instance
       tags:
-        - Agents
+        - AgentInstances
       responses:
         "200":
           description: OK
@@ -452,9 +452,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/AgentInfo"
     put:
-      summary: Update agent status or info
+      summary: Update agent instance status or info
       tags:
-        - Agents
+        - AgentInstances
       requestBody:
         required: true
         content:
@@ -464,17 +464,17 @@ paths:
               properties:
                 ready:
                   type: boolean
-                  description: whether the agent is ready after reset
+                  description: whether the agent instance is ready after reset
       responses:
         "204":
-          description: Agent status updated
-  /agent_group:
+          description: Agent instance status updated
+  /agents:
     post:
       summary: Register a new agent group
       description: |
         For remote type: automatically creates one agent instance
         For hosted type: only creates agent group, no instances
-      tags: [AgentGroups]
+      tags: [Agents]
       requestBody:
         required: true
         content:
@@ -492,11 +492,11 @@ paths:
                   agent_group:
                     $ref: "#/components/schemas/AgentGroupResponse"
                   agent_instance:
-                    $ref: "#/components/schemas/AgentInstanceResponse"
+                    $ref: "#/components/schemas/AgentInstancesResponse"
                     description: Only present for remote type agent groups
     get:
       summary: List all agent groups (with ownership filtering)
-      tags: [AgentGroups]
+      tags: [Agents]
       responses:
         "200":
           description: OK
@@ -506,17 +506,17 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AgentGroupResponse"
-  /agent_group/{agentGroupId}:
+  /agents/{agentId}:
     parameters:
       - in: path
-        name: agentGroupId
+        name: agentId
         required: true
         schema:
           type: string
           format: uuid
     get:
       summary: Get specific agent group details
-      tags: [AgentGroups]
+      tags: [Agents]
       responses:
         "200":
           description: OK
@@ -526,21 +526,21 @@ paths:
                 $ref: "#/components/schemas/AgentGroupResponse"
     delete:
       summary: Delete agent group and all its instances
-      tags: [AgentGroups]
+      tags: [Agents]
       responses:
         "204":
           description: Agent group and all instances deleted successfully
-  /agent_group/{agentGroupId}/instances:
+  /agents/{agentId}/instances:
     parameters:
       - in: path
-        name: agentGroupId
+        name: agentId
         required: true
         schema:
           type: string
           format: uuid
     get:
       summary: List all instances for a specific agent group
-      tags: [AgentGroups]
+      tags: [Agents]
       responses:
         "200":
           description: OK
@@ -549,10 +549,10 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AgentInstanceResponse"
+                  $ref: "#/components/schemas/AgentInstancesResponse"
     post:
       summary: Create new agent instance for hosted agent group
-      tags: [AgentGroups]
+      tags: [Agents]
       requestBody:
         required: true
         content:
@@ -565,7 +565,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentInstanceResponse"
+                $ref: "#/components/schemas/AgentInstancesResponse"
   /battles:
     post:
       summary: Create a battle record
@@ -644,14 +644,14 @@ paths:
             - If BattleResult: result field updated
             - If BattleInteractHistory: entry appended to logs array
 
-  /mcp/agents/{agentId}/card:
+  /mcp/agent_instances/{agentInstanceId}/card:
     post:
-      summary: Agent-initiated or backend-initiated upload of AgentCard
+      summary: Agent instance-initiated or backend-initiated upload of AgentCard
       tags:
         - MCP
       parameters:
         - in: path
-          name: agentId
+          name: agentInstanceId
           required: true
           schema:
             type: string
