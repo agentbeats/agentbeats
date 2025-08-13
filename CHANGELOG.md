@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v1.2.4 (2025-08-13)
+
+### Bug Fixes
+
+- Add dev agent to list_agents result; change tmux mode split window to multiple windows
+  ([`f6d3a44`](https://github.com/agentbeats/agentbeats/commit/f6d3a4449f516c198025d8aabd323ba2fcbaaa04))
+
+- Backend url in batlle info; backendurl arg in run_frontend
+  ([`f6d3a44`](https://github.com/agentbeats/agentbeats/commit/f6d3a4449f516c198025d8aabd323ba2fcbaaa04))
+
+- Battle can be canceled by other user
+  ([`f6d3a44`](https://github.com/agentbeats/agentbeats/commit/f6d3a4449f516c198025d8aabd323ba2fcbaaa04))
+
+- Frontend liveness check loading animate in past battle, stage battle pages
+  ([`f6d3a44`](https://github.com/agentbeats/agentbeats/commit/f6d3a4449f516c198025d8aabd323ba2fcbaaa04))
+
+- Session token not found when register agent in dev mode; add: agent online status indicator
+  ([`f6d3a44`](https://github.com/agentbeats/agentbeats/commit/f6d3a4449f516c198025d8aabd323ba2fcbaaa04))
+
+- Supabase auth in dev mode
+  ([`f6d3a44`](https://github.com/agentbeats/agentbeats/commit/f6d3a4449f516c198025d8aabd323ba2fcbaaa04))
+
+
 ## v1.2.3 (2025-08-12)
 
 ### Bug Fixes
