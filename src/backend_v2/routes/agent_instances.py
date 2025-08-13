@@ -7,6 +7,7 @@ from ..models import (
     AgentInstanceUpdateRequest,
     AgentInstanceResponse,
     AgentInstanceListResponse,
+    AgentInstanceUpdateResponse,
 )
 
 
@@ -38,7 +39,7 @@ async def delete_agent_instance(
     # TODO: refer to backend_v1/agents.py: @router.delete("/agents/{agent_id}")
 
 
-@router.put("/agent_instances/{agent_instance_id}", response_model=AgentInstanceResponse, tags=["AgentInstances"])
+@router.put("/agent_instances/{agent_instance_id}", response_model=AgentInstanceUpdateResponse, tags=["AgentInstances"])
 async def update_agent_instance(
     agent_instance_id: str = Path(..., description="Agent instance ID"),
     update_data: AgentInstanceUpdateRequest = None

@@ -14,14 +14,33 @@ from .agent_instances import (
     AgentInstanceUpdateRequest,
     AgentInstanceResponse,
     AgentInstanceListResponse,
+    AgentInstanceUpdateResponse,
+)
+from .battles import (
+    BattleCreateRequest,
+    BattleResponse,
+    BattleListResponse,
+    BattleUpdateRequest,
+    BattleUpdateResponse,
 )
 
 __all__ = [
+    # Agents
     "AgentCreateRequest",
     "AgentResponse",
     "AgentListResponse",
+
+    # Agent Instances
     "AgentInstanceCreateRequest",
     "AgentInstanceUpdateRequest",
     "AgentInstanceResponse",
     "AgentInstanceListResponse",
+    "AgentInstanceUpdateResponse",
+
+    # Battles
+    "BattleResponse",
+    "BattleListResponse",
+    "BattleUpdateResponse",
+    "BattleCreateRequest",
+    "BattleUpdateRequest",
 ]

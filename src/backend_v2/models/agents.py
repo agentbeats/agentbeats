@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+
 """
 Agent and AgentInstance models for AgentBeats API.
 """
+
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from enum import Enum
