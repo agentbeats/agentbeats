@@ -142,6 +142,7 @@
           }}
           agent_id={greenAgent.agent_id || greenAgent.id}
           isOnline={greenAgent.live || false}
+          isLoading={greenAgent.livenessLoading || false}
         />
       </div>
     {/if}
@@ -160,6 +161,7 @@
               }}
               agent_id={agent.agent_id || agent.id}
               isOnline={agent.live || false}
+              isLoading={agent.livenessLoading || false}
             />
           {/each}
         </div>
