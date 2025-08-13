@@ -318,7 +318,8 @@ async def list_agents(check_liveness: bool = False, current_user: Dict[str, Any]
             # Show user's own agents first, then public agents (no user_id)
             user_agents = [agent for agent in agents if agent.get("user_id") == current_user["id"]]
             public_agents = [agent for agent in agents if not agent.get("user_id")]
-            agents = user_agents + public_agents
+            dev_agents = [agent for agent in agents if agent.get("user_id") == "dev-user-id"]
+            agents = user_agents + public_agents + dev_agents
         else:
             # If not authenticated, only show public agents
             agents = [agent for agent in agents if not agent.get("user_id")]
