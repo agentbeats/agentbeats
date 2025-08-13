@@ -26,20 +26,11 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S',
 )
 logger = logging.getLogger(__name__)
-server = FastMCP("Open MCP for AgentBeast Battle Arena")
+ab_mcp_server = FastMCP("Open MCP for AgentBeast Battle Arena")
 BACKEND_URL = "" # will be set from command line argument
 
 
-@server.tool()
-def echo(message: str) -> str:
-    """
-    Echo the input message.
-    """
-    logger.info("Echoing message: %s", message)
-    return f"Echo: {message}"
-
-
-@server.tool()
+@ab_mcp_server.tool()
 async def talk_to_agent(query: str, target_url: str) -> str:
     """
     Forward *query* to another A2A agent at *target_url* and stream back
@@ -84,7 +75,7 @@ async def talk_to_agent(query: str, target_url: str) -> str:
     return "".join(chunks).strip() or "No response from agent."
 
 
-@server.tool()
+@ab_mcp_server.tool()
 def update_battle_process(battle_id: str, message: str, reported_by: str, detail: dict = None, markdown_content: str = None) -> str:
     """
     Log battle process updates to backend API and console.
@@ -156,7 +147,7 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
         return 'logged locally (network error)'
 
 
-@server.tool()
+@ab_mcp_server.tool()
 def report_on_battle_end(battle_id: str, message:str, winner: str, reported_by: str, detail: dict = None, markdown_content: str = None) -> str:
     """
     Report the final battle result to backend API. YOU MUST CALL THIS AT THE END OF THE BATTLE.
@@ -235,7 +226,7 @@ if __name__ == "__main__":
     logger.info(f"Using host: {args.host}")
     logger.info(f"Using backend URL: {BACKEND_URL}")
     
-    server.run(transport="sse", 
+    ab_mcp_server.run(transport="sse", 
                host=args.host,
                port=args.mcp_port,
                log_level="ERROR")
