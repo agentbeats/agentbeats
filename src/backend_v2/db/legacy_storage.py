@@ -1,9 +1,13 @@
-import json
+# -*- coding: utf-8 -*-
+
 import os
-import sqlite3
+import json
 import uuid
+import sqlite3
+
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+
 
 class SQLiteStorage:
     """SQLite-based storage with the same interface as JSONStorage."""
@@ -147,19 +151,8 @@ class SQLiteStorage:
             
             return [row[0] for row in rows]
 
-
-
+# TODO: Remove this after full migration
 # Legacy database instance (kept for backward compatibility during migration)
-legacy_db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
-
-# New repository-based database system
-from .repositories import DatabaseManager, AgentRepository, AgentInstanceRepository, BattleRepository
-
-db_manager = DatabaseManager(os.path.join(os.path.dirname(__file__), 'data'))
-agent_repo = AgentRepository(db_manager)
-instance_repo = AgentInstanceRepository(db_manager)
-battle_repo = BattleRepository(db_manager)
-
 # For backward compatibility, we'll keep the old 'db' reference but point to legacy_db
-# This can be removed after full migration
+legacy_db = SQLiteStorage(os.path.join(os.path.dirname(__file__), 'data'))
 db = legacy_db

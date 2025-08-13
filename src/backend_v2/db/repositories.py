@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
+
 import json
 import os
 import sqlite3
 import uuid
+
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple, Union
 from contextlib import contextmanager
+from typing import Dict, List, Any, Optional, Tuple, Union
+
 
 class DatabaseManager:
     """Database manager for the new 3-table structure."""
@@ -52,7 +56,7 @@ class DatabaseManager:
                 CREATE TABLE IF NOT EXISTS battles (
                     battle_id TEXT PRIMARY KEY,
                     green_agent_id TEXT NOT NULL,
-                    opponents TEXT NOT NULL,
+                    participant_ids TEXT NOT NULL,
                     state TEXT NOT NULL DEFAULT 'pending',
                     created_at TEXT NOT NULL,
                     user_id TEXT,
@@ -355,7 +359,7 @@ class BattleRepository(BaseRepository):
         battle_record = {
             'battle_id': battle_id,
             'green_agent_id': battle_data['green_agent_id'],
-            'opponents': self._serialize_json(battle_data['opponents']),
+            'participant_ids': self._serialize_json(battle_data['participant_ids']),
             'state': battle_data.get('state', 'pending'),
             'created_at': created_at,
             'user_id': battle_data.get('user_id'),
@@ -366,12 +370,12 @@ class BattleRepository(BaseRepository):
         
         with self.db_manager.get_connection() as conn:
             conn.execute('''
-                INSERT INTO battles (battle_id, green_agent_id, opponents, state, 
+                INSERT INTO battles (battle_id, green_agent_id, participant_ids, state, 
                                    created_at, user_id, interact_history, result, error)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 battle_record['battle_id'], battle_record['green_agent_id'],
-                battle_record['opponents'], battle_record['state'],
+                battle_record['participant_ids'], battle_record['state'],
                 battle_record['created_at'], battle_record['user_id'],
                 battle_record['interact_history'], battle_record['result'],
                 battle_record['error']
@@ -388,7 +392,7 @@ class BattleRepository(BaseRepository):
             
             if row:
                 battle = dict(row)
-                battle['opponents'] = self._deserialize_json(battle['opponents'])
+                battle['participant_ids'] = self._deserialize_json(battle['participant_ids'])
                 battle['interact_history'] = self._deserialize_json(battle['interact_history'])
                 battle['result'] = self._deserialize_json(battle['result'])
                 return battle
@@ -416,7 +420,7 @@ class BattleRepository(BaseRepository):
             battles = []
             for row in rows:
                 battle = dict(row)
-                battle['opponents'] = self._deserialize_json(battle['opponents'])
+                battle['participant_ids'] = self._deserialize_json(battle['participant_ids'])
                 battle['interact_history'] = self._deserialize_json(battle['interact_history'])
                 battle['result'] = self._deserialize_json(battle['result'])
                 battles.append(battle)
@@ -432,7 +436,7 @@ class BattleRepository(BaseRepository):
             if key == 'battle_id':  # Don't allow updating primary key
                 continue
             
-            if key in ['opponents', 'interact_history', 'result']:
+            if key in ['participant_ids', 'interact_history', 'result']:
                 value = self._serialize_json(value)
             
             set_clauses.append(f"{key} = ?")

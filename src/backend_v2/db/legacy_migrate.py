@@ -3,7 +3,7 @@ import os
 import shutil
 from datetime import datetime
 from typing import Dict, Any, List
-from .storage import SQLiteStorage
+from .legacy_storage import SQLiteStorage
 from .repositories import DatabaseManager, AgentRepository, AgentInstanceRepository, BattleRepository
 
 def migrate_database(db_dir: str):
@@ -97,7 +97,7 @@ def migrate_database(db_dir: str):
                 battle_data = {
                     'battle_id': old_battle['battle_id'],
                     'green_agent_id': old_battle.get('green_agent_id', ''),
-                    'opponents': battle_repo._serialize_json(old_battle.get('opponents', [])),
+                    'participant_ids': battle_repo._serialize_json(old_battle.get('opponents', [])),
                     'state': old_battle.get('state', 'finished'),
                     'created_at': old_battle.get('created_at', datetime.utcnow().isoformat() + 'Z'),
                     'user_id': old_battle.get('created_by'),
@@ -110,12 +110,12 @@ def migrate_database(db_dir: str):
                 with new_db_manager.get_connection() as conn:
                     conn.execute("PRAGMA foreign_keys = OFF")
                     conn.execute('''
-                        INSERT INTO battles (battle_id, green_agent_id, opponents, state, 
+                        INSERT INTO battles (battle_id, green_agent_id, participant_ids, state, 
                                            created_at, user_id, interact_history, result, error)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         battle_data['battle_id'], battle_data['green_agent_id'],
-                        battle_data['opponents'], battle_data['state'],
+                        battle_data['participant_ids'], battle_data['state'],
                         battle_data['created_at'], battle_data['user_id'],
                         battle_data['interact_history'], battle_data['result'],
                         battle_data['error']

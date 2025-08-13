@@ -65,7 +65,7 @@ Remark: Will use agent_instance_id as docker_name, to find container
 + TEXT  battle_id
 + TEXT  user_id                  # Which user created this battle
 + TEXT  green_agent_id
-+ TEXT  participants_id          # Is json array
++ TEXT  participant_ids          # Is json array
 + TEXT  created_at               # Timestamp
 + TEXT  state                    # pending/queued/running/finished/error
 + TEXT  interact_history         # Is json array -> reported by update_battle_process

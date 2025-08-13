@@ -20,7 +20,7 @@ class BattleState(str, Enum):
 # Base Battle Models
 class BattleBase(BaseModel):
     green_agent_id: str = Field(..., description="Green agent (judge/coordinator) ID")
-    participants_id: List[str] = Field(..., description="List of participant agent IDs")
+    participant_ids: List[str] = Field(..., description="List of participant agent IDs")
 
 
 class BattleCreateRequest(BattleBase):
