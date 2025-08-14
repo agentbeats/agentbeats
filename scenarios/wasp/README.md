@@ -78,7 +78,7 @@ Use the web app to add the following agents:
 
 ### Running the Computer use blue agent
 
-To run the computer use blue agent you must either provide the `ANTHROPIC_API_KEY` environmental variable or add the GCP service account with vertex AI credentials into ` ".config/gcloud/agentbeats-235f43dc13fc.json"`.
+To run the computer use blue agent you must either provide the `ANTHROPIC_API_KEY` environmental variable or add the GCP service account with vertex AI credentials into ` ".config/gcloud/agentbeats-235f43dc13fc.json"`. The computer use agent also requires `docker` to be installed.
 
 ### Running the GCP server deployment
 
