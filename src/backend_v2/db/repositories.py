@@ -346,6 +346,13 @@ class AgentInstanceRepository(BaseRepository):
             cursor = conn.execute('DELETE FROM agent_instances WHERE agent_instance_id = ?', (instance_id,))
             conn.commit()
             return cursor.rowcount > 0
+    
+    def delete_agent_instances_by_agent_id(self, agent_id: str) -> bool:
+        """Delete all instances for a specific agent."""
+        with self.db_manager.get_connection() as conn:
+            cursor = conn.execute('DELETE FROM agent_instances WHERE agent_id = ?', (agent_id,))
+            conn.commit()
+            return cursor.rowcount > 0
 
 
 class BattleRepository(BaseRepository):

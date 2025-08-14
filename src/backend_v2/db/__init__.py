@@ -13,6 +13,14 @@ from .repositories import (
     BattleRepository,
 )
 
+
+__all__ = [
+    "agent_repo",
+    "instance_repo",
+    "battle_repo",
+]
+
+
 db_manager = DatabaseManager(os.path.join(os.path.dirname(__file__), 'data'))
 agent_repo = AgentRepository(db_manager)
 instance_repo = AgentInstanceRepository(db_manager)

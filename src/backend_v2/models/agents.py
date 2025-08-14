@@ -20,7 +20,11 @@ class AgentBase(BaseModel):
 
 class AgentCreateRequest(AgentBase):
     """Request model for creating a new agent"""
-    pass
+
+    # Optional fields for remote agents (non-hosted)
+    agent_url: Optional[str] = Field(None, description="Agent URL endpoint (required for remote agents)")
+    launcher_url: Optional[str] = Field(None, description="Launcher URL endpoint (required for remote agents)")
+    user_id: Optional[str] = Field(None, description="Owner user ID")
 
 
 class AgentResponse(AgentBase):
@@ -29,9 +33,6 @@ class AgentResponse(AgentBase):
     user_id: str = Field(..., description="Owner user ID")
     elo: Optional[Dict[str, Any]] = Field(None, description="ELO rating data (JSON)")
     created_at: datetime = Field(..., description="Creation timestamp")
-
-    class Config:
-        from_attributes = True
 
 
 class AgentListResponse(BaseModel):
