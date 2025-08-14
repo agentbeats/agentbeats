@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from fastapi import APIRouter, HTTPException, Path, Query, status
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Path, Query, status, Depends
+from typing import Optional, Dict, Any
 
 from ..models import (
     AgentInstanceUpdateRequest,
@@ -10,7 +10,7 @@ from ..models import (
     AgentInstanceUpdateResponse,
 )
 from ..db import instance_repo
-
+from ..utils.auth import get_current_user
 
 router = APIRouter()
 
@@ -18,7 +18,8 @@ router = APIRouter()
 @router.get("/agent_instances", response_model=AgentInstanceListResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
 async def list_all_agent_instances(
     is_locked: Optional[bool] = Query(None, description="Filter by locked status"),
-    ready: Optional[bool] = Query(None, description="Filter by ready status")
+    ready: Optional[bool] = Query(None, description="Filter by ready status"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """List all agent instances
        example: /api/agent_instances?is_locked=false&ready=true"""
@@ -38,7 +39,8 @@ async def list_all_agent_instances(
 
 @router.get("/agent_instances/{agent_instance_id}", response_model=AgentInstanceResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
 async def get_agent_instance(
-    agent_instance_id: str = Path(..., description="Agent instance ID")
+    agent_instance_id: str = Path(..., description="Agent instance ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Retrieve a single agent instance"""
     try:
@@ -63,7 +65,8 @@ async def get_agent_instance(
 
 @router.delete("/agent_instances/{agent_instance_id}", tags=["AgentInstances"], status_code=status.HTTP_200_OK)
 async def delete_agent_instance(
-    agent_instance_id: str = Path(..., description="Agent instance ID")
+    agent_instance_id: str = Path(..., description="Agent instance ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Delete a specific agent instance"""
     try:
@@ -105,7 +108,8 @@ async def delete_agent_instance(
 @router.put("/agent_instances/{agent_instance_id}", response_model=AgentInstanceUpdateResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
 async def update_agent_instance(
     update_data: AgentInstanceUpdateRequest,
-    agent_instance_id: str = Path(..., description="Agent instance ID")
+    agent_instance_id: str = Path(..., description="Agent instance ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Update agent instance status or info"""
     try:

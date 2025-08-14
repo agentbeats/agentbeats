@@ -180,13 +180,25 @@ class AgentRepository(BaseRepository):
             return None
     
     def list_agents(self, user_id: str = None, is_green: bool = None) -> List[Dict[str, Any]]:
-        """List agents with optional filters."""
+        """List agents with optional filters.
+        
+        Args:
+            user_id: 
+                - None (default): No user_id filtering
+                - "NULL": Only agents with user_id IS NULL
+                - "dev-user-id": Only dev agents
+                - str: Only agents with this specific user_id
+            is_green: Optional boolean filter for is_green field
+        """
         query = 'SELECT * FROM agents WHERE 1=1'
         params = []
         
         if user_id is not None:
-            query += ' AND user_id = ?'
-            params.append(user_id)
+            if user_id == "NULL":
+                query += ' AND user_id IS NULL'
+            else:
+                query += ' AND user_id = ?'
+                params.append(user_id)
         
         if is_green is not None:
             query += ' AND is_green = ?'

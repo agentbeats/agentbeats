@@ -4,7 +4,7 @@ import uuid
 
 from typing import Optional
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import APIRouter, HTTPException, Path, Query, status, Depends
 from ..models import (
     AgentCreateRequest,
     AgentResponse,
@@ -14,13 +14,15 @@ from ..models import (
     AgentInstanceListResponse,
 )
 from ..db import agent_repo, instance_repo
+from ..utils.auth import *
+from ..utils.agent_utils import check_agents_liveness
 
 
 router = APIRouter()
 
 
 @router.post("/agents", response_model=AgentResponse, tags=["Agents"], status_code=status.HTTP_201_CREATED)
-async def register_agent(request: AgentCreateRequest):
+async def register_agent(request: AgentCreateRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Create agent. If its a hosted agent, it will be created with no instance.
        If its a remote agent, it will be created with one instance."""
     try:
@@ -31,11 +33,12 @@ async def register_agent(request: AgentCreateRequest):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="agent_url and launcher_url are required for remote agents"
                 )
-        
+        #TODO: For hosted agents, add something to AgentCreateRequest
         # Create agent data
         agent_data = request.model_dump()
         agent_data['agent_id'] = str(uuid.uuid4())
         agent_data['created_at'] = datetime.utcnow().isoformat() + 'Z'
+        agent_data['user_id'] = current_user['id']
         instance_fields = ['agent_url', 'launcher_url']
         instance_data = {k: agent_data.pop(k, None) for k in instance_fields}
         
@@ -82,14 +85,29 @@ async def register_agent(request: AgentCreateRequest):
 
 @router.get("/agents", response_model=AgentListResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def list_all_agents(
-    user_id: Optional[str] = Query(None, description="Filter by user ID"),
-    is_green: Optional[bool] = Query(None, description="Filter by green agent status")
+    scope: str = Query("all", description="Agent visibility scope: 'mine' for user agents only, 'all' for user + public + dev agents"),
+    is_green: Optional[bool] = Query(None, description="Filter by green agent status"),
+    check_liveness: bool = Query(False, description="Check agent liveness status"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """List all agents (with ownership filtering)
-       example: /api/agents?user_id=1234-12345-1234-1234567890ab&is_green=true"""
+    """List all agents. Optionally filter by user or green status."""
     try:
-        agents = agent_repo.list_agents(user_id=user_id, is_green=is_green)
-        
+        user_id = current_user['id']
+        if scope == "mine":
+            agents = agent_repo.list_agents(user_id=user_id, is_green=is_green)
+
+        elif scope == "all":
+            agents = agent_repo.list_agents(is_green=is_green)
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid scope parameter. Use 'mine' or 'all'."
+            )
+
+        if check_liveness:
+            agents = await check_agents_liveness(agents)
+            
         agent_responses = [AgentResponse(**agent) for agent in agents]
         
         return AgentListResponse(agents=agent_responses)
@@ -103,7 +121,8 @@ async def list_all_agents(
 
 @router.get("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def get_agent(
-    agent_id: str = Path(..., description="Agent ID")
+    agent_id: str = Path(..., description="Agent ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Get specific agent details"""
     try:
@@ -128,7 +147,8 @@ async def get_agent(
 
 @router.delete("/agents/{agent_id}", tags=["Agents"], status_code=status.HTTP_200_OK)
 async def delete_agent(
-    agent_id: str = Path(..., description="Agent ID")
+    agent_id: str = Path(..., description="Agent ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Delete agent and all its instances"""
     try:
@@ -138,6 +158,14 @@ async def delete_agent(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Agent with ID {agent_id} not found"
+            )
+
+        agent_owner_id = agent.get('user_id')
+        user_id = current_user['id']
+        if user_id != "dev-user-id" and agent_owner_id != user_id: # dev user or owner can delete
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied - can only delete your own agents"
             )
         
         # Delete the agent (instances will be deleted via cascade)
@@ -171,7 +199,8 @@ async def delete_agent(
 
 @router.get("/agents/{agent_id}/instances", response_model=AgentInstanceListResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def list_agent_instances(
-    agent_id: str = Path(..., description="Agent ID")
+    agent_id: str = Path(..., description="Agent ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """List all instances for a specific agent"""
     try:
@@ -202,7 +231,8 @@ async def list_agent_instances(
 @router.post("/agents/{agent_id}/instances", response_model=AgentInstanceResponse, tags=["Agents"], status_code=status.HTTP_201_CREATED)
 async def create_hosted_agent_instance(
     instance: AgentInstanceCreateRequest,
-    agent_id: str = Path(..., description="Agent ID")
+    agent_id: str = Path(..., description="Agent ID"),
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Create new agent instance for hosted agent"""
     try:
