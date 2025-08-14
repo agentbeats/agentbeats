@@ -62,8 +62,7 @@ class DatabaseManager:
                     user_id TEXT,
                     interact_history TEXT,
                     result TEXT,
-                    error TEXT,
-                    FOREIGN KEY (green_agent_id) REFERENCES agents(agent_id)
+                    error TEXT
                 )
             ''')
             

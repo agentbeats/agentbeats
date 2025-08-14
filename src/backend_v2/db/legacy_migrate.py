@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sqlite3
 from datetime import datetime
 from typing import Dict, Any, List
 from .legacy_storage import SQLiteStorage
@@ -136,6 +137,85 @@ def migrate_database(db_dir: str):
     if failed_battles > 0:
         print(f"  Battles failed to migrate: {failed_battles}")
     
+    # Copy additional tables (agent_matches and match_roles) if they exist
+    print("\nCopying additional tables...")
+    copied_tables = []
+    
+    try:
+        # Check if agent_matches table exists and copy it
+        old_db_path = os.path.join(db_dir, 'database.db')
+        with sqlite3.connect(old_db_path) as old_conn:
+            # Check if agent_matches exists
+            cursor = old_conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='agent_matches'")
+            if cursor.fetchone():
+                # Get the table schema and data
+                cursor = old_conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='agent_matches'")
+                create_sql = cursor.fetchone()[0]
+                
+                cursor = old_conn.execute("SELECT * FROM agent_matches")
+                agent_matches_data = cursor.fetchall()
+                agent_matches_columns = [description[0] for description in cursor.description]
+                
+                # Create table in new database
+                with new_db_manager.get_connection() as new_conn:
+                    new_conn.execute("PRAGMA foreign_keys = OFF")
+                    new_conn.execute(create_sql)
+                    
+                    # Copy data
+                    if agent_matches_data:
+                        placeholders = ','.join(['?' for _ in agent_matches_columns])
+                        insert_sql = f"INSERT INTO agent_matches VALUES ({placeholders})"
+                        new_conn.executemany(insert_sql, agent_matches_data)
+                    
+                    new_conn.commit()
+                
+                copied_tables.append(f"agent_matches ({len(agent_matches_data)} rows)")
+                print(f"  Copied agent_matches table with {len(agent_matches_data)} rows")
+            
+            # Check if match_roles table exists and copy it
+            cursor = old_conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='match_roles'")
+            if cursor.fetchone():
+                # Get the table schema and data
+                cursor = old_conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='match_roles'")
+                create_sql = cursor.fetchone()[0]
+                
+                cursor = old_conn.execute("SELECT * FROM match_roles")
+                match_roles_data = cursor.fetchall()
+                match_roles_columns = [description[0] for description in cursor.description]
+                
+                # Create table in new database
+                with new_db_manager.get_connection() as new_conn:
+                    new_conn.execute("PRAGMA foreign_keys = OFF")
+                    new_conn.execute(create_sql)
+                    
+                    # Copy data
+                    if match_roles_data:
+                        placeholders = ','.join(['?' for _ in match_roles_columns])
+                        insert_sql = f"INSERT INTO match_roles VALUES ({placeholders})"
+                        new_conn.executemany(insert_sql, match_roles_data)
+                    
+                    new_conn.commit()
+                
+                copied_tables.append(f"match_roles ({len(match_roles_data)} rows)")
+                print(f"  Copied match_roles table with {len(match_roles_data)} rows")
+                
+            # Copy any indexes for these tables
+            for table_name in ['agent_matches', 'match_roles']:
+                cursor = old_conn.execute("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL", (table_name,))
+                indexes = cursor.fetchall()
+                
+                if indexes:
+                    with new_db_manager.get_connection() as new_conn:
+                        for index_sql, in indexes:
+                            try:
+                                new_conn.execute(index_sql)
+                            except Exception as e:
+                                print(f"    Warning: Failed to create index for {table_name}: {e}")
+                        new_conn.commit()
+                        
+    except Exception as e:
+        print(f"Error copying additional tables: {str(e)}")
+    
     # Migration summary
     print(f"\nMigration completed!")
     print(f"  Agents migrated: {migrated_agents}")
@@ -143,6 +223,8 @@ def migrate_database(db_dir: str):
     print(f"  Battles migrated: {migrated_battles}")
     if failed_battles > 0:
         print(f"  Battles failed: {failed_battles}")
+    if copied_tables:
+        print(f"  Additional tables copied: {', '.join(copied_tables)}")
     print(f"  Old database backed up to: {backup_path}")
     
     return {
@@ -150,6 +232,7 @@ def migrate_database(db_dir: str):
         'instances_created': migrated_instances,
         'battles_migrated': migrated_battles,
         'battles_failed': failed_battles,
+        'copied_tables': copied_tables,
         'backup_path': backup_path
     }
 
