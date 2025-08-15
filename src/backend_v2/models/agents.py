@@ -25,6 +25,7 @@ class AgentCreateRequest(AgentBase):
     agent_url: Optional[str] = Field(None, description="Agent URL endpoint (required for remote agents)")
     launcher_url: Optional[str] = Field(None, description="Launcher URL endpoint (required for remote agents)")
     user_id: Optional[str] = Field(None, description="Owner user ID")
+    github_link: Optional[str] = Field(None, description="GitHub link for the hosted agent repository")
 
 
 class AgentResponse(AgentBase):
@@ -32,6 +33,7 @@ class AgentResponse(AgentBase):
     agent_id: str = Field(..., description="Unique agent identifier")
     user_id: str = Field(..., description="Owner user ID")
     elo: Optional[Dict[str, Any]] = Field(None, description="ELO rating data (JSON)")
+    agent_card: Optional[Dict[str, Any]] = Field(None, description="Agent card data (JSON)")
     created_at: datetime = Field(..., description="Creation timestamp")
 
 

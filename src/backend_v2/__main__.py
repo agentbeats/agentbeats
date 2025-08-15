@@ -3,7 +3,7 @@
 import uvicorn
 
 from fastapi import FastAPI
-from .routes import agents, agent_instances, battles, misc
+from .routes import agents, agent_instances, battles, misc, services
 
 
 app = FastAPI(
@@ -15,6 +15,7 @@ app.include_router(agents.router)
 app.include_router(agent_instances.router)
 app.include_router(battles.router)
 app.include_router(misc.router)
+app.include_router(services.router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=9000)

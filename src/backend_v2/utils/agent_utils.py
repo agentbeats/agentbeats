@@ -5,12 +5,22 @@ from typing import Dict, Any, List
 from agentbeats.utils.agents import get_agent_card
 
 
+from ..db import agent_repo, instance_repo
+
+
 async def check_agents_liveness(agents: List[Dict[str, Any]], max_concurrent: int = 10) -> List[Dict[str, Any]]:
     """Check liveness for a list of agents and add 'live' field to each agent."""
     async def check_agent_liveness(agent):
         """Check liveness for a single agent."""
-        agent_url = agent.get("register_info", {}).get("agent_url")
-        launcher_url = agent.get("register_info", {}).get("launcher_url")
+        if agent.get("is_hosted"):
+            agent["live"] = True  # Hosted agents are always considered live
+            return agent
+
+        # Else is remote agent, get tne instance and then get URLs
+        agent_id = agent.get("id")
+        instance = instance_repo.get_agent_instances_by_agent_id(agent_id)[0]
+        agent_url = instance.get("agent_url")
+        launcher_url = instance.get("launcher_url")
         
         async def check_agent_card():
             """Check if agent URL is accessible and can return agent card."""
