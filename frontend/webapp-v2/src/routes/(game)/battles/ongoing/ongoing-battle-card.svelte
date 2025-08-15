@@ -212,6 +212,7 @@
             }}
             agent_id={greenAgent.agent_id || greenAgent.id}
             isOnline={greenAgent.live || false}
+            isLoading={greenAgent.livenessLoading || false}
           />
         </div>
       {:else if greenAgent}
@@ -265,6 +266,7 @@
                         }}
                         agent_id={agent.agent_id || agent.id}
                         isOnline={agent.live || false}
+                        isLoading={agent.livenessLoading || false}
                       />
                     {:else}
                       <span class="text-sm text-muted-foreground">Agent data incomplete</span>

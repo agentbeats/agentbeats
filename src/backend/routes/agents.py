@@ -422,7 +422,12 @@ async def list_agents(
             public_agents = [
                 agent for agent in agents if not agent.get("user_id")
             ]
-            agents = user_agents + public_agents
+            dev_agents = [
+                agent
+                for agent in agents
+                if agent.get("user_id") == "dev-user-id"
+            ]
+            agents = user_agents + public_agents + dev_agents
         else:
             # If not authenticated, only show public agents
             agents = [agent for agent in agents if not agent.get("user_id")]

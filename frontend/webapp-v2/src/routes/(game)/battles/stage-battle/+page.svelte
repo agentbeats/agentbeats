@@ -124,7 +124,8 @@
       register_info: agent.register_info || {},
       status: agent.status || 'unlocked',
       agent_card: agent.agent_card || {},
-      live: agent.live || false
+      live: agent.live || false,
+      livenessLoading: agent.livenessLoading || false
     }));
     
     // Filter agents by type

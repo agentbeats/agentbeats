@@ -168,6 +168,7 @@
                     }}
                     agent_id={battle.green_agent.agent_id || battle.green_agent.id}
                     isOnline={battle.green_agent.live || false}
+                    isLoading={battle.green_agent.livenessLoading || false}
                   />
                 {:else}
                   <span class="text-gray-500">Loading...</span>
@@ -194,6 +195,7 @@
                                 }} 
                                 agent_id={agent.agent_id || agent.id}
                                 isOnline={agent.live || false}
+                                isLoading={agent.livenessLoading || false}
                               />
                             </div>
                           </Carousel.Item>

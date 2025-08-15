@@ -13,6 +13,8 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
+from agentbeats.utils.agents import get_agent_card
+
 __all__ = ["BeatsAgentLauncher"]
 
 
@@ -111,6 +113,31 @@ class BeatsAgentLauncher:
                 self._agent_proc.kill()
                 self._agent_proc.wait()
 
+    async def _wait_for_agent_and_notify(self, backend_url: str, agent_id: str) -> None:
+        """Background task to wait for agent to be ready and notify backend."""
+        max_attempts = 30  # Maximum 60 seconds (30 * 2s)
+        attempt = 0
+        
+        while attempt < max_attempts:
+            await asyncio.sleep(2)  # Wait 2 seconds between checks
+            attempt += 1
+
+            agent_card = await get_agent_card(f"http://{self.agent_host}:{self.agent_port}")
+            if agent_card:
+                try:
+                    requests.put(
+                        f"{backend_url}/agents/{agent_id}",
+                        json={"ready": True},
+                        timeout=5,
+                    )
+                    print(f"[Launcher] Successfully notified backend that agent {agent_id} is ready")
+                    return
+                except requests.RequestException as e:
+                    print(f"[Launcher] WARNING: failed to notify backend: {e}")
+                    return
+        
+        print(f"[Launcher] WARNING: Agent {agent_id} did not become ready within timeout")
+
     # reset router
     async def _reset_endpoint(self, payload: _SignalPayload) -> dict:
         if payload.signal != "reset":
@@ -119,19 +146,13 @@ class BeatsAgentLauncher:
         async with self._state_lock:
             self._terminate_agent()
             self._agent_proc = self._start_agent()
+            
+            # Start background task to check agent readiness and notify backend
+            asyncio.create_task(
+                self._wait_for_agent_and_notify(payload.backend_url, payload.agent_id)
+            )
 
-            time.sleep(2) # wait for agent to start, TODO: use a better impl
-
-            try:
-                requests.put(
-                    f"{payload.backend_url}/agents/{payload.agent_id}",
-                    json={"ready": True},
-                    timeout=5,
-                )
-            except requests.RequestException as e:
-                print(f"[Launcher] WARNING: failed to notify backend: {e}")
-
-            return {"status": "restarted", "pid": self._agent_proc.pid}
+            return {"status": "restarting", "pid": self._agent_proc.pid}
 
     
     def _build_app(self) -> FastAPI:

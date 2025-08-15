@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { marked } from 'marked';
+  import { userEmail } from '$lib/stores/auth';
   import AsciinemaPlayerView from '$lib/components/AsciinemaPlayerView.svelte';
   
   let battle: any = null;
@@ -13,6 +14,7 @@
   let greenAgentInfo: any = null;
   let opponentRoleMap = new Map<string, string>(); // name -> role mapping
   let interactHistoryContainer: HTMLDivElement | null = null;
+  let isDevMode = false;
   let entryActiveTabs: Record<number, string> = {};
 
   async function fetchWithTimeout(input: RequestInfo, init?: RequestInit, timeoutMs: number = 15000): Promise<Response> {
@@ -29,6 +31,12 @@
   $: battleId = $page.params.battle_id;
   
   $: battleInProgress = battle ? isBattleInProgress() : false;
+  
+  // Check if current user can cancel the battle
+  $: canCancelBattle = battleInProgress && (
+    isDevMode || 
+    (battle?.created_by && $userEmail && battle.created_by === $userEmail)
+  );
   
   async function fetchAgentName(agentId: string): Promise<string> {
     try {
@@ -142,7 +150,7 @@
   }
   
   async function cancelBattle() {
-    if (!battle || !battleInProgress) return;
+    if (!battle || !canCancelBattle) return;
     
     const confirmed = confirm('Are you sure you want to cancel this battle? This will end the battle with a draw result.');
     if (!confirmed) return;
@@ -181,6 +189,10 @@
   onMount(async () => {
     loading = true;
     error = '';
+    
+    // Check if we're in development mode
+    isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+    
     try {
       const res = await fetchWithTimeout(`/api/battles/${battleId}`);
       if (!res.ok) {
@@ -308,7 +320,7 @@
           <div class="text-red-700">Error: <span class="font-semibold">{battle.error}</span></div>
         {/if}
         
-        {#if battleInProgress}
+        {#if canCancelBattle}
           <div class="mt-3 pt-3 border-t">
             <button 
               on:click={cancelBattle}

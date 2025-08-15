@@ -186,6 +186,7 @@
             }}
             agent_id={selectedOption.value}
             isOnline={selectedOption.agent.live || false}
+            isLoading={selectedOption.agent.livenessLoading || false}
           />
           {#if selectedOption.confidence > 0}
             <span class="text-xs text-gray-500">({Math.round(selectedOption.confidence * 100)}%)</span>
@@ -247,6 +248,7 @@
                       }}
                       agent_id={option.value}
                       isOnline={option.agent.live || false}
+                      isLoading={option.agent.livenessLoading || false}
                     />
                   {:else}
                     <span class="{!option.isMatch ? 'text-gray-400' : 'text-gray-900'}">{option.label}</span>
