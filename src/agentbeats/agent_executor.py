@@ -331,7 +331,10 @@ class AgentBeatsExecutor(AgentExecutor):
                     # TODO: perhaps make it more flexible later?
                     terminal_input = arguments_dict["terminal_command"]
                     terminal_output = result["terminal_output"]
-                    asciinema_url = result["asciinema_url"]
+                    if "asciinema_url" in result:
+                        asciinema_url = result["asciinema_url"]
+                    else:
+                        asciinema_url = None
 
                     logger.info("Arguments dict: %s", arguments_dict)
                     logger.info("Terminal input: %s", terminal_input)
