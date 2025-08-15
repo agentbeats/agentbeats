@@ -22,7 +22,10 @@ router = APIRouter()
 
 
 @router.post("/agents", response_model=AgentResponse, tags=["Agents"], status_code=status.HTTP_201_CREATED)
-async def register_agent(request: AgentCreateRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def register_agent(
+    request: AgentCreateRequest, 
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
     """Create agent. If its a hosted agent, it will be created with no instance.
        If its a remote agent, it will be created with one instance."""
     try:

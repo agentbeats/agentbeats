@@ -6,11 +6,11 @@ Latest Updates:
 + Add src/backend_v2/database/ folder
   (just delete the JSONStorage class and write a better SQLiteStorage if needed)
 + Transfer all src/backend/agents.py
-
-TODO:
 + Add src/backend_v2/battle_manager folder 
   (personally, don't put it in routes; please create a class for this and import it)
 + Transfer all src/backend/battles.py
+
+TODO:
 + Transfer all misc (login credential, websockets, auth, mcp, matches)
   + Add automatic MCP prompt hook for all agents
 
@@ -18,6 +18,12 @@ TODO:
 
 ### 1. Start the Service
 ```bash
+export DEV_LOGIN_MODE=true # linux
+python -m src.backend_v2
+```
+
+```powershell
+$Env:DEV_LOGIN_MODE="true" # windows
 python -m src.backend_v2
 ```
 

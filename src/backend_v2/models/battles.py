@@ -20,12 +20,15 @@ class BattleState(str, Enum):
 # Base Battle Models
 class BattleBase(BaseModel):
     green_agent_id: str = Field(..., description="Green agent (judge/coordinator) ID")
-    participant_ids: List[str] = Field(..., description="List of participant agent IDs")
+    opponents: List[Dict[str, Any]] = Field(..., description="List of opponent agents with names and IDs")
 
 
-class BattleCreateRequest(BattleBase):
+class BattleCreateRequest(BaseModel):
     """Request model for creating a new battle"""
-    pass
+    green_agent_id: str = Field(..., description="Green agent (judge/coordinator) ID")
+    opponents: List[Dict[str, Any]] = Field(..., description="List of opponent agents with names and IDs")
+    config: Optional[Dict[str, Any]] = Field(None, description="Battle configuration")
+    created_by: Optional[str] = Field(None, description="User who created this battle")
 
 
 class BattleUpdateRequest(BaseModel):
@@ -37,9 +40,11 @@ class BattleUpdateRequest(BaseModel):
     finished_at: Optional[datetime] = Field(None, description="Battle finish timestamp")
 
 
-class BattleResponse(BattleBase):
+class BattleResponse(BaseModel):
     """Response model for battle data"""
     battle_id: str = Field(..., description="Unique battle identifier")
+    green_agent_id: str = Field(..., description="Green agent (judge/coordinator) ID")
+    opponents: List[Dict[str, Any]] = Field(..., description="List of opponent agents with names and IDs")
     user_id: str = Field(..., description="User who created this battle")
     created_at: datetime = Field(..., description="Battle creation timestamp")
     state: BattleState = Field(BattleState.PENDING, description="Current battle state")
