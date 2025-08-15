@@ -8,7 +8,7 @@ from agentbeats.utils.agents import send_message_to_agent
 
 
 async def reset_agent_trigger(
-    self, launcher_url: str, agent_id: str, backend_url: str, extra_args: dict = None
+    launcher_url: str, agent_id: str, backend_url: str, extra_args: dict = None
 ) -> bool:
     """Reset an agent via its launcher."""
     httpx_client = None
@@ -43,7 +43,6 @@ async def reset_agent_trigger(
 
 
 async def notify_green_agent(
-    self,
     endpoint: str,
     opponent_infos: List[Dict[str, Any]],
     battle_id: str,
@@ -129,7 +128,6 @@ async def notify_green_agent(
 
 
 async def send_battle_info(
-    self,
     endpoint: str,
     battle_id: str,
     agent_name: str,

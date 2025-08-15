@@ -14,12 +14,14 @@ from ..models import (
 )
 from ..utils.auth import *
 from ..db import agent_repo, battle_repo
-from ..utils.battle_manager import BattleManager
+from ..battle_manager import BattleManager
+
 
 router = APIRouter()
 
-# Initialize battle manager (globally shared)
+# Initialize battle manager (globally shared) and start it
 battle_manager = BattleManager()
+battle_manager.start()
 
 
 @router.get("/battles", response_model=BattleListResponse, tags=["Battles"], status_code=status.HTTP_200_OK)
