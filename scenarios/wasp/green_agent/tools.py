@@ -122,7 +122,7 @@ def reset_battle() -> str:
 
         print("Resetting battle properly for battle_id: " + battle_id + " with auth token: " + os.environ.get('RESET_AUTH_TOKEN'), file=sys.__stdout__, flush=True)
 
-        return "Battle reset successfully" # TODO: Remove this
+        # return "Battle reset successfully"
 
         # Reset the server
         import requests
