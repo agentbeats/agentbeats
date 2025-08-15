@@ -35,6 +35,7 @@ class DatabaseManager:
                     participant_requirements TEXT,
                     github_link TEXT,
                     agent_card TEXT,
+                    agent_card_status TEXT NOT NULL,
                     user_id TEXT,
                     elo TEXT,
                     created_at TEXT NOT NULL
@@ -150,6 +151,7 @@ class AgentRepository(BaseRepository):
             'participant_requirements': self._serialize_json(agent_data.get('participant_requirements')),
             'github_link': agent_data.get('github_link'),
             'agent_card': self._serialize_json(agent_data.get('agent_card')),
+            'agent_card_status': agent_data.get('agent_card_status'),
             'user_id': agent_data.get('user_id'),
             'elo': self._serialize_json(agent_data.get('elo')),
             'created_at': created_at
@@ -158,12 +160,12 @@ class AgentRepository(BaseRepository):
         with self.db_manager.get_connection() as conn:
             conn.execute('''
                 INSERT INTO agents (agent_id, alias, is_hosted, is_green, battle_description, 
-                                  participant_requirements, agent_card, github_link, user_id, elo, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  participant_requirements, agent_card, agent_card_status, github_link, user_id, elo, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 agent_record['agent_id'], agent_record['alias'], agent_record['is_hosted'],
                 agent_record['is_green'], agent_record['battle_description'],
-                agent_record['participant_requirements'], agent_record['agent_card'],
+                agent_record['participant_requirements'], agent_record['agent_card'], agent_data['agent_card_status'],
                 agent_record['github_link'], agent_record['user_id'], agent_record['elo'], agent_record['created_at']
             ))
             conn.commit()
