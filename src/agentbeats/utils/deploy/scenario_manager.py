@@ -104,7 +104,7 @@ class ScenarioService:
 class ScenarioAgent:
     """Represents an agent configuration for a scenario"""
     
-    def __init__(self, config: Dict[str, Any], scenario_dir: Path):
+    def __init__(self, config: Dict[str, Any], scenario_dir: Path, task_index: int = None):
         self.card = config["card"]
         if "name" in config:
             self.name = config["name"]
@@ -114,6 +114,7 @@ class ScenarioAgent:
             self.name = card_content.get("name", "Unnamed Agent")
             
         self.scenario_dir = scenario_dir
+        self.task_index = task_index
         
         # Agent configuration
         # Required fields
@@ -207,9 +208,10 @@ class ScenarioAgent:
 class ScenarioManager:
     """Manages scenario loading and execution"""
     
-    def __init__(self, scenario_root: Path):
+    def __init__(self, scenario_root: Path, project_dir: Path = None):
         # Scenario root, e.g. "scenarios/tensortrust"
         self.scenario_root = Path(scenario_root)
+        self.project_dir = Path(project_dir)
         
         # These will be loaded by `load_scenario_toml()`
         self.config: Dict[str, Any] = {}  
@@ -237,11 +239,33 @@ class ScenarioManager:
             service = ScenarioService(service_config, self.scenario_root)
             self.services.append(service)
         
-        # Load agents
+        # Load agents to start
         self.agents = []
         for agent_config in config.get("agents", []):
             agent = ScenarioAgent(agent_config, self.scenario_root)
             self.agents.append(agent)
+
+        # Load agents to register
+        self.agents_to_register = []
+        for agent_config in config.get("agents", []):
+            if num_tasks := agent_config.get("num_tasks", None):
+                for i in range(num_tasks):
+                    agent = ScenarioAgent(
+                        agent_config, self.scenario_root, task_index=i + 1
+                    )
+                    self.agents_to_register.append(agent)
+            else:
+                agent = ScenarioAgent(agent_config, self.scenario_root)
+                self.agents_to_register.append(agent)
+        
+        print("===Agents to start===")
+        for agent in self.agents:
+            print(f"Agent {agent.name} task index: {agent.task_index}")
+
+        print("===Agents to register===")
+        for agent in self.agents_to_register:
+            print(f"Agent {agent.name} task index: {agent.task_index}")
+
     
     def load_scenario(self, mode: str = None):
         """Start all components of a scenario"""
@@ -361,12 +385,12 @@ class ScenarioManager:
                 full_cmd = f'start cmd /k "title {agent.name} && cd /d {agent.scenario_dir} && {command}"'
                 subprocess.Popen(full_cmd, shell=True)
             elif system == "Darwin":  # macOS
-                apple_script = f'''
+                apple_script = f"""
                 tell application "Terminal"
-                    do script "cd '{agent.scenario_dir}' && {command}"
+                    do script "source {self.project_dir}/venv/bin/activate && cd '{agent.scenario_dir}' && {command}"
                 end tell
-                '''
-                subprocess.Popen(['osascript', '-e', apple_script])
+                """
+                subprocess.Popen(["osascript", "-e", apple_script])
             else:  # Linux
                 terminal_cmds = [
                     ['gnome-terminal', '--', 'bash', '-c'],
@@ -454,6 +478,7 @@ class ScenarioManager:
                 scenarios.append(item.name)
         return scenarios
     
+
     def register_agent_to_backend(self, agent: ScenarioAgent, backend_url: str = "http://localhost:9000") -> Optional[str]:
         """Register a single agent to the backend and return agent_id"""
         max_retries = 3
@@ -474,17 +499,17 @@ class ScenarioManager:
                     "launcher_url": launcher_url,
                     "is_green": agent.is_green
                 }
+
+                if agent.task_index:
+                    print(f"Task index: {agent.task_index}")
+                    register_data["task_config"] = str(agent.task_index)
                 
                 # Add participant_requirements for green agents
                 if agent.is_green and agent.participant_requirements:
                     register_data["participant_requirements"] = agent.participant_requirements
                 
                 # Register agent
-                response = requests.post(
-                    f"{backend_url}/agents",
-                    json=register_data,
-                    timeout=30
-                )
+                response = requests.post(f"{backend_url}/agents", json=register_data, timeout=30)
                 
                 if response.status_code == 201:
                     result = response.json()
@@ -505,7 +530,32 @@ class ScenarioManager:
         
         print(f"❌ Failed to register agent {agent.name} after {max_retries} attempts")
         return None
-    
+
+    def register_agents_to_backend(
+        self,
+        backend_url: str = "http://localhost:9000",
+    ):
+        """
+        Register all agents to the backend
+
+        return agent_id_map, green_agent_id
+        """
+        # Register all agents
+        agent_id_map = {}  # Maps agent name to registered agent_id
+        green_agent_id = None
+
+        for agent in self.agents_to_register:
+            agent_id = self.register_agent_to_backend(agent, backend_url)
+            if not agent_id:
+                print(f"❌ Failed to register agent {agent.name}")
+                return None, None
+            agent_id_map[agent.name] = agent_id
+            if agent.is_green:
+                green_agent_id = agent_id
+
+        return agent_id_map, green_agent_id
+
+
     def create_battle(self, green_agent_id: str, opponents: List[Dict[str, str]], backend_url: str = "http://localhost:9000") -> Optional[str]:
         """Create a battle and return battle_id"""
         try:
@@ -550,48 +600,42 @@ class ScenarioManager:
             return None
         
         print(f"Found green agent: {green_agent.name}")
-        
+
         # Register all agents
-        agent_id_map = {}  # Maps agent name to registered agent_id
-        
-        # Register green agent first
-        green_agent_id = self.register_agent_to_backend(green_agent, backend_url)
-        if not green_agent_id:
+        agent_id_map, green_agent_id = self.register_agents_to_backend(
+            backend_url
+        )
+        if not agent_id_map or not green_agent_id:
+            print("❌ Failed to register agents")
             return None
-        agent_id_map[green_agent.name] = green_agent_id
-        
-        # Register other agents
-        for agent in self.agents:
-            if not agent.is_green:
-                agent_id = self.register_agent_to_backend(agent, backend_url)
-                if not agent_id:
-                    print(f"❌ Failed to register non-green agent {agent.name}")
-                    return None
-                agent_id_map[agent.name] = agent_id
-        
+
         # Build opponents list based on participant_requirements
         opponents = []
         for req in green_agent.participant_requirements:
             participant_agent_name = req["participant_agent"]
             if participant_agent_name not in agent_id_map:
-                print(f"❌ Required participant agent {participant_agent_name} not found in scenario")
+                print(
+                    f"❌ Required participant agent {participant_agent_name} not found in scenario"
+                )
                 return None
-            
-            opponents.append({
-                "name": req["name"],
-                "agent_id": agent_id_map[participant_agent_name],
-                "role": req["role"]
-            })
-        
+
+            opponents.append(
+                {
+                    "name": req["name"],
+                    "agent_id": agent_id_map[participant_agent_name],
+                    "role": req["role"],
+                }
+            )
+
         print(f"Prepared {len(opponents)} opponents for battle")
-        
+
         # Create battle
         battle_id = self.create_battle(green_agent_id, opponents, backend_url)
         if not battle_id:
             return None
-        
+
         # Generate frontend URL
         battle_url = f"{frontend_url}/battles/{battle_id}"
         print(f"🎯 Battle URL: {battle_url}")
-        
+
         return battle_url

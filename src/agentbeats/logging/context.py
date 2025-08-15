@@ -15,6 +15,7 @@ def set_battle_context(context: Dict):
     """
     Set the global battle context.
     """
+    global _BATTLE_CONTEXT
     _BATTLE_CONTEXT = context
 
 
@@ -61,6 +62,7 @@ class BattleContext:
     battle_id: str
     backend_url: str
     agent_name: str
+    task_config: str = ""
     
     def __post_init__(self):
         """Validate and setup context after initialization."""
