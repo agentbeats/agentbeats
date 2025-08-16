@@ -42,6 +42,7 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.52.1",
 		"@sveltejs/adapter-node": "^5.2.13",
+		"asciinema-player": "^3.10.0",
 		"embla-carousel-autoplay": "^8.6.0",
 		"marked": "^16.1.1",
 		"mdsvex": "^0.12.6",

@@ -76,7 +76,8 @@ class AgentBeatsA2AClient:
                                 battle_id: str,
                                 backend_url: str = "http://localhost:9000",
                                 green_agent_name: str = "green_agent",
-                                red_agent_names: Dict[str, str] = None) -> bool:
+                                red_agent_names: Dict[str, str] = None,
+                                task_config: str = "") -> bool:
         """Notify the green agent about a battle using SDK message sending."""
         try:
             # TODO: make this more eligant, for exmaple, 
@@ -90,7 +91,8 @@ class AgentBeatsA2AClient:
             green_context = BattleContext(
                 battle_id=battle_id, 
                 backend_url=backend_url, 
-                agent_name=green_agent_name  # Use actual agent name from database
+                agent_name=green_agent_name,  # Use actual agent name from database
+                task_config=task_config
             )
             
             red_contexts = {}
@@ -116,7 +118,8 @@ class AgentBeatsA2AClient:
                 "green_battle_context": {
                     "battle_id": green_context.battle_id,
                     "backend_url": green_context.backend_url,
-                    "agent_name": green_context.agent_name
+                    "agent_name": green_context.agent_name,
+                    "task_config": f"Task description: {green_context.task_config}",
                 },
                 "red_battle_contexts": {
                     url: {
@@ -143,6 +146,7 @@ class AgentBeatsA2AClient:
                         "type": "battle_start",
                         "battle_id": battle_id,
                         "opponent_infos": opponent_infos,
+                        "task_config": task_config,
                     }
                     json.dumps(test_info)
                     logger.error("Basic info serializes fine, BattleContext is the issue")

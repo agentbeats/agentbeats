@@ -491,6 +491,8 @@ def main():
     load_scenario_parser.add_argument("scenario_root", help="Path to scenario directory")
     load_scenario_parser.add_argument("--launch-mode", choices=["tmux", "separate", "current"], 
                                 default="", help="Launching terminal; Will override scenario.toml's settings!")
+    load_scenario_parser.add_argument("--register_agents", action="store_true", default=False, help="Register agents to backend (default: false)")
+    load_scenario_parser.add_argument("--backend", help="Backend URL", default="http://localhost:9000")
 
     # run_scenario command
     run_scenario_parser = sub_parser.add_parser("run_scenario", help="Run a scenario from scenario.toml (requires frontend and backend to be running; eqivalant to `ab load_scenario` + register agent + start battle)")
@@ -561,8 +563,18 @@ def main():
         launcher.run(reload=args.reload)
     
     elif args.cmd == "load_scenario":
-        manager = ScenarioManager(scenario_root=pathlib.Path(args.scenario_root))
+        project_dir = pathlib.Path(__file__).parent.parent.parent
+        scenario_root = project_dir / pathlib.Path(args.scenario_root)
+        manager = ScenarioManager(
+            project_dir=project_dir, scenario_root=scenario_root
+        )
         manager.load_scenario(mode=args.launch_mode)
+        if args.register_agents:
+            if not args.backend:
+                parser.error(
+                    "--backend is required when --register_agents is used"
+                )
+            manager.register_agents_to_backend(backend_url=args.backend)
     
     elif args.cmd == "run_scenario":
         manager = ScenarioManager(scenario_root=pathlib.Path(args.scenario_root))
