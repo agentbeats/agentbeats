@@ -41,17 +41,17 @@ tools = ["green_agent/tools.py"]
 mcp_servers = ["http://localhost:9001/sse"]
 is_green = true
 
-[[agents]]
-name = "Blue Agent Computer Use"
-card = "blue_agent_computer_use/blue_agent_card.toml"
-launcher_host = "0.0.0.0"
-launcher_port = 9116
-agent_host = "0.0.0.0"
-agent_port = 9117
-model_type = "openrouter"
-model_name = "anthropic/claude-3.5-sonnet-20241022"
-tools = ["blue_agent_computer_use/tools.py"]
-mcp_servers = ["http://localhost:9001/sse"]
+# [[agents]]
+# name = "Blue Agent Computer Use"
+# card = "blue_agent_computer_use/blue_agent_card.toml"
+# launcher_host = "0.0.0.0"
+# launcher_port = 9116
+# agent_host = "0.0.0.0"
+# agent_port = 9117
+# model_type = "openrouter"
+# model_name = "anthropic/claude-3.5-sonnet-20241022"
+# tools = ["blue_agent_computer_use/tools.py"]
+# mcp_servers = ["http://localhost:9001/sse"]
 
 [[agents.participant_requirements]]
   role = "red_agent"
