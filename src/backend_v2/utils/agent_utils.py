@@ -4,6 +4,9 @@ import subprocess
 import asyncio
 import httpx
 import platform
+import time
+import uuid
+from datetime import datetime
 from fastapi import HTTPException
 from typing import Dict, Any, List, Optional
 from agentbeats.utils.agents import get_agent_card
@@ -180,133 +183,207 @@ async def fetch_agent_card(target_url: str, timeout: float = 3.0) -> Optional[Di
             await httpx_client.aclose()
 
 
-def deploy_hosted_agent(agent_id: str, github_link: str) -> None:
+def deploy_hosted_agent(agent_id: str, docker_image_link: str) -> None:
     """
-    Deploy a hosted agent by cloning GitHub repo and running docker compose.
+    Deploy an agent instance for a hosted agent using Docker image from Docker Hub.
     This function runs in a background thread and updates agent status.
+    Uses docker pull and docker run commands directly.
     
     Args:
         agent_id: The agent ID
-        github_link: GitHub repository URL to clone
+        docker_image_link: Docker image name (e.g., 'simonxie2004/tensortrust')
     """
     try:
-        print(f"Starting deployment for hosted agent {agent_id} from {github_link}")
+        print(f"Starting deployment for hosted agent {agent_id} from Docker image {docker_image_link}")
+        
+        # Generate unique instance ID for this deployment
+        instance_id = str(uuid.uuid4())
         
         # Create dockers directory if it doesn't exist
         dockers_dir = Path("dockers")
         dockers_dir.mkdir(exist_ok=True)
+        instance_dir = dockers_dir / instance_id
+        instance_dir.mkdir(exist_ok=True)
         
-        # Agent directory path
-        agent_dir = dockers_dir / agent_id
-        
-        # Remove existing directory if it exists
-        if agent_dir.exists():
-            import shutil
-            shutil.rmtree(agent_dir)
-            print(f"Removed existing directory: {agent_dir}")
-        
-        # Clone the repository directly to dockers/{agent_id}
-        print(f"Cloning {github_link} to {agent_dir}")
-        clone_result = subprocess.run(
-            ["git", "clone", github_link, str(agent_dir)],
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minutes timeout for git clone
-        )
-        
-        if clone_result.returncode != 0:
-            print(f"Git clone failed for agent {agent_id}: {clone_result.stderr}")
-            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, f"Git clone failed: {clone_result.stderr}")
-            return
-            
-        print(f"Successfully cloned repository for agent {agent_id}")
-        
-        # Generate random ports for the agent
+        # Generate random ports for this instance
         try:
             agent_port, launcher_port = get_random_unused_ports(count=2)
-            print(f"Generated ports for agent {agent_id}: agent_port={agent_port}, launcher_port={launcher_port}")
+            print(f"Generated ports for instance {instance_id}: agent_port={agent_port}, launcher_port={launcher_port}")
         except Exception as port_error:
             error_msg = f"Failed to generate random ports: {str(port_error)}"
-            print(f"Port generation failed for agent {agent_id}: {error_msg}")
+            print(f"Port generation failed for instance {instance_id}: {error_msg}")
             update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
             return
         
-        # Check if docker-compose.yml exists
-        compose_file_path = agent_dir / "docker-compose.yml"
-        if not compose_file_path.exists():
-            # Also check for docker-compose.yaml (alternative naming)
-            compose_file_alt_path = agent_dir / "docker-compose.yaml"
-            if not compose_file_alt_path.exists():
-                error_msg = f"docker-compose.yml or docker-compose.yaml not found in {agent_dir}"
-                print(f"Deployment failed for agent {agent_id}: {error_msg}")
-                update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
-                return
-            
-        # Prepare docker compose command based on operating system
-        print(f"Running docker compose for agent {agent_id} in {agent_dir}")
+        # Create log file for docker operations
+        log_file_path = instance_dir / "deployment.log"
         
         # First, check if Docker is running
         try:
-            docker_check = subprocess.run(
-                ["docker", "version"],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            if docker_check.returncode != 0:
-                error_msg = f"Docker is not running or not accessible: {docker_check.stderr}"
-                print(f"Docker check failed for agent {agent_id}: {error_msg}")
-                update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
-                return
-            print(f"Docker is running for agent {agent_id}")
+            with open(log_file_path, 'w', encoding='utf-8') as log_file:
+                log_file.write(f"=== Docker Deployment Log for Agent Instance {instance_id} ===\n")
+                log_file.write(f"Timestamp: {datetime.now().isoformat()}\n")
+                log_file.write(f"Agent ID: {agent_id}\n")
+                log_file.write(f"Instance ID: {instance_id}\n")
+                log_file.write(f"Docker Image: {docker_image_link}\n")
+                log_file.write(f"Agent Port: {agent_port}, Launcher Port: {launcher_port}\n")
+                log_file.write("=" * 60 + "\n\n")
+                log_file.flush()
+                
+                # Check Docker status
+                docker_check = subprocess.run(
+                    ["docker", "version"],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    timeout=30
+                )
+                
+                if docker_check.returncode != 0:
+                    error_msg = f"Docker is not running or not accessible. Check logs at: {log_file_path}"
+                    print(f"Docker check failed for instance {instance_id}: {error_msg}")
+                    update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+                    return
+                    
+                log_file.write(f"\nDocker is running successfully.\n\n")
+                print(f"Docker is running for instance {instance_id}")
+                
         except Exception as docker_error:
             error_msg = f"Failed to check Docker status: {str(docker_error)}"
-            print(f"Docker check failed for agent {agent_id}: {error_msg}")
+            print(f"Docker check failed for instance {instance_id}: {error_msg}")
             update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
             return
         
-        if platform.system().lower() == "windows":
-            # Windows PowerShell command
-            compose_cmd = [
-                "powershell", "-Command",
-                f"$env:HOST_AGENT_PORT={agent_port}; $env:HOST_LAUNCHER_PORT={launcher_port}; docker compose up -d --build"
-            ]
-        else:
-            # Linux/Unix command
-            compose_cmd = ["docker", "compose", "up", "-d", "--build"]
-            compose_env = {
-                **subprocess.os.environ,  # Copy existing environment
-                "HOST_AGENT_PORT": str(agent_port),
-                "HOST_LAUNCHER_PORT": str(launcher_port)
-            }
+        # Step 1: Pull the Docker image
+        docker_image_full = f"{docker_image_link}:latest"
+        print(f"Pulling Docker image: {docker_image_full}")
         
-        # Execute docker compose with appropriate environment variables
-        if platform.system().lower() == "windows":
-            compose_result = subprocess.run(
-                compose_cmd,
-                cwd=str(agent_dir),
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minutes timeout for docker build
-            )
-        else:
-            compose_result = subprocess.run(
-                compose_cmd,
-                cwd=str(agent_dir),
-                capture_output=True,
-                text=True,
-                timeout=600,  # 10 minutes timeout for docker build
-                env=compose_env
-            )
-        
-        if compose_result.returncode != 0:
-            print(f"Docker compose failed for agent {agent_id}: {compose_result.stderr}")
-            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, f"Docker compose failed: {compose_result.stderr}")
+        try:
+            with open(log_file_path, 'a', encoding='utf-8') as log_file:
+                log_file.write(f"=== Pulling Docker Image ===\n")
+                log_file.write(f"Image: {docker_image_full}\n")
+                log_file.flush()
+                
+                pull_result = subprocess.run(
+                    ["docker", "pull", docker_image_full],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    timeout=600  # 10 minutes timeout for docker pull
+                )
+                
+                if pull_result.returncode != 0:
+                    error_msg = f"Docker pull failed for image {docker_image_full}. Check logs at: {log_file_path}"
+                    print(f"Docker pull failed for instance {instance_id}: {error_msg}")
+                    update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+                    return
+                    
+                log_file.write(f"\nDocker pull completed successfully.\n\n")
+                print(f"Successfully pulled Docker image for instance {instance_id}")
+                
+        except subprocess.TimeoutExpired:
+            error_msg = f"Docker pull timeout for image {docker_image_full}. Check logs at: {log_file_path}"
+            print(f"Docker pull timeout for instance {instance_id}: {error_msg}")
+            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
             return
-            
-        print(f"Successfully deployed hosted agent {agent_id}")
+        except Exception as pull_error:
+            error_msg = f"Docker pull error: {str(pull_error)}. Check logs at: {log_file_path}"
+            print(f"Docker pull failed for instance {instance_id}: {error_msg}")
+            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+            return
         
-        # Try to fetch agent card after deployment using the generated agent port
+        # Step 2: Stop and remove existing container if it exists (by instance_id)
+        container_name = f"agent-instance-{instance_id}"
+        print(f"Cleaning up existing container: {container_name}")
+        
+        try:
+            with open(log_file_path, 'a', encoding='utf-8') as log_file:
+                log_file.write(f"=== Cleaning up existing container ===\n")
+                log_file.write(f"Container name: {container_name}\n")
+                log_file.flush()
+                
+                # Stop container (ignore errors if not running)
+                subprocess.run(
+                    ["docker", "stop", container_name],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    timeout=30
+                )
+                
+                # Remove container (ignore errors if not exists)
+                subprocess.run(
+                    ["docker", "rm", container_name],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    timeout=30
+                )
+                
+                log_file.write(f"\nContainer cleanup completed.\n\n")
+                
+        except Exception as cleanup_error:
+            # Log cleanup errors but don't fail the deployment
+            print(f"Container cleanup warning for instance {instance_id}: {str(cleanup_error)}")
+        
+        # Step 3: Run the Docker container
+        print(f"Running Docker container for instance {instance_id}")
+        
+        # Prepare docker run command with volume mounts and port mappings
+        docker_run_cmd = [
+            "docker", "run",
+            "-d",  # Run in detached mode
+            "--name", container_name,
+            "-p", f"{launcher_port}:9002",  # Map launcher port
+            "-p", f"{agent_port}:9003",     # Map agent port
+            "-p", "9000:9000",              # Additional port mapping
+            "-p", "9001:9001",              # Additional port mapping
+            "-e", f"AGENT_PORT=9003",       # Environment variables
+            "-e", f"LAUNCHER_PORT=9002",
+            "--restart", "unless-stopped",  # Restart policy
+            docker_image_full
+        ]
+        
+        try:
+            with open(log_file_path, 'a', encoding='utf-8') as log_file:
+                log_file.write(f"=== Running Docker Container ===\n")
+                log_file.write(f"Command: {' '.join(docker_run_cmd)}\n")
+                log_file.flush()
+                
+                run_result = subprocess.run(
+                    docker_run_cmd,
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    timeout=120  # 2 minutes timeout for docker run
+                )
+                
+                if run_result.returncode != 0:
+                    error_msg = f"Docker run failed for instance {instance_id}. Check logs at: {log_file_path}"
+                    print(f"Docker run failed for instance {instance_id}: {error_msg}")
+                    update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+                    return
+                    
+                log_file.write(f"\nDocker container started successfully.\n\n")
+                print(f"Successfully started Docker container for instance {instance_id}")
+                
+        except subprocess.TimeoutExpired:
+            error_msg = f"Docker run timeout for instance {instance_id}. Check logs at: {log_file_path}"
+            print(f"Docker run timeout for instance {instance_id}: {error_msg}")
+            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+            return
+        except Exception as run_error:
+            error_msg = f"Docker run error: {str(run_error)}. Check logs at: {log_file_path}"
+            print(f"Docker run failed for instance {instance_id}: {error_msg}")
+            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+            return
+        
+        # Step 4: Wait a moment for container to start up
+        print(f"Waiting for container to start up...")
+        import time
+        time.sleep(5)
+        
+        # Step 5: Try to fetch agent card after deployment
         agent_url = f"http://localhost:{agent_port}"
         launcher_url = f"http://localhost:{launcher_port}"
         print(f"Attempting to fetch agent card from {agent_url}")
@@ -315,20 +392,20 @@ def deploy_hosted_agent(agent_id: str, github_link: str) -> None:
             import asyncio
             agent_card = asyncio.run(fetch_agent_card(agent_url, timeout=10.0))
             if agent_card:
-                # Add port information to agent card
+                # Add port and container information to agent card
                 agent_card['agent_port'] = agent_port
                 agent_card['launcher_port'] = launcher_port
+                agent_card['container_name'] = container_name
+                agent_card['docker_image'] = docker_image_full
+                agent_card['instance_id'] = instance_id
                 
                 # Create agent instance record in database
                 try:
-                    from datetime import datetime
-                    import uuid
-                    
                     instance_data = {
                         'agent_id': agent_id,
                         'agent_url': agent_url,
                         'launcher_url': launcher_url,
-                        'agent_instance_id': str(uuid.uuid4()),
+                        'agent_instance_id': instance_id,
                         'created_at': datetime.utcnow().isoformat() + 'Z',
                         'is_locked': False,
                         'ready': True  # Mark as ready since we successfully fetched agent card
@@ -336,22 +413,37 @@ def deploy_hosted_agent(agent_id: str, github_link: str) -> None:
                     
                     created_instance = instance_repo.create_agent_instance(instance_data)
                     if created_instance:
-                        print(f"Successfully created instance record for hosted agent {agent_id}")
-                        # Add instance info to agent card
-                        agent_card['instance_id'] = created_instance['agent_instance_id']
+                        print(f"Successfully created instance record for agent {agent_id}, instance {instance_id}")
+                        
+                        # Log success
+                        with open(log_file_path, 'a', encoding='utf-8') as log_file:
+                            log_file.write(f"=== Deployment Successful ===\n")
+                            log_file.write(f"Agent URL: {agent_url}\n")
+                            log_file.write(f"Launcher URL: {launcher_url}\n")
+                            log_file.write(f"Container: {container_name}\n")
+                            log_file.write(f"Instance ID: {instance_id}\n")
+                            log_file.write(f"Agent card fetched successfully\n")
+                        
+                        # Update agent status to READY (only if this is the first successful instance)
+                        update_agent_deployment_status(agent_id, AgentCardStatus.READY, None, agent_card)
                     else:
-                        print(f"Warning: Failed to create instance record for agent {agent_id}, but agent is running")
+                        error_msg = f"Failed to create instance record for agent {agent_id}, instance {instance_id}"
+                        print(error_msg)
+                        update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+                        return
                         
                 except Exception as instance_error:
-                    print(f"Warning: Failed to create instance record for agent {agent_id}: {str(instance_error)}")
-                    # Don't fail the entire deployment just because instance creation failed
-                
-                update_agent_deployment_status(agent_id, AgentCardStatus.READY, None, agent_card)
+                    error_msg = f"Failed to create instance record: {str(instance_error)}"
+                    print(f"Instance creation failed for agent {agent_id}, instance {instance_id}: {error_msg}")
+                    update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
+                    return
             else:
-                update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, f"Failed to fetch agent card from {agent_url}")
+                error_msg = f"Failed to fetch agent card from {agent_url}. Container may be starting. Check logs at: {log_file_path}"
+                update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
         except Exception as card_error:
-            print(f"Failed to fetch agent card for {agent_id}: {str(card_error)}")
-            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, f"Agent card fetch failed: {str(card_error)}")
+            error_msg = f"Agent card fetch failed: {str(card_error)}. Check logs at: {log_file_path}"
+            print(f"Failed to fetch agent card for {agent_id}: {error_msg}")
+            update_agent_deployment_status(agent_id, AgentCardStatus.ERROR, error_msg)
         
     except subprocess.TimeoutExpired as e:
         error_msg = f"Deployment timeout: {str(e)}"
@@ -388,3 +480,4 @@ def update_agent_deployment_status(agent_id: str, status: AgentCardStatus, error
             print(f"Agent {agent_id} not found for status update")
     except Exception as e:
         print(f"Failed to update agent {agent_id} status: {str(e)}")
+    

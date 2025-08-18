@@ -55,10 +55,10 @@ async def register_agent(
             agent_data['agent_card'] = None
             
             # Start background deployment for hosted agent
-            if request.github_link:
+            if request.docker_image_link:
                 threading.Thread(
                     target=deploy_hosted_agent,
-                    args=(agent_data['agent_id'], request.github_link),
+                    args=(agent_data['agent_id'], request.docker_image_link),
                     daemon=True
                 ).start()
         else:

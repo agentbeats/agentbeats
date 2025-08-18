@@ -33,13 +33,13 @@ class AgentCreateRequest(AgentBase):
 
     # Will use is_hosted field to determine if this is a hosted agent
     # Which is inherited from AgentBase
-    
+
     # Optional fields for remote agents (non-hosted)
     agent_url: Optional[str] = Field(None, description="Agent URL endpoint (required for remote agents)")
     launcher_url: Optional[str] = Field(None, description="Launcher URL endpoint (required for remote agents)")
     
     # Optional fields for hosted agents
-    github_link: Optional[str] = Field(None, description="GitHub link for the hosted agent repository")
+    docker_image_link: Optional[str] = Field(None, description="Docker image link for the hosted agent (e.g., 'simonxie2004/tensortrust')")
 
 
 class AgentResponse(AgentBase):
