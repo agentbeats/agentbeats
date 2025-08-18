@@ -138,3 +138,6 @@ dist/
 # --- CyberGym ---
 scenarios/cybergym/resources/cybergym/
 scenarios/cybergym/scripts/
+
+# --- User cloned dockers ---
+dockers/

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import uuid
+import threading
 
 from typing import Optional
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Path, Query, status, Depends
+from fastapi import APIRouter, HTTPException, Query, status, Depends
+from fastapi import Path as FastAPIPath # remark: to avoid the same name as Path Library
 from ..models import (
     AgentCreateRequest,
     AgentResponse,
@@ -12,10 +14,11 @@ from ..models import (
     AgentInstanceCreateRequest,
     AgentInstanceResponse,
     AgentInstanceListResponse,
+    AgentCardStatus,
 )
 from ..db import agent_repo, instance_repo
 from ..utils.auth import *
-from ..utils.agent_utils import check_agents_liveness
+from ..utils.agent_utils import *
 
 
 router = APIRouter()
@@ -29,14 +32,14 @@ async def register_agent(
     """Create agent. If its a hosted agent, it will be created with no instance.
        If its a remote agent, it will be created with one instance."""
     try:
-        # Validate remote agent requirements
+        # Remote agents must come with URLs
         if not request.is_hosted:
             if not request.agent_url or not request.launcher_url:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="agent_url and launcher_url are required for remote agents"
                 )
-        #TODO: For hosted agents, add something to AgentCreateRequest
+        
         # Create agent data
         agent_data = request.model_dump()
         agent_data['agent_id'] = str(uuid.uuid4())
@@ -44,6 +47,39 @@ async def register_agent(
         agent_data['user_id'] = current_user['id']
         instance_fields = ['agent_url', 'launcher_url']
         instance_data = {k: agent_data.pop(k, None) for k in instance_fields}
+        
+        # Set initial agent card status and data based on agent type
+        if request.is_hosted:
+            # Hosted agents start with loading status and no card
+            agent_data['agent_card_status'] = AgentCardStatus.LOADING
+            agent_data['agent_card'] = None
+            
+            # Start background deployment for hosted agent
+            if request.github_link:
+                threading.Thread(
+                    target=deploy_hosted_agent,
+                    args=(agent_data['agent_id'], request.github_link),
+                    daemon=True
+                ).start()
+        else:
+            # Remote agents: try to fetch agent card immediately
+            try:
+                agent_url = instance_data.get('agent_url')
+                if agent_url:
+                    agent_card = await fetch_agent_card(agent_url, timeout=5.0)
+                    if agent_card:
+                        agent_data['agent_card_status'] = AgentCardStatus.READY
+                        agent_data['agent_card'] = agent_card
+                    else:
+                        agent_data['agent_card_status'] = AgentCardStatus.ERROR
+                        agent_data['agent_card'] = None
+                else:
+                    agent_data['agent_card_status'] = AgentCardStatus.ERROR
+                    agent_data['agent_card'] = None
+            except Exception as e:
+                print(f"Failed to fetch agent card for {agent_url}: {str(e)}")
+                agent_data['agent_card_status'] = AgentCardStatus.ERROR
+                agent_data['agent_card'] = None
         
         created_agent = agent_repo.create_agent(agent_data)
         
@@ -74,6 +110,8 @@ async def register_agent(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create agent instance for remote agent due to database errors"
                 )
+        
+        # Remark: If this is a hosted agent, the instance will be created in the background
         
         return AgentResponse(**created_agent)
         
@@ -124,7 +162,7 @@ async def list_all_agents(
 
 @router.get("/agents/{agent_id}", response_model=AgentResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def get_agent(
-    agent_id: str = Path(..., description="Agent ID"),
+    agent_id: str = FastAPIPath(..., description="Agent ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Get specific agent details"""
@@ -150,7 +188,7 @@ async def get_agent(
 
 @router.delete("/agents/{agent_id}", tags=["Agents"], status_code=status.HTTP_200_OK)
 async def delete_agent(
-    agent_id: str = Path(..., description="Agent ID"),
+    agent_id: str = FastAPIPath(..., description="Agent ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Delete agent and all its instances"""
@@ -202,7 +240,7 @@ async def delete_agent(
 
 @router.get("/agents/{agent_id}/instances", response_model=AgentInstanceListResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def list_agent_instances(
-    agent_id: str = Path(..., description="Agent ID"),
+    agent_id: str = FastAPIPath(..., description="Agent ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """List all instances for a specific agent"""
@@ -234,7 +272,7 @@ async def list_agent_instances(
 @router.post("/agents/{agent_id}/instances", response_model=AgentInstanceResponse, tags=["Agents"], status_code=status.HTTP_201_CREATED)
 async def create_hosted_agent_instance(
     instance: AgentInstanceCreateRequest,
-    agent_id: str = Path(..., description="Agent ID"),
+    agent_id: str = FastAPIPath(..., description="Agent ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Create new agent instance for hosted agent"""

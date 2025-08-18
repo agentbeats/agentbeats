@@ -8,6 +8,7 @@ from .agents import (
     AgentCreateRequest,
     AgentResponse,
     AgentListResponse,
+    AgentCardStatus, 
 )
 from .agent_instances import (
     AgentInstanceCreateRequest,
@@ -29,6 +30,7 @@ __all__ = [
     "AgentCreateRequest",
     "AgentResponse",
     "AgentListResponse",
+    "AgentCardStatus",
 
     # Agent Instances
     "AgentInstanceCreateRequest",
