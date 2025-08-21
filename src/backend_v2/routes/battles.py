@@ -3,7 +3,8 @@
 import uuid
 from typing import Optional, Dict, Any
 from datetime import datetime
-from fastapi import APIRouter, Path, Query, HTTPException, status, Depends
+from fastapi import APIRouter, Query, HTTPException, status, Depends
+from fastapi import Path as FastAPIPath
 
 from ..models import (
     BattleCreateRequest,
@@ -83,7 +84,7 @@ async def list_all_battles(
 
 @router.get("/battles/{battle_id}", response_model=BattleResponse, tags=["Battles"], status_code=status.HTTP_200_OK)
 async def get_battle(
-    battle_id: str = Path(..., description="Battle ID")
+    battle_id: str = FastAPIPath(..., description="Battle ID")
 ):
     """Get specific battle details"""
     try:
@@ -252,7 +253,7 @@ async def create_battle(
 @router.post("/battles/{battle_id}", response_model=BattleUpdateResponse, tags=["Battles"], status_code=status.HTTP_200_OK)
 async def update_battle(
     update_data: BattleUpdateRequest,
-    battle_id: str = Path(..., description="Battle ID")
+    battle_id: str = FastAPIPath(..., description="Battle ID")
 ):
     """Update an existing battle (handle battle result or log entry)"""
     try:

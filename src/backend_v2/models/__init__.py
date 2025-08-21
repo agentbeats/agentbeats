@@ -8,14 +8,18 @@ from .agents import (
     AgentCreateRequest,
     AgentResponse,
     AgentListResponse,
+    AgentDeleteResponse,
     AgentCardStatus, 
 )
 from .agent_instances import (
-    AgentInstanceCreateRequest,
+    AgentInstanceHostedCreateRequest,
     AgentInstanceUpdateRequest,
     AgentInstanceResponse,
     AgentInstanceListResponse,
     AgentInstanceUpdateResponse,
+    AgentInstanceDeleteResponse,
+    AgentInstanceLogResponse,
+    AgentInstanceDockerStatus,
 )
 from .battles import (
     BattleCreateRequest,
@@ -30,14 +34,18 @@ __all__ = [
     "AgentCreateRequest",
     "AgentResponse",
     "AgentListResponse",
+    "AgentDeleteResponse",
     "AgentCardStatus",
 
     # Agent Instances
-    "AgentInstanceCreateRequest",
+    "AgentInstanceHostedCreateRequest",
     "AgentInstanceUpdateRequest",
     "AgentInstanceResponse",
     "AgentInstanceListResponse",
     "AgentInstanceUpdateResponse",
+    "AgentInstanceDeleteResponse",
+    "AgentInstanceLogResponse",
+    "AgentInstanceDockerStatus",
 
     # Battles
     "BattleResponse",

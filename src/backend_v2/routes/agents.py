@@ -11,14 +11,17 @@ from ..models import (
     AgentCreateRequest,
     AgentResponse,
     AgentListResponse,
-    AgentInstanceCreateRequest,
+    AgentDeleteResponse,
+    AgentInstanceHostedCreateRequest,
     AgentInstanceResponse,
     AgentInstanceListResponse,
     AgentCardStatus,
+    AgentInstanceDockerStatus,
 )
 from ..db import agent_repo, instance_repo
 from ..utils.auth import *
 from ..utils.agent_utils import *
+from ..utils.network_utils import get_random_unused_ports
 
 
 router = APIRouter()
@@ -53,14 +56,6 @@ async def register_agent(
             # Hosted agents start with loading status and no card
             agent_data['agent_card_status'] = AgentCardStatus.LOADING
             agent_data['agent_card'] = None
-            
-            # Start background deployment for hosted agent
-            if request.docker_image_link:
-                threading.Thread(
-                    target=deploy_hosted_agent,
-                    args=(agent_data['agent_id'], request.docker_image_link),
-                    daemon=True
-                ).start()
         else:
             # Remote agents: try to fetch agent card immediately
             try:
@@ -81,7 +76,10 @@ async def register_agent(
                 agent_data['agent_card_status'] = AgentCardStatus.ERROR
                 agent_data['agent_card'] = None
         
-        created_agent = agent_repo.create_agent(agent_data)
+        # Try to create the agent in the database
+        created_agent = None
+        if agent_data['agent_card_status'] != AgentCardStatus.ERROR:
+            created_agent = agent_repo.create_agent(agent_data)
         
         if not created_agent:
             raise HTTPException(
@@ -89,7 +87,8 @@ async def register_agent(
                 detail="Failed to create agent due to database errors"
             )
         
-        # If it's a remote agent (not hosted), create an instance automatically
+        # If it's a remote agent (not hosted), 
+        # also create an instance automatically
         if not request.is_hosted:
             instance_create_data = {
                 'agent_id': created_agent['agent_id'],
@@ -98,7 +97,8 @@ async def register_agent(
                 'agent_instance_id': str(uuid.uuid4()),
                 'created_at': datetime.utcnow().isoformat() + 'Z',
                 'is_locked': False,
-                'ready': False
+                'ready': False,
+                'docker_status': AgentInstanceDockerStatus.STOPPED
             }
             
             created_instance = instance_repo.create_agent_instance(instance_create_data)
@@ -110,8 +110,44 @@ async def register_agent(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create agent instance for remote agent due to database errors"
                 )
+        else:
+            # For hosted agents, create instance and start deployment
+            if request.docker_image_link:
+                # Generate parameters for the instance
+                agent_instance_id = str(uuid.uuid4())
+                agent_port, launcher_port = get_random_unused_ports(count=2)
+                created_at = datetime.utcnow().isoformat() + 'Z'
+                
+                # Create instance record first
+                instance_create_data = {
+                    'agent_id': created_agent['agent_id'],
+                    'agent_url': f"http://localhost:{agent_port}",
+                    'launcher_url': f"http://localhost:{launcher_port}",
+                    'agent_instance_id': agent_instance_id,
+                    'created_at': created_at,
+                    'is_locked': False,
+                    'ready': False,
+                    'docker_status': AgentInstanceDockerStatus.STARTING
+                }
+                
+                created_instance = instance_repo.create_agent_instance(instance_create_data)
+                
+                if not created_instance:
+                    # If instance creation fails, we should clean up the agent
+                    agent_repo.delete_agent(created_agent['agent_id'])
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to create agent instance for hosted agent due to database errors"
+                    )
+                
+                # Start background deployment
+                threading.Thread(
+                    target=deploy_hosted_agent_instance,
+                    args=(created_agent['agent_id'], request.docker_image_link, agent_instance_id, agent_port, launcher_port, created_at),
+                    daemon=True
+                ).start()
         
-        # Remark: If this is a hosted agent, the instance will be created in the background
+        # Remark: If this is a hosted agent, the instance will be created and deployment started in background
         
         return AgentResponse(**created_agent)
         
@@ -186,7 +222,7 @@ async def get_agent(
         )
 
 
-@router.delete("/agents/{agent_id}", tags=["Agents"], status_code=status.HTTP_200_OK)
+@router.delete("/agents/{agent_id}", response_model=AgentDeleteResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def delete_agent(
     agent_id: str = FastAPIPath(..., description="Agent ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -209,25 +245,107 @@ async def delete_agent(
                 detail="Access denied - can only delete your own agents"
             )
         
-        # Delete the agent (instances will be deleted via cascade)
-        success = agent_repo.delete_agent(agent_id)
+        is_hosted = agent.get('is_hosted', False)
         
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to delete agent"
-            )
-
-        success = instance_repo.delete_agent_instances_by_agent_id(agent_id)
-        # TODO: delete all instance DOCKER files&process associated with this agent
-
-        if not success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to delete agent instances"
-            )
+        # Get all instances for this agent
+        instances = instance_repo.get_agent_instances_by_agent_id(agent_id)
+        instances_count = len(instances)
         
-        return {"message": f"Agent {agent_id} and all its instances deleted successfully"}
+        if not is_hosted:
+            # Remote agent: Delete instance DB objects first, then agent DB object
+            try:
+                # Delete all instances from database
+                success = instance_repo.delete_agent_instances_by_agent_id(agent_id)
+                if not success:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to delete remote agent instances"
+                    )
+                
+                # Delete the agent from database
+                success = agent_repo.delete_agent(agent_id)
+                if not success:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to delete remote agent"
+                    )
+                
+                return AgentDeleteResponse(
+                    agent_id=agent_id,
+                    message=f"Remote agent {agent_id} and {instances_count} instances deleted successfully",
+                    is_hosted=False,
+                    instances_deleted=instances_count,
+                    docker_stopping=False
+                )
+                
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Error deleting remote agent: {str(e)}"
+                )
+        else:
+            # Hosted agent: Start deletion process for each instance
+            try:
+                docker_stopping = False
+                stopped_or_stopping_count = 0
+                
+                # Process each instance
+                for instance in instances:
+                    instance_id = instance.get('agent_instance_id')
+                    current_docker_status = instance.get('docker_status')
+                    
+                    if current_docker_status in [AgentInstanceDockerStatus.STOPPED, AgentInstanceDockerStatus.STOPPING]:
+                        stopped_or_stopping_count += 1
+                        continue
+                    
+                    # Update docker status to STOPPING for running instances
+                    try:
+                        instance_repo.update_agent_instance(instance_id, {'docker_status': AgentInstanceDockerStatus.STOPPING})
+                        
+                        # Start background thread to stop Docker container and delete from database
+                        threading.Thread(
+                            target=stop_hosted_agent_instance,
+                            args=(instance_id,),
+                            daemon=True
+                        ).start()
+                        
+                        docker_stopping = True
+                        stopped_or_stopping_count += 1
+                        
+                    except Exception as instance_error:
+                        print(f"Failed to initiate deletion for instance {instance_id}: {str(instance_error)}")
+                        # Continue with other instances
+                        continue
+                
+                # Delete the agent from database (instances will be deleted by background threads)
+                success = agent_repo.delete_agent(agent_id)
+                if not success:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to delete hosted agent"
+                    )
+                
+                message = f"Hosted agent {agent_id} deleted. {stopped_or_stopping_count}/{instances_count} instances are stopped/stopping."
+                if docker_stopping:
+                    message += " Docker containers are being stopped in background."
+                
+                return AgentDeleteResponse(
+                    agent_id=agent_id,
+                    message=message,
+                    is_hosted=True,
+                    instances_deleted=instances_count,
+                    docker_stopping=docker_stopping
+                )
+                
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Error deleting hosted agent: {str(e)}"
+                )
         
     except HTTPException:
         raise
@@ -271,7 +389,7 @@ async def list_agent_instances(
 
 @router.post("/agents/{agent_id}/instances", response_model=AgentInstanceResponse, tags=["Agents"], status_code=status.HTTP_201_CREATED)
 async def create_hosted_agent_instance(
-    instance: AgentInstanceCreateRequest,
+    instance: AgentInstanceHostedCreateRequest,
     agent_id: str = FastAPIPath(..., description="Agent ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
@@ -292,19 +410,43 @@ async def create_hosted_agent_instance(
                 detail="Can only create instances for hosted agents"
             )
         
-        # Create instance data
-        instance_data = instance.model_dump()
-        instance_data['agent_id'] = agent_id
-        instance_data['agent_instance_id'] = str(uuid.uuid4())
-        instance_data['created_at'] = datetime.utcnow().isoformat() + 'Z'
-        
-        # Create the instance
-        created_instance = instance_repo.create_agent_instance(instance_data)
-        
-        if not created_instance:
+        # Start background deployment for this instance
+        docker_image_link = agent.get('docker_image_link')
+        if docker_image_link:
+            # Generate parameters for the instance
+            agent_instance_id = str(uuid.uuid4())
+            agent_port, launcher_port = get_random_unused_ports(count=2)
+            created_at = datetime.utcnow().isoformat() + 'Z'
+            
+            # Create instance record first (will be updated by background deployment)
+            instance_data = {
+                'agent_id': agent_id,
+                'agent_url': f"http://localhost:{agent_port}",
+                'launcher_url': f"http://localhost:{launcher_port}",
+                'agent_instance_id': agent_instance_id,
+                'created_at': created_at,
+                'is_locked': False,
+                'ready': False,
+                'docker_status': AgentInstanceDockerStatus.STARTING
+            }
+            
+            created_instance = instance_repo.create_agent_instance(instance_data)
+            if not created_instance:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create agent instance record"
+                )
+            
+            # Start background deployment
+            threading.Thread(
+                target=deploy_hosted_agent_instance,
+                args=(agent_id, docker_image_link, agent_instance_id, agent_port, launcher_port, created_at),
+                daemon=True
+            ).start()
+        else:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create agent instance"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Agent does not have a docker_image_link specified"
             )
         
         return AgentInstanceResponse(**created_instance)

@@ -50,6 +50,7 @@ class DatabaseManager:
                     launcher_url TEXT NOT NULL,
                     is_locked BOOLEAN NOT NULL DEFAULT 0,
                     ready BOOLEAN NOT NULL DEFAULT 0,
+                    docker_status TEXT,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY (agent_id) REFERENCES agents(agent_id) ON DELETE CASCADE
                 )
@@ -282,19 +283,20 @@ class AgentInstanceRepository(BaseRepository):
             'launcher_url': instance_data['launcher_url'],
             'is_locked': instance_data.get('is_locked', False),
             'ready': instance_data.get('ready', False),
+            'docker_status': instance_data.get('docker_status', 'stopped'),
             'created_at': created_at
         }
         
         with self.db_manager.get_connection() as conn:
             conn.execute('''
                 INSERT INTO agent_instances (agent_instance_id, agent_id, agent_url, 
-                                           launcher_url, is_locked, ready, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                           launcher_url, is_locked, ready, docker_status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 instance_record['agent_instance_id'], instance_record['agent_id'],
                 instance_record['agent_url'], instance_record['launcher_url'],
                 instance_record['is_locked'], instance_record['ready'],
-                instance_record['created_at']
+                instance_record['docker_status'], instance_record['created_at']
             ))
             conn.commit()
         

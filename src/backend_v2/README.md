@@ -18,12 +18,12 @@ TODO:
 
 ### 1. Start the Service
 ```bash
-export DEV_LOGIN_MODE=true # linux
+export DEV_LOGIN=true # linux
 python -m src.backend_v2
 ```
 
 ```powershell
-$Env:DEV_LOGIN_MODE="true" # windows
+$Env:DEV_LOGIN="true" # windows
 python -m src.backend_v2
 ```
 

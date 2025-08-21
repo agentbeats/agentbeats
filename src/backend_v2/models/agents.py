@@ -55,3 +55,13 @@ class AgentResponse(AgentBase):
 class AgentListResponse(BaseModel):
     """Response model for listing agents"""
     agents: List[AgentResponse]
+
+
+class AgentDeleteResponse(BaseModel):
+    """Response model for agent deletion"""
+    agent_id: str = Field(..., description="Deleted agent ID")
+    message: str = Field(..., description="Deletion status message")
+    is_hosted: bool = Field(..., description="Whether this was a hosted agent")
+    instances_deleted: int = Field(..., description="Number of instances deleted")
+    docker_stopping: bool = Field(False, description="Whether Docker containers are being stopped in background")
+    

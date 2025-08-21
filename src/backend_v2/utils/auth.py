@@ -1,8 +1,10 @@
-from fastapi import Request, HTTPException, status
-from fastapi.responses import JSONResponse
-from typing import Optional, Dict, Any
+# -*- coding:utf-8 -*-
+
 import os
 import jwt
+
+from fastapi import Request, HTTPException, status
+from typing import Optional, Dict, Any
 
 
 def verify_jwt(token: str) -> Optional[Dict[str, Any]]:
@@ -34,6 +36,7 @@ def verify_jwt(token: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         print(f"JWT verification error: {e}")
         return None
+
 
 async def get_current_user(request: Request) -> Dict[str, Any]:
     """
@@ -70,29 +73,3 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         )
     
     return user_data
-
-# async def get_optional_user(request: Request) -> Optional[Dict[str, Any]]:
-#     """
-#     Extract current user from JWT token if present, return None if not authenticated.
-#     Returns mock user data in dev mode when DEV_LOGIN=true.
-#     """
-#     # Check if we're in dev login mode
-#     if os.getenv("DEV_LOGIN") == "true":
-#         return {
-#             "id": "dev-user-id",
-#             "email": "dev@agentbeats.org",
-#             "app_metadata": {"provider": "dev"}
-#         }
-    
-#     auth_header = request.headers.get("Authorization")
-    
-#     if not auth_header or not auth_header.startswith("Bearer "):
-#         return None
-    
-#     token = auth_header.split(" ")[1]
-    
-#     try:
-#         user_data = verify_jwt(token)
-#         return user_data
-#     except:
-#         return None
