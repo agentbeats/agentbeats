@@ -71,7 +71,7 @@ async def get_agent_instance(
         )
 
 
-@router.get("/agent_instances/{agent_instance_id}/logs/{log_type}", response_model=AgentInstanceLogResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
+@router.get("/agent_instances/hosted/{agent_instance_id}/logs/{log_type}", response_model=AgentInstanceLogResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
 async def get_agent_instance_logs(
     agent_instance_id: str = FastAPIPath(..., description="Agent instance ID"),
     log_type: str = FastAPIPath(..., description="Log type: deployment, stop, or live_output"),
@@ -147,7 +147,7 @@ async def get_agent_instance_logs(
         )
 
 
-@router.delete("/agent_instances/{agent_instance_id}", response_model=AgentInstanceDeleteResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
+@router.delete("/agent_instances/hosted/{agent_instance_id}", response_model=AgentInstanceDeleteResponse, tags=["AgentInstances"], status_code=status.HTTP_200_OK)
 async def delete_hosted_agent_instance(
     agent_instance_id: str = FastAPIPath(..., description="Agent instance ID"),
     current_user: Dict[str, Any] = Depends(get_current_user)

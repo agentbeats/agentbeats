@@ -154,24 +154,8 @@ async def fetch_agent_card(target_url: str, timeout: float = 3.0) -> Optional[Di
         
         if card is None:
             return None
-            
-        # Convert AgentCard object to dictionary
-        # AgentCard typically has attributes like name, description, etc.
-        card_dict = {
-            "name": getattr(card, 'name', None),
-            "description": getattr(card, 'description', None),
-            "version": getattr(card, 'version', None),
-            "author": getattr(card, 'author', None),
-            "homepage": getattr(card, 'homepage', None),
-            "capabilities": getattr(card, 'capabilities', []),
-            "requirements": getattr(card, 'requirements', []),
-            "agent_url": target_url,
-        }
-        
-        # Remove None values to keep the dict clean
-        card_dict = {k: v for k, v in card_dict.items() if v is not None}
-        
-        return card_dict
+
+        return card.model_dump()
         
     except HTTPException:
         # Re-raise HTTP exceptions to be handled by calling code
@@ -398,13 +382,6 @@ def deploy_hosted_agent_instance(agent_id: str, docker_image_link: str, agent_in
         
         # Step 4: Process the result
         if agent_card:
-            # Add port and container information to agent card
-            agent_card['agent_port'] = agent_port
-            agent_card['launcher_port'] = launcher_port
-            agent_card['container_name'] = container_name
-            agent_card['docker_image'] = docker_image_full
-            agent_card['instance_id'] = instance_id
-            
             # Update instance docker status and agent card (instance should already exist)
             try:
                 print(f"Successfully deployed agent {agent_id}, instance {instance_id}")
@@ -418,7 +395,7 @@ def deploy_hosted_agent_instance(agent_id: str, docker_image_link: str, agent_in
                     log_file.write(f"Instance ID: {instance_id}\n")
                     log_file.write(f"Agent card fetched successfully\n")
                 
-                # Update agent status to READY with agent card
+                # Update agent status to READY with agent card (keeping original card data)
                 update_agent_deployment_status(agent_id, AgentCardStatus.READY, None, agent_card)
                     
             except Exception as instance_error:
