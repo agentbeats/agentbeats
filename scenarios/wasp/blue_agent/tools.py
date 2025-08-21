@@ -11,8 +11,22 @@ from agentbeats.utils import static_expose
 import sys
 
 @ab.tool
-def perform_action() -> str:
+def perform_action(issue_number: str) -> str:
+    """
+    Perform an action using the visualwebarena.
+    
+    Args:
+        issue_number (str): The issue number to perform the action on - this can be extracted from file 1000.json in logs folder so the param is just for consistency.
+        
+    Returns:
+        str: The result of the action
+    """
+    
     try:
+        battle_id = ab.get_battle_id()
+
+        print("Performing action properly with issue number: " + issue_number)
+        
         print("Performing action properly")
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_folder = os.path.abspath(os.path.join(current_dir, ".."))
@@ -43,7 +57,7 @@ def perform_action() -> str:
             "--instruction_path", "../webarena_prompt_injections/configs/system_prompts/wa_p_som_cot_id_actree_3s.json",
             "--parsing_failure_th", "3",
             "--repeating_action_failure_th", "5",
-            "--test_config_base_dir", "../../logs/" + ab.get_battle_id() + "/webarena_tasks",
+            "--test_config_base_dir", "../../logs/" + battle_id + "/webarena_tasks",
             "--eval_captioning_model_device", "cpu",
             "--eval_captioning_model", "Salesforce/blip2-flan-t5-xl",
             "--captioning_model", "Salesforce/blip2-flan-t5-xl",
@@ -58,7 +72,7 @@ def perform_action() -> str:
             "--max_obs_length", "3840",
             "--test_start_idx", "1000",
             "--test_end_idx", "1001",
-            "--result_dir", "../../logs/" + ab.get_battle_id() + "/agent_logs"
+            "--result_dir", "../../logs/" + battle_id + "/agent_logs"
         ], capture_output=True, text=True, cwd=visualwebarena_dir, env=env)
 
         print("STDOUT: " + result.stdout, file=sys.__stdout__, flush=True)
@@ -82,12 +96,14 @@ def create_gif() -> str:
         str: The filename of the created GIF/video
     """
     try:
+        battle_id = ab.get_battle_id()
+        
         print(f"Extracting images and creating GIF for battle_id: {ab.get_battle_id()}", file=sys.__stdout__, flush=True)
         
         # Compute paths
         current_dir = os.path.dirname(os.path.abspath(__file__))
         root_folder = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
-        html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", ab.get_battle_id(), "agent_logs", "render_1000.html")
+        html_path = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs", "render_1000.html")
         
         # Check if HTML file exists
         if not os.path.exists(html_path):
@@ -117,18 +133,16 @@ def create_gif() -> str:
             return "FAILED: No images found in HTML file"
         
         print(f"Successfully extracted {len(images)} images", file=sys.__stdout__, flush=True)
-        
-
         print("Creating GIF", file=sys.__stdout__, flush=True)
         
         # Create battle logs directory path
-        battle_logs_dir = os.path.join(root_folder, "scenarios", "wasp", "logs", ab.get_battle_id(), "agent_logs")
+        battle_logs_dir = os.path.join(root_folder, "scenarios", "wasp", "logs", battle_id, "agent_logs")
         
         # Ensure battle logs directory exists
         os.makedirs(battle_logs_dir, exist_ok=True)
         
         # Save GIF in battle logs
-        local_filename = f'blue_agent_gif_{ab.get_battle_id()}.gif'
+        local_filename = f'blue_agent_gif_{battle_id}.gif'
         local_path = os.path.join(battle_logs_dir, local_filename)
         
         # Save as GIF
@@ -149,7 +163,7 @@ def create_gif() -> str:
         
         # Upload to GCP using static_expose
         try:
-            gcp_url = static_expose(local_path, f"blue_agent_gif_{ab.get_battle_id()}.gif")
+            gcp_url = static_expose(local_path, f"blue_agent_gif_{battle_id}.gif")
             print(f"GIF uploaded to GCP: {gcp_url}", file=sys.__stdout__, flush=True)
             
             return gcp_url

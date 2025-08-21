@@ -13,7 +13,7 @@ echo "Setting up WASP environment..."
 cd wasp/webarena_prompt_injections/
 bash setup.sh
 
-# Prepare the authentication for the visualwebarena
+# Prepare the authentication for the visualwebarena (auto login is also done before green agent evaluator is run)
 cd ../visualwebarena/
 source venv/bin/activate
 bash prepare.sh
