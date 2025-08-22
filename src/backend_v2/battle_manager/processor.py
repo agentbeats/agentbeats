@@ -39,7 +39,7 @@ async def process_battle(battle_id: str, battle_data: Dict[str, Any]) -> bool:
     
     Args:
         battle_id: Unique battle identifier
-        battle_data: Battle configuration containing green_agent_id, opponents, config, etc.
+        battle_data: Battle configuration containing green_agent_id, participants, config, etc.
         
     Returns:
         True if battle completed successfully, False if there were errors
@@ -59,22 +59,30 @@ async def process_battle(battle_id: str, battle_data: Dict[str, Any]) -> bool:
         
         # Extract battle configuration
         green_agent_id = battle_data.get('green_agent_id') or battle.get('green_agent_id')
-        opponents = battle_data.get('opponents') or battle.get('participant_ids', [])
+        
+        # Get participants - must be provided in correct format
+        participants = battle_data.get('participants') or battle.get('participants', [])
+        if not participants:
+            error_msg = "No participants provided in battle data"
+            logger.error(f"Battle {battle_id}: {error_msg}")
+            await _finish_battle_with_error(battle_id, error_msg)
+            return False
+        
         config = battle_data.get('config', {})
         
-        logger.info(f"Battle {battle_id}: green_agent={green_agent_id}, opponents={opponents}")
+        logger.info(f"Battle {battle_id}: green_agent={green_agent_id}, participants={participants}")
         
         # Step 1: Agent validation
-        green_agent, opponent_agents = await _validate_battle_agents(battle_id, green_agent_id, opponents)
+        green_agent, opponent_agents = await _validate_battle_agents(battle_id, green_agent_id, participants)
         if not green_agent or not opponent_agents:
             return False
             
         # Step 2: Lock agents
-        all_agent_ids = [green_agent_id] + [_extract_agent_id(op) for op in opponents]
+        all_agent_ids = [green_agent_id] + [_extract_agent_id(op) for op in participants]
         await _lock_battle_agents(battle_id, all_agent_ids)
         
         # Step 3: Reset agents
-        opponent_info_for_green = await _reset_battle_agents(battle_id, green_agent, opponent_agents, opponents)
+        opponent_info_for_green = await _reset_battle_agents(battle_id, green_agent, opponent_agents, participants)
         if opponent_info_for_green is None:
             await _unlock_battle_agents(battle_id, all_agent_ids)
             return False
@@ -86,7 +94,7 @@ async def process_battle(battle_id: str, battle_data: Dict[str, Any]) -> bool:
             return False
             
         # Step 5: Send battle info to all agents
-        battle_info_success = await _send_battle_info_to_agents(battle_id, green_agent, opponent_info_for_green, opponents, all_agent_ids)
+        battle_info_success = await _send_battle_info_to_agents(battle_id, green_agent, opponent_info_for_green, participants, all_agent_ids)
         if not battle_info_success:
             await _unlock_battle_agents(battle_id, all_agent_ids)
             return False
@@ -137,7 +145,7 @@ def _extract_agent_id(opponent_info: Any) -> str:
     return opponent_info
 
 
-async def _validate_battle_agents(battle_id: str, green_agent_id: str, opponents: List[Any]) -> tuple:
+async def _validate_battle_agents(battle_id: str, green_agent_id: str, participants: List[Any]) -> tuple:
     """
     Validate all battle agents exist and are accessible.
     
@@ -152,17 +160,17 @@ async def _validate_battle_agents(battle_id: str, green_agent_id: str, opponents
         await _finish_battle_with_error(battle_id, error_msg)
         return None, None
         
-    # Validate opponent agents
+    # Validate participant agents
     opponent_agents = []
-    for opponent_info in opponents:
-        opponent_id = _extract_agent_id(opponent_info)
-        opponent = agent_repo.get_agent(opponent_id)
-        if not opponent:
-            error_msg = f"Opponent agent {opponent_id} not found"
+    for participant_info in participants:
+        participant_id = _extract_agent_id(participant_info)
+        participant_agent = agent_repo.get_agent(participant_id)
+        if not participant_agent:
+            error_msg = f"Participant agent {participant_id} not found"
             logger.error(f"Battle {battle_id}: {error_msg}")
             await _finish_battle_with_error(battle_id, error_msg)
             return None, None
-        opponent_agents.append(opponent)
+        opponent_agents.append(participant_agent)
         
     logger.info(f"Battle {battle_id}: All agents validated successfully")
     return green_agent, opponent_agents
@@ -191,7 +199,7 @@ async def _unlock_battle_agents(battle_id: str, agent_ids: List[str]) -> None:
 
 async def _reset_battle_agents(battle_id: str, green_agent: Dict[str, Any], 
                               opponent_agents: List[Dict[str, Any]], 
-                              opponents: List[Any]) -> Optional[List[Dict[str, Any]]]:
+                              participants: List[Any]) -> Optional[List[Dict[str, Any]]]:
     """
     Reset all battle agents via their launchers.
     
@@ -231,8 +239,8 @@ async def _reset_battle_agents(battle_id: str, green_agent: Dict[str, Any],
             return None
             
         # Prepare opponent info for green agent
-        if idx < len(opponents):
-            original_name = opponents[idx].get("name", "red_agent") if isinstance(opponents[idx], dict) else "red_agent"
+        if idx < len(participants):
+            original_name = participants[idx].get("name", "red_agent") if isinstance(participants[idx], dict) else "red_agent"
         else:
             original_name = "red_agent"
             
@@ -279,7 +287,7 @@ async def _wait_for_agents_ready(battle_id: str, agent_ids: List[str]) -> bool:
 
 async def _send_battle_info_to_agents(battle_id: str, green_agent: Dict[str, Any],
                                     opponent_info_for_green: List[Dict[str, Any]],
-                                    opponents: List[Any], agent_ids: List[str]) -> bool:
+                                    participants: List[Any], agent_ids: List[str]) -> bool:
     """
     Send battle info to all participating agents.
     
@@ -306,7 +314,7 @@ async def _send_battle_info_to_agents(battle_id: str, green_agent: Dict[str, Any
     for idx, op_info in enumerate(opponent_info_for_green):
         if idx < len(agent_ids) - 1:  # -1 because first is green agent
             op_id = agent_ids[idx + 1]
-            op_name = opponents[idx].get("name", "no_name") if isinstance(opponents[idx], dict) else "red_agent"
+            op_name = participants[idx].get("name", "no_name") if isinstance(participants[idx], dict) else "red_agent"
             agents_info[op_info["name"]] = {
                 "agent_id": op_id,
                 "agent_url": op_info["agent_url"],
@@ -362,10 +370,10 @@ def _check_battle_timeout(battle_id: str, timeout: int) -> None:
         battle_repo.update_battle(battle_id, result_data)
         
         # Unlock agents
-        opponent_ids = []
-        if "opponents" in battle:
-            opponent_ids = [_extract_agent_id(op) for op in battle["opponents"]]
-        all_agent_ids = [battle.get("green_agent_id")] + opponent_ids
+        participant_ids = []
+        if "participants" in battle:
+            participant_ids = [_extract_agent_id(op) for op in battle["participants"]]
+        all_agent_ids = [battle.get("green_agent_id")] + participant_ids
         
         for agent_id in all_agent_ids:
             if agent_id:

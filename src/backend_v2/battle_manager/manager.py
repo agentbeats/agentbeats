@@ -16,16 +16,7 @@ from queue import Queue
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Callable
 from .processor import process_battle as default_process_battle
-
-
-class BattleState(str, Enum):
-    """Battle state enumeration."""
-    PENDING = "pending"         # Initial state
-    QUEUED = "queued"           # In queue, waiting for processing
-    RUNNING = "running"         # Currently being processed
-    FINISHED = "finished"       # Successfully completed
-    ERROR = "error"             # Error occurred during processing
-    CANCELLED = "cancelled"     # Manually cancelled by user
+from ..models.battles import BattleCreateRequest, BattleState, BattleRecord
 
 
 class BattleManager:
@@ -55,7 +46,7 @@ class BattleManager:
         self._queue_lock = threading.Lock()
         
         # Battle tracking
-        self._battles: Dict[str, Dict[str, Any]] = {}
+        self._battles: Dict[str, BattleRecord] = {}
         self._battles_lock = threading.Lock()
         
         # Current running battle
@@ -139,13 +130,13 @@ class BattleManager:
         
         self._processor_running = False
     
-    def add_battle(self, battle_id: str, battle_data: Dict[str, Any]) -> int:
+    def add_battle(self, battle_id: str, battle_request: BattleCreateRequest) -> int:
         """
         Add a battle to the queue.
         
         Args:
             battle_id: Unique battle identifier
-            battle_data: Battle configuration and metadata
+            battle_request: Validated battle creation request
             
         Returns:
             Queue position (0-based index)
@@ -154,17 +145,16 @@ class BattleManager:
             if battle_id in self._battles:
                 raise ValueError(f"Battle {battle_id} already exists")
             
-            # Create battle record
-            battle_record = {
-                "battle_id": battle_id,
-                "state": BattleState.PENDING,
-                "created_at": datetime.utcnow().isoformat() + 'Z',
-                "queued_at": None,
-                "started_at": None,
-                "finished_at": None,
-                "error": None,
-                **battle_data
-            }
+            # Create battle record using BattleRecord model
+            battle_record = BattleRecord(
+                battle_id=battle_id,
+                green_agent_id=battle_request.green_agent_id,
+                participants=battle_request.participants,
+                config=battle_request.config,
+                user_id=battle_request.user_id,
+                created_at=datetime.utcnow(),
+                state=BattleState.PENDING
+            )
             
             self._battles[battle_id] = battle_record
         
@@ -175,8 +165,7 @@ class BattleManager:
             
             # Update state to queued
             with self._battles_lock:
-                self._battles[battle_id]["state"] = BattleState.QUEUED
-                self._battles[battle_id]["queued_at"] = datetime.utcnow().isoformat() + 'Z'
+                self._battles[battle_id].state = BattleState.QUEUED
         
         self.logger.info(f"Added battle {battle_id} to queue at position {queue_position}")
         
@@ -199,11 +188,11 @@ class BattleManager:
         with self._battles_lock:
             battle = self._battles.get(battle_id)
             if battle:
-                # Add queue position if still queued
-                if battle["state"] == BattleState.QUEUED:
-                    battle = battle.copy()
-                    battle["queue_position"] = self.get_queue_position(battle_id)
-                return battle
+                # Convert to dict and add queue position if still queued
+                battle_dict = battle.model_dump()
+                if battle.state == BattleState.QUEUED:
+                    battle_dict["queue_position"] = self.get_queue_position(battle_id)
+                return battle_dict
             return None
     
     def get_queue_position(self, battle_id: str) -> Optional[int]:
@@ -275,11 +264,10 @@ class BattleManager:
                 "queued_battles": queue_list,
                 "all_battles": {
                     battle_id: {
-                        "state": battle["state"],
-                        "created_at": battle["created_at"],
-                        "queued_at": battle.get("queued_at"),
-                        "started_at": battle.get("started_at"),
-                        "finished_at": battle.get("finished_at")
+                        "state": battle.state,
+                        "created_at": battle.created_at,
+                        "started_at": battle.started_at,
+                        "finished_at": battle.finished_at
                     }
                     for battle_id, battle in self._battles.items()
                 }
@@ -301,8 +289,8 @@ class BattleManager:
                 return False
             
             # TODO: support cancelling running battles
-            if battle["state"] not in [BattleState.PENDING, BattleState.QUEUED]:
-                self.logger.warning(f"Cannot cancel battle {battle_id} in state {battle['state']}")
+            if battle.state not in [BattleState.PENDING, BattleState.QUEUED]:
+                self.logger.warning(f"Cannot cancel battle {battle_id} in state {battle.state}")
                 return False
         
         # Remove from queue
@@ -318,8 +306,8 @@ class BattleManager:
                 
                 # Update battle state
                 with self._battles_lock:
-                    self._battles[battle_id]["state"] = BattleState.CANCELLED
-                    self._battles[battle_id]["finished_at"] = datetime.utcnow().isoformat() + 'Z'
+                    self._battles[battle_id].state = BattleState.CANCELLED
+                    self._battles[battle_id].finished_at = datetime.utcnow()
                 
                 self.logger.info(f"Cancelled battle {battle_id}")
                 return True
@@ -357,8 +345,8 @@ class BattleManager:
                     # Update battle state
                     with self._battles_lock:
                         if battle_id in self._battles:
-                            self._battles[battle_id]["state"] = BattleState.RUNNING
-                            self._battles[battle_id]["started_at"] = datetime.utcnow().isoformat() + 'Z'
+                            self._battles[battle_id].state = BattleState.RUNNING
+                            self._battles[battle_id].started_at = datetime.utcnow()
                     
                     self.logger.info(f"Processing battle {battle_id}")
                     
@@ -391,13 +379,13 @@ class BattleManager:
                         # Update error info
                         with self._battles_lock:
                             if battle_id in self._battles:
-                                self._battles[battle_id]["error"] = str(e)
+                                self._battles[battle_id].error = str(e)
                     
                     # Update final state
                     with self._battles_lock:
                         if battle_id in self._battles:
-                            self._battles[battle_id]["state"] = final_state
-                            self._battles[battle_id]["finished_at"] = datetime.utcnow().isoformat() + 'Z'
+                            self._battles[battle_id].state = final_state
+                            self._battles[battle_id].finished_at = datetime.utcnow()
                     
                     # Clear current battle
                     with self._current_battle_lock:
@@ -428,10 +416,13 @@ class BattleManager:
         try:
             # Get battle data
             with self._battles_lock:
-                battle_data = self._battles.get(battle_id)
-                if not battle_data:
+                battle_record = self._battles.get(battle_id)
+                if not battle_record:
                     self.logger.error(f"Battle {battle_id} not found")
                     return False
+                
+                # Convert BattleRecord to dict for processor
+                battle_data = battle_record.model_dump()
             
             # Run the battle processor
             return await self._battle_processor(battle_id, battle_data)
@@ -477,8 +468,8 @@ class BattleManager:
             
             for battle_id, battle in self._battles.items():
                 try:
-                    created_time = datetime.fromisoformat(battle["created_at"].replace('Z', '+00:00')).timestamp()
-                    if created_time < cutoff_time and battle["state"] in [BattleState.FINISHED, BattleState.ERROR, BattleState.CANCELLED]:
+                    created_time = battle.created_at.timestamp()
+                    if created_time < cutoff_time and battle.state in [BattleState.FINISHED, BattleState.ERROR, BattleState.CANCELLED]:
                         battles_to_remove.append(battle_id)
                 except Exception as e:
                     self.logger.error(f"Error parsing time for battle {battle_id}: {e}")
@@ -524,9 +515,9 @@ class BattleManager:
         """
         with self._battles_lock:
             if battle_id in self._battles:
-                self._battles[battle_id]["state"] = BattleState.FINISHED
-                self._battles[battle_id]["finished_at"] = datetime.utcnow().isoformat() + 'Z'
-                self._battles[battle_id]["result"] = result_data
+                self._battles[battle_id].state = BattleState.FINISHED
+                self._battles[battle_id].finished_at = datetime.utcnow()
+                # Note: BattleRecord doesn't have result field, this would need to be added if needed
                 self.logger.info(f"Battle {battle_id} marked as finished")
             else:
                 self.logger.warning(f"Cannot finish battle {battle_id}: not found in manager")

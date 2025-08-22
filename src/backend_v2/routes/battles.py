@@ -34,44 +34,31 @@ async def list_all_battles(
     try:
         battles = battle_repo.list_battles(user_id=user_id)
         
-        # Convert to response format
+        # Add queue position for queued battles
         response_battles = []
         for battle in battles:
-            # Convert participant_ids back to opponents format for frontend
-            participant_ids = battle.get('participant_ids', [])
-            opponents = []
-            
-            # Try to get original opponents from battle manager or reconstruct
-            battle_status = battle_manager.get_battle_status(battle['battle_id'])
-            if battle_status and 'opponents' in battle_status:
-                opponents = battle_status['opponents']
-            else:
-                # Fallback: create basic opponent structure
-                for i, agent_id in enumerate(participant_ids):
-                    opponents.append({
-                        'agent_id': agent_id,
-                        'name': f'opponent_{i+1}'  # Basic fallback name
-                    })
-            
-            # Add queue position for queued battles
+            # Add queue position if battle is queued
             queue_position = None
             if battle.get('state') == 'queued':
                 queue_position = battle_manager.get_queue_position(battle['battle_id'])
             
-            response_battle = {
-                'battle_id': battle['battle_id'],
-                'green_agent_id': battle['green_agent_id'],
-                'opponents': opponents,
-                'user_id': battle['user_id'],
-                'created_at': battle['created_at'],
-                'state': battle['state'],
-                'interact_history': battle.get('interact_history'),
-                'finished_at': battle.get('finished_at'),
-                'result': battle.get('result'),
-                'error': battle.get('error'),
-                'queue_position': queue_position
-            }
-            response_battles.append(response_battle)
+            # Add queue_position to battle data
+            battle_with_queue = battle.copy()
+            battle_with_queue['queue_position'] = queue_position
+            
+            # Ensure created_at is properly formatted for Pydantic
+            if isinstance(battle_with_queue.get('created_at'), str):
+                battle_with_queue['created_at'] = battle_with_queue['created_at'].replace('Z', '+00:00')
+            
+            # Ensure started_at is properly formatted for Pydantic
+            if isinstance(battle_with_queue.get('started_at'), str):
+                battle_with_queue['started_at'] = battle_with_queue['started_at'].replace('Z', '+00:00')
+            
+            # Ensure finished_at is properly formatted for Pydantic
+            if isinstance(battle_with_queue.get('finished_at'), str):
+                battle_with_queue['finished_at'] = battle_with_queue['finished_at'].replace('Z', '+00:00')
+            
+            response_battles.append(battle_with_queue)
         
         return BattleListResponse(battles=response_battles)
     
@@ -96,42 +83,28 @@ async def get_battle(
                 detail=f"Battle with ID {battle_id} not found"
             )
         
-        # Convert participant_ids back to opponents format for frontend
-        participant_ids = battle.get('participant_ids', [])
-        opponents = []
-        
-        # Try to get original opponents from battle manager
-        battle_status = battle_manager.get_battle_status(battle_id)
-        if battle_status and 'opponents' in battle_status:
-            opponents = battle_status['opponents']
-        else:
-            # Fallback: create basic opponent structure
-            for i, agent_id in enumerate(participant_ids):
-                opponents.append({
-                    'agent_id': agent_id,
-                    'name': f'opponent_{i+1}'  # Basic fallback name
-                })
-        
         # Add queue position if battle is queued
         queue_position = None
         if battle.get('state') == 'queued':
             queue_position = battle_manager.get_queue_position(battle_id)
         
-        response_data = {
-            'battle_id': battle['battle_id'],
-            'green_agent_id': battle['green_agent_id'],
-            'opponents': opponents,
-            'user_id': battle['user_id'],
-            'created_at': battle['created_at'],
-            'state': battle['state'],
-            'interact_history': battle.get('interact_history'),
-            'finished_at': battle.get('finished_at'),
-            'result': battle.get('result'),
-            'error': battle.get('error'),
-            'queue_position': queue_position
-        }
+        # Add queue_position to battle data
+        battle_with_queue = battle.copy()
+        battle_with_queue['queue_position'] = queue_position
         
-        return BattleResponse(**response_data)
+        # Ensure created_at is properly formatted for Pydantic
+        if isinstance(battle_with_queue.get('created_at'), str):
+            battle_with_queue['created_at'] = battle_with_queue['created_at'].replace('Z', '+00:00')
+        
+        # Ensure started_at is properly formatted for Pydantic
+        if isinstance(battle_with_queue.get('started_at'), str):
+            battle_with_queue['started_at'] = battle_with_queue['started_at'].replace('Z', '+00:00')
+        
+        # Ensure finished_at is properly formatted for Pydantic
+        if isinstance(battle_with_queue.get('finished_at'), str):
+            battle_with_queue['finished_at'] = battle_with_queue['finished_at'].replace('Z', '+00:00')
+        
+        return BattleResponse(**battle_with_queue)
     
     except HTTPException:
         raise
@@ -153,7 +126,7 @@ async def create_battle(
         battle_data = battle_request.model_dump()
         
         green_agent_id = battle_data['green_agent_id']
-        opponents = battle_data['opponents']
+        participants = battle_data['participants']
         
         # Validate green agent exists
         green_agent = agent_repo.get_agent(green_agent_id)
@@ -167,48 +140,38 @@ async def create_battle(
         participant_requirements = green_agent.get("participant_requirements", [])
         participant_requirements_names = [p['name'] for p in participant_requirements]
         
-        # Validate opponents
-        participant_ids = []
-        
-        for opponent in opponents:
-            if not isinstance(opponent, dict) or 'name' not in opponent or 'agent_id' not in opponent:
+        # Validate participants
+        for participant in participants:
+            if participant['name'] not in participant_requirements_names:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Each opponent must be a dictionary with 'name' and 'agent_id'"
+                    detail=f"Participant {participant['name']}:{participant['agent_id']} does not match participant requirements"
                 )
             
-            if opponent['name'] not in participant_requirements_names:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Opponent agent {opponent['name']}:{opponent['agent_id']} does not match participant requirements"
-                )
-            
-            # Validate opponent agent exists
-            opponent_agent = agent_repo.get_agent(opponent['agent_id'])
-            if not opponent_agent:
+            # Validate participant agent exists
+            participant_agent = agent_repo.get_agent(participant['agent_id'])
+            if not participant_agent:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Opponent agent {opponent['name']} with ID {opponent['agent_id']} not found"
+                    detail=f"Participant agent {participant['name']} with ID {participant['agent_id']} not found"
                 )
-            
-            participant_ids.append(opponent['agent_id'])
         
         # Validate required participants are present
         for p_req in participant_requirements:
-            if p_req.get('required', True) and not any(p['name'] == p_req['name'] for p in opponents):
+            if p_req.get('required', True) and not any(p['name'] == p_req['name'] for p in participants):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Required participant {p_req['name']} not found in opponents"
+                    detail=f"Required participant {p_req['name']} not found in participants"
                 )
         
-        # Create battle record for database (using participant_ids format for compatibility)
+        # Create battle record for database
         battle_db_data = {
             'battle_id': str(uuid.uuid4()),
             'green_agent_id': green_agent_id,
-            'participant_ids': participant_ids,
+            'participants': participants,
             'state': 'pending',
             'created_at': datetime.utcnow().isoformat() + 'Z',
-            'user_id': battle_data.get('created_by', 'N/A'),
+            'user_id': battle_data.get('user_id', 'N/A'),
             'interact_history': [],
             'result': None,
             'error': None
@@ -217,29 +180,17 @@ async def create_battle(
         # Save to database
         created_battle = battle_repo.create_battle(battle_db_data)
         
-        # Add to battle manager queue
-        queue_position = battle_manager.add_battle(created_battle['battle_id'], {
-            'green_agent_id': green_agent_id,
-            'opponents': opponents,
-            'config': battle_data.get('config', {})
-        })
+        # Add to battle manager queue - pass the validated request directly
+        queue_position = battle_manager.add_battle(created_battle['battle_id'], battle_request)
         
-        # Convert to response format (using opponents format for frontend)
-        response_data = {
-            'battle_id': created_battle['battle_id'],
-            'green_agent_id': green_agent_id,
-            'opponents': opponents,
-            'user_id': created_battle['user_id'],
-            'created_at': created_battle['created_at'],
-            'state': created_battle['state'],
-            'interact_history': created_battle['interact_history'],
-            'finished_at': created_battle.get('finished_at'),
-            'result': created_battle['result'],
-            'error': created_battle['error'],
-            'queue_position': queue_position
-        }
+        # Add queue_position to battle data and return
+        created_battle['queue_position'] = queue_position
         
-        return BattleResponse(**response_data)
+        # Ensure created_at is properly formatted for Pydantic
+        if isinstance(created_battle.get('created_at'), str):
+            created_battle['created_at'] = created_battle['created_at'].replace('Z', '+00:00')
+        
+        return BattleResponse(**created_battle)
     
     except HTTPException:
         raise
@@ -278,6 +229,10 @@ async def update_battle(
         # Update state if provided
         if update_data.state is not None:
             update_fields['state'] = update_data.state
+        
+        # Update started_at if provided
+        if update_data.started_at is not None:
+            update_fields['started_at'] = update_data.started_at.isoformat() + 'Z'
         
         # Update interact_history if provided
         if update_data.interact_history is not None:

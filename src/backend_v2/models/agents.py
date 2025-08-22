@@ -8,6 +8,7 @@ from enum import Enum
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
+from .battles import ParticipantRequirement
 
 
 class AgentCardStatus(str, Enum):
@@ -23,7 +24,7 @@ class AgentBase(BaseModel):
     is_hosted: bool = Field(..., description="Whether this is a hosted agent")
     is_green: bool = Field(..., description="Whether this is a green agent (judge/coordinator)")
     battle_description: Optional[str] = Field(None, description="Battle description for selection UI")
-    participant_requirements: Optional[List[Dict[str, Any]]] = Field(None, description="Participant requirements (JSON)")
+    participant_requirements: Optional[List[ParticipantRequirement]] = Field(None, description="Participant requirements")
 
 
 class AgentCreateRequest(AgentBase):
