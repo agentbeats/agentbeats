@@ -52,7 +52,8 @@
         if (updatedGreenAgent) {
           updatedBattle.green_agent = {
             ...battle.green_agent,
-            live: updatedGreenAgent.live || false
+            live: updatedGreenAgent.live || false,
+            livenessLoading: updatedGreenAgent.livenessLoading || false
           };
         }
       }
@@ -64,7 +65,8 @@
           if (updatedOpponentAgent) {
             return {
               ...opponentAgent,
-              live: updatedOpponentAgent.live || false
+              live: updatedOpponentAgent.live || false,
+              livenessLoading: updatedOpponentAgent.livenessLoading || false
             };
           }
           return opponentAgent;

@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { marked } from 'marked';
+  import { userEmail } from '$lib/stores/auth';
+  import AsciinemaPlayerView from '$lib/components/AsciinemaPlayerView.svelte';
   
   let battle: any = null;
   let loading = true;
@@ -12,10 +14,29 @@
   let greenAgentInfo: any = null;
   let opponentRoleMap = new Map<string, string>(); // name -> role mapping
   let interactHistoryContainer: HTMLDivElement | null = null;
+  let isDevMode = false;
+  let entryActiveTabs: Record<number, string> = {};
+
+  async function fetchWithTimeout(input: RequestInfo, init?: RequestInit, timeoutMs: number = 15000): Promise<Response> {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(input, { ...(init || {}), signal: controller.signal });
+      return res;
+    } finally {
+      clearTimeout(id);
+    }
+  }
   
   $: battleId = $page.params.battle_id;
   
   $: battleInProgress = battle ? isBattleInProgress() : false;
+  
+  // Check if current user can cancel the battle
+  $: canCancelBattle = battleInProgress && (
+    isDevMode || 
+    (battle?.created_by && $userEmail && battle.created_by === $userEmail)
+  );
   
   async function fetchAgentName(agentId: string): Promise<string> {
     try {
@@ -129,7 +150,7 @@
   }
   
   async function cancelBattle() {
-    if (!battle || !battleInProgress) return;
+    if (!battle || !canCancelBattle) return;
     
     const confirmed = confirm('Are you sure you want to cancel this battle? This will end the battle with a draw result.');
     if (!confirmed) return;
@@ -168,13 +189,24 @@
   onMount(async () => {
     loading = true;
     error = '';
+    
+    // Check if we're in development mode
+    isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+    
     try {
-      const res = await fetch(`/api/battles/${battleId}`);
+      const res = await fetchWithTimeout(`/api/battles/${battleId}`);
       if (!res.ok) {
         error = 'Failed to load battle';
         return;
       }
       battle = await res.json();
+
+      if (battle?.interact_history && Array.isArray(battle.interact_history)) {
+        entryActiveTabs = {};
+        battle.interact_history.forEach((entry: any, idx: number) => {
+          entryActiveTabs[idx] = entry.asciinema_url ? 'asciinema' : 'logs';
+        });
+      }
       
       // Fetch agent names
       if (battle.green_agent_id) {
@@ -210,6 +242,14 @@
           
           // create a new battle object to trigger Svelte's reactivity
           battle = { ...data.battle };
+
+          if (battle?.interact_history && Array.isArray(battle.interact_history)) {
+            battle.interact_history.forEach((entry: any, idx: number) => {
+              if (entryActiveTabs[idx] === undefined) {
+                entryActiveTabs[idx] = entry.asciinema_url ? 'asciinema' : 'logs';
+              }
+            });
+          }
           
           // Update agent names if needed
           if (battle.green_agent_id && !greenAgentName) {
@@ -280,7 +320,7 @@
           <div class="text-red-700">Error: <span class="font-semibold">{battle.error}</span></div>
         {/if}
         
-        {#if battleInProgress}
+        {#if canCancelBattle}
           <div class="mt-3 pt-3 border-t">
             <button 
               on:click={cancelBattle}
@@ -309,6 +349,50 @@
               {#if entry.markdown_content}
                 <div class="markdown-content mt-2 bg-white p-3 rounded border text-sm">
                   {@html renderMarkdown(entry.markdown_content)}
+                </div>
+              {/if}
+              {#if (entry.terminal_input && entry.terminal_output) || entry.asciinema_url}
+                <div class="mt-2 rounded-md border border-zinc-800 text-zinc-100 font-mono text-xs overflow-hidden" style="background-color: #121314;">
+                  <div class="flex items-center gap-2 px-3 py-1.5" style="background-color: #121314;">
+                    <div class="flex items-center gap-2 border-b border-zinc-800 pb-1.5 -mb-1.5">
+                      <span class="h-2 w-2 rounded-full bg-red-500"></span>
+                      <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
+                      <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                      <span class="ml-2 text-[10px] text-zinc-400">Terminal</span>
+                    </div>
+                    
+                    <!-- Terminal-style tabs -->
+                    <div class="ml-4 flex flex-1 gap-px -mb-px">
+                      {#if entry.asciinema_url}
+                        <button 
+                          class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[i] === 'asciinema' ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
+                          style="{entryActiveTabs[i] === 'asciinema' ? 'background-color: #121314;' : ''}"
+                          on:click={() => entryActiveTabs[i] = 'asciinema'}
+                        >
+                          Live
+                        </button>
+                      {/if}
+                      <button 
+                        class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[i] === 'logs' || !entryActiveTabs[i] ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
+                        style="{entryActiveTabs[i] === 'logs' || !entryActiveTabs[i] ? 'background-color: #121314;' : ''}"
+                        on:click={() => entryActiveTabs[i] = 'logs'}
+                      >
+                        Logs
+                      </button>
+                      
+                    </div>
+                  </div>
+                  <!-- Tab content -->
+                  {#if entryActiveTabs[i] === 'asciinema' && entry.asciinema_url}
+                    <div class="p-2">
+                      <AsciinemaPlayerView src={entry.asciinema_url} options={{ fit: 'width', autoplay: true, loop: false, speed: 0.3 }} />
+                    </div>
+                  {:else if entryActiveTabs[i] === 'logs' || (!entryActiveTabs[i] && !entry.asciinema_url)}
+                    {#if entry.terminal_input && entry.terminal_output}
+                      <pre class="px-3 py-2 whitespace-pre-wrap leading-relaxed max-h-100 overflow-y-auto"><span class="text-green-400">docker $ </span><span class="text-yellow-300 font-medium">{entry.terminal_input}</span>
+<span class="text-white">{entry.terminal_output}</span></pre>
+                    {/if}
+                  {/if}
                 </div>
               {/if}
               {#if entry.detail}

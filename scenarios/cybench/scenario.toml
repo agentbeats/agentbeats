@@ -1,0 +1,44 @@
+[scenario]
+name = "cybench"
+description = "Cybench CTF scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "CyBench"
+card = "agents/green_agent/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8335
+agent_host = "0.0.0.0"
+agent_port = 8336
+model_type = "openai"
+model_name = "gpt-5-2025-08-07"
+tools = ["agents/green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+num_tasks = 2
+is_green = true
+
+[[agents.participant_requirements]]
+  role = "red_agent"
+  name = "red_attacker"
+  required = true
+  participant_agent = "red_agent"
+
+[[agents]]
+name = "red_agent (GPT-5)"
+card = "agents/red_agent/agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8060
+agent_host = "0.0.0.0"
+agent_port = 8061
+model_type = "openai"
+model_name = "gpt-5-2025-08-07"
+tools = ["agents/red_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+
+# Launch configuration
+[launch]
+mode = "separate"  # Options: "tmux", "separate", "current"
+tmux_session_name = "agentbeats-cybench"
+startup_interval = 1  # seconds between launching each component
+wait_for_services = true  # wait for services to be healthy before starting agents
