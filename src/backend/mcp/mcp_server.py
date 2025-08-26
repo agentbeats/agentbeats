@@ -131,7 +131,7 @@ def update_battle_process(battle_id: str, message: str, reported_by: str, detail
             f"{BACKEND_URL}/battles/{battle_id}",
             json=event_data,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=300
         )
         
         if response.status_code == 204:
@@ -192,7 +192,7 @@ def report_on_battle_end(battle_id: str, message:str, winner: str, reported_by: 
             f"{BACKEND_URL}/battles/{battle_id}",
             json=result_data,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=300
         )
         
         if response.status_code == 204:

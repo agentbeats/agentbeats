@@ -49,7 +49,7 @@ pip install Pillow
 
 ### (Optional) Running the Computer use blue agent
 
-If you want to use Computer use agents uncomment the following lines in `scenario.toml`. To run the Computer use blue agent add the GCP service account with vertex AI credentials into ` ".config/gcloud/agentbeats-235f43dc13fc.json"` (contact the member of AgentBeats team in Slack to get the file). The computer use agent also requires `docker` to be installed. 
+If you want to use Computer use agents uncomment the following lines in `scenario.toml`.
 
 ```bash
 [[agents]]
@@ -63,6 +63,16 @@ model_type = "openrouter"
 model_name = "anthropic/claude-3.5-sonnet-20241022"
 tools = ["blue_agent_computer_use/tools.py"]
 mcp_servers = ["http://localhost:9001/sse"]
+```
+
+To run the Computer use blue agent add the GCP service account with vertex AI credentials into ` ".config/gcloud/agentbeats-235f43dc13fc.json"` (contact the member of AgentBeats team in Slack to get the file). The computer use agent also requires `docker` to be installed. Before loading the scenario build the Docker image using
+
+```bash
+cd scenarios/wasp/wasp/claude-35-computer-use-demo
+# or
+cd scenarios/wasp/wasp/claude-37-computer-use-demo
+
+docker build . -t d computer-use-demo:local
 ```
 
 ### (Optional) Bucket access
