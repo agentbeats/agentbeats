@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getAllBattles } from "$lib/api/battles";
-  import { getMyAgents } from "$lib/api/agents";
+  import { getMyAgentsWithAsyncLiveness } from "$lib/api/agents";
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { Spinner } from "$lib/components/ui/spinner";
   import { Button } from "$lib/components/ui/button";
@@ -55,31 +55,43 @@
 
   async function loadMyAgents() {
     try {
-      agents = await getMyAgents();
-      // Note: getMyAgents doesn't support liveness check, but the agents should have live field from backend
-      console.log('Dashboard loaded agents:', agents);
-      
-      // Calculate top agents (both green and opponent agents)
-      if (agents.length > 0) {
-        console.log('All agents for top agents:', agents);
+      // Use layered loading: get basic info first, then update with liveness
+      agents = await getMyAgentsWithAsyncLiveness((updatedAgents) => {
+        // This callback will be called when liveness data is ready
+        agents = updatedAgents;
+        console.log('Dashboard agents liveness updated:', agents);
         
-        topAgents = agents
-          .sort((a: any, b: any) => {
-            // Sort by ELO rating first, then by win rate
-            const eloDiff = (b.elo?.rating || 0) - (a.elo?.rating || 0);
-            if (eloDiff !== 0) return eloDiff;
-            return (b.elo?.stats?.win_rate || 0) - (a.elo?.stats?.win_rate || 0);
-          })
-          .slice(0, 6); // Top 6 agents
-      } else {
-        topAgents = [];
-      }
+        // Recalculate top agents with updated liveness info
+        updateTopAgents(agents);
+      });
+      
+      console.log('Dashboard loaded basic agent info:', agents);
+      updateTopAgents(agents);
+      
     } catch (error) {
       console.error('Failed to load agents:', error);
       agents = [];
       topAgents = [];
     } finally {
       agentsLoading = false;
+    }
+  }
+  
+  function updateTopAgents(agentsList: any[]) {
+    // Calculate top agents (both green and opponent agents)
+    if (agentsList.length > 0) {
+      console.log('Updating top agents with:', agentsList);
+      
+      topAgents = agentsList
+        .sort((a: any, b: any) => {
+          // Sort by ELO rating first, then by win rate
+          const eloDiff = (b.elo?.rating || 0) - (a.elo?.rating || 0);
+          if (eloDiff !== 0) return eloDiff;
+          return (b.elo?.stats?.win_rate || 0) - (a.elo?.stats?.win_rate || 0);
+        })
+        .slice(0, 6); // Top 6 agents
+    } else {
+      topAgents = [];
     }
   }
 
@@ -250,6 +262,7 @@
                                   }} 
                                   agent_id={agent.agent_id || agent.id}
                                   isOnline={agent.live || false}
+                                  isLoading={agent.livenessLoading || false}
                                 />
                               </div>
                             </Carousel.Item>
@@ -316,6 +329,7 @@
                                 }} 
                                 agent_id={greenAgent.agent_id || greenAgent.id}
                                 isOnline={greenAgent.live || false}
+                                isLoading={greenAgent.livenessLoading || false}
                               />
                             {:else}
                               <p class="font-medium text-sm">Green Agent (ID: {battle.green_agent_id?.slice(0, 8)})</p>

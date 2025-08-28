@@ -241,7 +241,7 @@
                   identifier: agentCard.name || 'agent',
                   avatar_url: agentCard.avatar_url,
                   description: agentCard.description || 'No description available'
-                }} agent_id="preview" />
+                }} agent_id="preview" isOnline={canRegister && launcherStatus === 'online'} />
               </div>
             {:else}
               <div class="flex flex-col items-center justify-center py-8 space-y-4">
@@ -325,6 +325,15 @@
                 </Form.Control>
               </Form.Field>
 
+              <!-- Hidden task description field -->
+              <Form.Field {form} name="task_config">
+                <Form.Control>
+                  {#snippet children({ props })}
+                    <Input {...props} bind:value={$formData.task_config} type="hidden" />
+                  {/snippet}
+                </Form.Control>
+              </Form.Field>
+
               <Form.Field {form} name="launcher_url">
                 <Form.Control>
                   {#snippet children({ props })}
@@ -401,6 +410,16 @@
                     </div>
                   {/if}
                   <div class="space-y-4">
+                  <div class="pb-4">
+                    <Label for="task_config" class="text-sm">Task Index</Label>
+                    <textarea
+                      id="task_config"
+                      bind:value={$formData.task_config}
+                      placeholder="Write a task index (starting from 0), if applicable. e.g. Task index = 0. "
+                      rows="3"
+                      class="border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground shadow-xs flex w-full min-w-0 rounded-md border px-3 py-2 text-base outline-none transition-[color,box-shadow] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[2px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive mt-1 resize-vertical"
+                    ></textarea>
+                  </div>
                   <div class="border-t pt-4">
                     <div class="flex items-center gap-2 mb-2">
                       <h4 class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Participant Requirements</h4>

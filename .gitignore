@@ -138,3 +138,8 @@ dist/
 # --- CyberGym ---
 scenarios/cybergym/resources/cybergym/
 scenarios/cybergym/scripts/
+
+# Asciinema
+asciinema_playground
+**/asciinema_outputs/
+

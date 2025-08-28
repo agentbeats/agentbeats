@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/stores';
   import { marked } from 'marked';
+  import { userEmail } from '$lib/stores/auth';
   import AgentChip from "$lib/components/agent-chip.svelte";
   import * as Card from "$lib/components/ui/card";
   import { SvelteFlow, Background, Controls, MiniMap, Handle, Position } from '@xyflow/svelte';
@@ -13,11 +14,27 @@
   import LogEdge from "$lib/components/log-edge.svelte";
   import * as Carousel from "$lib/components/ui/carousel";
   import Autoplay from "embla-carousel-autoplay";
+  import AsciinemaPlayerView from '$lib/components/AsciinemaPlayerView.svelte';
   
   // Node and edge types for Svelte Flow
   const nodeTypes = {
     agentNode: AgentNode
   };
+  
+  let interactHistoryContainer: HTMLDivElement | null = null;
+  let isDevMode = false;
+  let entryActiveTabs: Record<number, string> = {};
+
+  async function fetchWithTimeout(input: RequestInfo, init?: RequestInit, timeoutMs: number = 15000): Promise<Response> {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(input, { ...(init || {}), signal: controller.signal });
+      return res;
+    } finally {
+      clearTimeout(id);
+    }
+  }
   
   const edgeTypes = {
     logEdge: LogEdge
@@ -50,7 +67,11 @@
   
   let battleInProgress = $derived(battle ? isBattleInProgress() : false);
   
-
+  // Check if current user can cancel the battle
+  let canCancelBattle = $derived(battleInProgress && (
+    isDevMode || 
+    (battle?.created_by && $userEmail && battle.created_by === $userEmail)
+  ));
   
   function getChronologicalAgentGroups() {
     if (!battle?.interact_history) return [];
@@ -184,10 +205,6 @@
     }
   });
 
-
-
-
-  
   async function fetchAgentName(agentId: string): Promise<string> {
     try {
       const res = await fetch(`/api/agents/${agentId}`);
@@ -374,7 +391,7 @@
   }
   
   async function cancelBattle() {
-    if (!battle || !battleInProgress) return;
+    if (!battle || !canCancelBattle) return;
     
     const confirmed = confirm('Are you sure you want to cancel this battle? This will end the battle with a draw result.');
     if (!confirmed) return;
@@ -413,13 +430,24 @@
   onMount(async () => {
     loading = true;
     error = '';
+    
+    // Check if we're in development mode
+    isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+    
     try {
-      const res = await fetch(`/api/battles/${$page.params.battle_id}`);
+      const res = await fetchWithTimeout(`/api/battles/${$page.params.battle_id}`);
       if (!res.ok) {
         error = 'Failed to load battle';
         return;
       }
       battle = await res.json();
+
+      if (battle?.interact_history && Array.isArray(battle.interact_history)) {
+        entryActiveTabs = {};
+        battle.interact_history.forEach((entry: any, idx: number) => {
+          entryActiveTabs[idx] = entry.asciinema_url ? 'asciinema' : 'logs';
+        });
+      }
       
       // Fetch agent names
       if (battle.green_agent_id) {
@@ -500,6 +528,15 @@
           
           // Update battle data
           battle = newBattle;
+
+          // Handle asciinema tabs for new entries
+          if (battle?.interact_history && Array.isArray(battle.interact_history)) {
+            battle.interact_history.forEach((entry: any, idx: number) => {
+              if (entryActiveTabs[idx] === undefined) {
+                entryActiveTabs[idx] = entry.asciinema_url ? 'asciinema' : 'logs';
+              }
+            });
+          }
           
           // Update agent names if needed
           if (battle.green_agent_id && !greenAgentName) {
@@ -620,14 +657,14 @@
             </span>
                 </div>
                   </div>
-        {#if battleInProgress}
+        {#if canCancelBattle}
           <button 
             onclick={cancelBattle}
             class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
           >
             Cancel Battle
           </button>
-                {/if}
+        {/if}
               </div>
 
       <!-- Opponents Section -->
@@ -1036,6 +1073,51 @@
                               {/if}
                             </div>
                           {/if}
+                          
+                          <!-- Asciinema Terminal Output -->
+                          {#if (entry.terminal_input && entry.terminal_output) || entry.asciinema_url}
+                            <div class="mt-2 rounded-md border border-zinc-800 text-zinc-100 font-mono text-xs overflow-hidden" style="background-color: #121314;">
+                              <div class="flex items-center gap-2 px-3 py-1.5" style="background-color: #121314;">
+                                <div class="flex items-center gap-2 border-b border-zinc-800 pb-1.5 -mb-1.5">
+                                  <span class="h-2 w-2 rounded-full bg-red-500"></span>
+                                  <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
+                                  <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                                  <span class="ml-2 text-[10px] text-zinc-400">Terminal</span>
+                                </div>
+                                
+                                <!-- Terminal-style tabs -->
+                                <div class="ml-4 flex flex-1 gap-px -mb-px">
+                                  {#if entry.asciinema_url}
+                                    <button 
+                                      class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[entry.logNumber] === 'asciinema' ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
+                                      style="{entryActiveTabs[entry.logNumber] === 'asciinema' ? 'background-color: #121314;' : ''}"
+                                      onclick={() => entryActiveTabs[entry.logNumber] = 'asciinema'}
+                                    >
+                                      Live
+                                    </button>
+                                  {/if}
+                                  <button 
+                                    class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[entry.logNumber] === 'logs' || !entryActiveTabs[entry.logNumber] ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
+                                    style="{entryActiveTabs[entry.logNumber] === 'logs' || !entryActiveTabs[entry.logNumber] ? 'background-color: #121314;' : ''}"
+                                    onclick={() => entryActiveTabs[entry.logNumber] = 'logs'}
+                                  >
+                                    Logs
+                                  </button>
+                                </div>
+                              </div>
+                              <!-- Tab content -->
+                              {#if entryActiveTabs[entry.logNumber] === 'asciinema' && entry.asciinema_url}
+                                <div class="p-2">
+                                  <AsciinemaPlayerView src={entry.asciinema_url} options={{ fit: 'width', autoplay: true, loop: false, speed: 0.3 }} />
+                                </div>
+                              {:else if entryActiveTabs[entry.logNumber] === 'logs' || (!entryActiveTabs[entry.logNumber] && !entry.asciinema_url)}
+                                {#if entry.terminal_input && entry.terminal_output}
+                                  <pre class="px-3 py-2 whitespace-pre-wrap leading-relaxed max-h-100 overflow-y-auto"><span class="text-green-400">docker $ </span><span class="text-yellow-300 font-medium">{entry.terminal_input}</span>
+<span class="text-white">{entry.terminal_output}</span></pre>
+                                {/if}
+                              {/if}
+                            </div>
+                          {/if}
                         </div>
                       {/if}
                     </div>
@@ -1043,7 +1125,7 @@
                 </div>
               {/if}
             </div>
-              {/each}
+          {/each}
         </div>
       </div>
     {/if}

@@ -42,6 +42,7 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.52.1",
 		"@sveltejs/adapter-node": "^5.2.13",
+		"asciinema-player": "^3.10.0",
 		"@types/d3": "^7.4.3",
 		"@xyflow/svelte": "^1.2.2",
 		"d3": "^7.9.0",

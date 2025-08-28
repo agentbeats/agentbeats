@@ -4,7 +4,7 @@
   import { cartStore } from '$lib/stores/cart';
   import { toast } from 'svelte-sonner';
   import SwordsIcon from "@lucide/svelte/icons/swords";
-  import { getAgentMatches } from "$lib/api/agents";
+  import { getAgentMatches, getAllAgentsWithAsyncLiveness } from "$lib/api/agents";
   import { getAccessToken } from "$lib/auth/supabase";
   import { Spinner } from "$lib/components/ui/spinner";
   import AgentChip from "$lib/components/agent-chip.svelte";
@@ -20,6 +20,7 @@
   let isOpen = $state(false);
   let topMatches = $state<Array<any>>([]);
   let loadingMatches = $state(false);
+  let allAgents = $state<Array<any>>([]);
 
   async function loadTopMatches() {
     if (!agent.agent_id) {
@@ -41,6 +42,13 @@
         if (accessToken) {
           headers['Authorization'] = `Bearer ${accessToken}`;
         }
+
+        // First get all agents for liveness info using layered loading
+        allAgents = await getAllAgentsWithAsyncLiveness((updatedAgents) => {
+          // Update allAgents when liveness data is ready
+          allAgents = updatedAgents;
+          // Note: We don't need to update topMatches here since we already have the base match data
+        });
 
         const res = await fetch(`/api/matches/green-agent/${agent.agent_id}`, {
           headers
@@ -68,16 +76,12 @@
           headers['Authorization'] = `Bearer ${accessToken}`;
         }
 
-        // Get all agents to find green agents
-        const allAgentsRes = await fetch('/api/agents', {
-          headers
+        // Get all agents to find green agents using layered loading
+        allAgents = await getAllAgentsWithAsyncLiveness((updatedAgents) => {
+          // Update allAgents when liveness data is ready
+          allAgents = updatedAgents;
+          // Note: We don't need to update topMatches here since we already have the base match data
         });
-
-        if (!allAgentsRes.ok) {
-          throw new Error('Failed to fetch all agents');
-        }
-
-        const allAgents = await allAgentsRes.json();
         const greenAgents = allAgents.filter((a: any) => a.register_info?.is_green === true);
         
         console.log('Found green agents:', greenAgents.length);
@@ -106,7 +110,8 @@
                       agent_id: greenAgent.agent_id,
                       alias: greenAgent.register_info?.alias || greenAgent.agent_card?.name,
                       name: greenAgent.agent_card?.name,
-                      description: greenAgent.agent_card?.description
+                      description: greenAgent.agent_card?.description,
+                      live: greenAgent.live || false
                     }
                   });
                 });

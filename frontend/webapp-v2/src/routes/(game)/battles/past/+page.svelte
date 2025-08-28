@@ -1,7 +1,7 @@
 <script lang="ts">
   import BattleTable from './battle-table.svelte';
   import { getAllBattles } from "$lib/api/battles";
-  import { getAllAgents } from "$lib/api/agents";
+  import { getAllAgentsWithAsyncLiveness } from "$lib/api/agents";
   import { onMount, onDestroy } from 'svelte';
   import { fade } from 'svelte/transition';
   import { Spinner } from "$lib/components/ui/spinner";
@@ -36,6 +36,47 @@
   // Helper function to find agent by ID from the cached agents
   function findAgentById(agentId: string): any | null {
     return allAgents.find(agent => agent.agent_id === agentId || agent.id === agentId) || null;
+  }
+  
+  // Update agent data in battles when liveness info is ready
+  function updateAgentDataInBattles(updatedAgents: any[]) {
+    allAgents = updatedAgents;
+    
+    // Update battles with new agent liveness data
+    battles = battles.map(battle => {
+      const updatedBattle = { ...battle };
+      
+      // Update green agent if it exists
+      if (battle.green_agent) {
+        const updatedGreenAgent = findAgentById(battle.green_agent_id);
+        if (updatedGreenAgent) {
+          updatedBattle.green_agent = {
+            ...battle.green_agent,
+            live: updatedGreenAgent.live || false,
+            livenessLoading: updatedGreenAgent.livenessLoading || false
+          };
+        }
+      }
+      
+      // Update opponent agents if they exist
+      if (battle.opponent_agents && battle.opponent_agents.length > 0) {
+        updatedBattle.opponent_agents = battle.opponent_agents.map(opponentAgent => {
+          const updatedOpponentAgent = findAgentById(opponentAgent.agent_id);
+          if (updatedOpponentAgent) {
+            return {
+              ...opponentAgent,
+              live: updatedOpponentAgent.live || false,
+              livenessLoading: updatedOpponentAgent.livenessLoading || false
+            };
+          }
+          return opponentAgent;
+        });
+      }
+      
+      return updatedBattle;
+    });
+    
+    console.log('Updated battles with liveness data');
   }
 
   async function loadAgentData(battle: any): Promise<Battle> {
@@ -105,10 +146,14 @@
       error = null;
       console.log('Loading battles from client...');
       
-      // First, load all agents once
+      // First, load all agents once with layered loading
       console.log('Loading all agents...');
-      allAgents = await getAllAgents();
-      console.log('All agents loaded:', allAgents.length);
+      allAgents = await getAllAgentsWithAsyncLiveness((updatedAgents) => {
+        // Update agent data when liveness info is ready
+        console.log('Past battles agents liveness updated:', updatedAgents);
+        updateAgentDataInBattles(updatedAgents);
+      });
+      console.log('All agents loaded (basic info):', allAgents.length);
       
       const allBattles = await getAllBattles();
       console.log('All battles loaded:', allBattles.length);

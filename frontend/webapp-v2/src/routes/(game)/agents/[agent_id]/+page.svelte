@@ -83,6 +83,14 @@
                 </div>
               </div>
               <div>
+                {#if agent.register_info?.task_config}
+                  <span class="font-medium">Task Index:</span>
+                  <div class="mt-1 max-h-32 overflow-y-auto p-2">
+                    <p class="text-muted-foreground text-sm">{agent.register_info.task_config}</p>
+                  </div>
+                {/if}
+              </div>
+              <div>
                 <span class="font-medium">Agent URL:</span>
                 <p class="text-muted-foreground font-mono text-sm mt-1">{agent.register_info?.agent_url || 'Not set'}</p>
               </div>

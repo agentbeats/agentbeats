@@ -348,6 +348,7 @@
                   }}
                   agent_id={greenAgent.agent.agent_id || greenAgent.agent.id}
                   isOnline={greenAgent.agent.live || false}
+                  isLoading={greenAgent.agent.livenessLoading || false}
                 />
                 
                 <!-- Participant Requirements -->
@@ -375,6 +376,7 @@
                                   }}
                                   agent_id={participantSlots[index]!.agent.agent_id || participantSlots[index]!.agent.id}
                                   isOnline={participantSlots[index]!.agent.live || false}
+                                  isLoading={participantSlots[index]!.agent.livenessLoading || false}
                                 />
                               </div>
                                                               <Button
@@ -430,6 +432,7 @@
                           }}
                           agent_id={item.agent.agent_id || item.agent.id}
                           isOnline={item.agent.live || false}
+                          isLoading={item.agent.livenessLoading || false}
                         />
                       </div>
                                               <Button
