@@ -1,18 +1,26 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { page } from '$app/stores';
   import { marked } from 'marked';
   import { userEmail } from '$lib/stores/auth';
+  import AgentChip from "$lib/components/agent-chip.svelte";
+  import * as Card from "$lib/components/ui/card";
+  import { SvelteFlow, Background, Controls, MiniMap, Handle, Position } from '@xyflow/svelte';
+  import '@xyflow/svelte/dist/style.css';
+  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
+  import ChevronUpIcon from "@lucide/svelte/icons/chevron-up";
+  import DownloadIcon from "@lucide/svelte/icons/download";
+  import AgentNode from "$lib/components/agent-node.svelte";
+  import LogEdge from "$lib/components/log-edge.svelte";
+  import * as Carousel from "$lib/components/ui/carousel";
+  import Autoplay from "embla-carousel-autoplay";
   import AsciinemaPlayerView from '$lib/components/AsciinemaPlayerView.svelte';
   
-  let battle: any = null;
-  let loading = true;
-  let error = '';
-  let greenAgentName = '';
-  let opponentNames: string[] = [];
-  let ws: WebSocket | null = null;
-  let greenAgentInfo: any = null;
-  let opponentRoleMap = new Map<string, string>(); // name -> role mapping
+  // Node and edge types for Svelte Flow
+  const nodeTypes = {
+    agentNode: AgentNode
+  };
+  
   let interactHistoryContainer: HTMLDivElement | null = null;
   let isDevMode = false;
   let entryActiveTabs: Record<number, string> = {};
@@ -28,21 +36,182 @@
     }
   }
   
-  $: battleId = $page.params.battle_id;
+  const edgeTypes = {
+    logEdge: LogEdge
+  };
   
-  $: battleInProgress = battle ? isBattleInProgress() : false;
+  let battle = $state<any>(null);
+  let loading = $state(true);
+  let error = $state('');
+  let greenAgentName = $state('');
+  let opponentNames = $state<string[]>([]);
+  let ws = $state<WebSocket | null>(null);
+  let greenAgentInfo = $state<any>(null);
+  let opponentAgentsInfo = $state<any[]>([]); // Store full opponent agent data
+  let opponentRoleMap = $state(new Map<string, string>()); // name -> role mapping
+  let agentDataMap = $state(new Map<string, any>()); // Map agent_id to full agent data
+  let expandedLogs = $state(new Set<string>()); // track which log sections are expanded
+  let openLogs = $state<Set<string>>(new Set()); // track which logs are open
+  let openAgents = $state<Set<string>>(new Set()); // track which agents are open
+  let closingAgents = $state<Set<string>>(new Set()); // track which agents are closing
+  let closingLogs = $state<Set<string>>(new Set()); // track which logs are closing
+  let currentAgentData = $state<any[]>([]);
+  
+  // Svelte Flow state
+  let nodes = $state<any[]>([]);
+  let edges = $state<any[]>([]);
+  let selectedLogNode = $state<string | null>(null);
+  let selectedLogEdge = $state<string | null>(null);
+  let openLogSections = $state<Set<string>>(new Set());
+  let closingLogSections = $state<Set<string>>(new Set());
+  
+  let battleInProgress = $derived(battle ? isBattleInProgress() : false);
   
   // Check if current user can cancel the battle
-  $: canCancelBattle = battleInProgress && (
+  let canCancelBattle = $derived(battleInProgress && (
     isDevMode || 
     (battle?.created_by && $userEmail && battle.created_by === $userEmail)
-  );
+  ));
   
+  function getChronologicalAgentGroups() {
+    if (!battle?.interact_history) return [];
+    
+    const groups: any[] = [];
+    let currentAgent = null;
+    let currentGroup = null;
+    
+    for (const [index, entry] of battle.interact_history.entries()) {
+      if (entry.reported_by !== currentAgent) {
+        // New agent - push previous group and start new one
+        if (currentGroup) {
+          groups.push(currentGroup);
+        }
+        currentAgent = entry.reported_by;
+        currentGroup = {
+          agent: currentAgent,
+          entries: [{ ...entry, logNumber: index + 1 }],
+          groupId: `group-${groups.length}`
+        };
+      } else {
+        // Same agent - add to current group
+        currentGroup?.entries.push({ ...entry, logNumber: index + 1 });
+      }
+    }
+    
+    // Don't forget the last group
+    if (currentGroup) {
+      groups.push(currentGroup);
+    }
+    
+    return groups;
+  }
+
+  // Create Svelte Flow nodes and edges from battle data
+  function createSvelteFlowData() {
+    if (!battle) return;
+    
+    console.log('Creating Svelte Flow data with agentDataMap size:', agentDataMap.size);
+    console.log('Available agent IDs:', Array.from(agentDataMap.keys()));
+    
+    const newNodes: any[] = [];
+    const newEdges: any[] = [];
+    
+    // Add green agent node
+    if (battle.green_agent_id) {
+      const greenAgentData = getAgentChipData(battle.green_agent_id);
+      console.log('Green agent data:', greenAgentData);
+      
+      newNodes.push({
+        id: battle.green_agent_id,
+        type: 'agentNode',
+        position: { x: 400, y: 150 },
+        data: {
+          agent: greenAgentData,
+          agent_id: battle.green_agent_id
+        },
+        style: {
+          background: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+          width: 200,
+          height: 80,
+          padding: '12px'
+        }
+      });
+    }
+    
+    // Add opponent nodes
+    if (battle.opponents) {
+      battle.opponents.forEach((opponent: any, i: number) => {
+        if (opponent.agent_id) {
+          const opponentAgentData = getAgentChipData(opponent.agent_id);
+          console.log(`Opponent ${i} (${opponent.agent_id}) data:`, opponentAgentData);
+          
+          const opponentsPerRow = 3;
+          const row = Math.floor(i / opponentsPerRow);
+          const col = i % opponentsPerRow;
+          const rowStartX = 400 - ((Math.min(opponentsPerRow, battle.opponents.length - (row * opponentsPerRow)) - 1) * 220) / 2;
+          
+          newNodes.push({
+            id: opponent.agent_id,
+            type: 'agentNode',
+            position: { 
+              x: rowStartX + (col * 220), 
+              y: 350 + (row * 200) 
+            },
+            data: {
+              agent: opponentAgentData,
+              agent_id: opponent.agent_id
+            },
+            style: {
+              background: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              width: 200,
+              height: 80,
+              padding: '12px'
+            }
+          });
+        }
+      });
+    }
+
+    nodes = newNodes;
+    edges = newEdges;
+  }
+
+
+
+  // Create Svelte Flow data when battle data is available
+  $effect(() => {
+    if (battle && greenAgentName && opponentNames.length > 0) {
+      createSvelteFlowData();
+    }
+  });
+
+  // Recreate Svelte Flow data when agent data map changes
+  $effect(() => {
+    if (battle && agentDataMap.size > 0) {
+      createSvelteFlowData();
+    }
+  });
+
+  // Clear selected log when agent changes
+  $effect(() => {
+    if (openAgents.size > 0) {
+      openLogs = new Set();
+    }
+  });
+
   async function fetchAgentName(agentId: string): Promise<string> {
     try {
       const res = await fetch(`/api/agents/${agentId}`);
       if (!res.ok) return agentId;
       const agent = await res.json();
+      // Store the full agent data
+      agentDataMap.set(agentId, agent);
       return agent.register_info?.name || agent.registerInfo?.name || agent.agent_card?.name || agent.agentCard?.name || agentId;
     } catch {
       return agentId;
@@ -88,27 +257,110 @@
     
     return roleMap;
   }
-  
-  function getEntryBackgroundClass(reportedBy: string): string {
-    const lowerReportedBy = reportedBy.toLowerCase();
-    if (reportedBy === 'system') {
+
+  function getAgentBackgroundClass(agentName: string): string {
+    const lowerAgentName = agentName.toLowerCase();
+    if (agentName === 'system') {
       return 'bg-gray-50 border-gray-200';
-    } else if (lowerReportedBy.includes('blue')) {
+    } else if (lowerAgentName.includes('blue')) {
       return 'bg-blue-50 border-blue-200';
-    } else if (lowerReportedBy.includes('red')) {
+    } else if (lowerAgentName.includes('red')) {
       return 'bg-red-50 border-red-200';
-    } else if (reportedBy === 'green_agent' || lowerReportedBy.includes('green')) {
+    } else if (agentName === 'green_agent' || lowerAgentName.includes('green')) {
       return 'bg-green-50 border-green-200';
-    } else if (opponentRoleMap.has(reportedBy)) {
-      const role = opponentRoleMap.get(reportedBy);
+    } else if (opponentRoleMap.has(agentName)) {
+      const role = opponentRoleMap.get(agentName);
       if (role === 'blue_agent') {
         return 'bg-blue-50 border-blue-200';
       } else if (role === 'red_agent') {
         return 'bg-red-50 border-red-200';
       }
     }
-    // Default background for unknown reported_by
+    // Default background for unknown agent
     return 'bg-yellow-50 border-yellow-200';
+  }
+
+  function getAgentIdFromReportedBy(reportedBy: string): string {
+    // Check if it's already an agent ID (exists in our agentDataMap)
+    if (agentDataMap.has(reportedBy)) {
+      return reportedBy;
+    }
+    
+    // Map common reported_by names to actual agent IDs
+    if (reportedBy === 'green_agent' || reportedBy.toLowerCase().includes('green')) {
+      return battle?.green_agent_id || reportedBy;
+    }
+    
+    // Check if any opponent matches this reported_by name
+    if (battle?.opponents) {
+      for (const opponent of battle.opponents) {
+        if (opponent.name === reportedBy || opponent.agent_id === reportedBy) {
+          return opponent.agent_id;
+        }
+      }
+    }
+    
+    // Return as-is if no mapping found
+    return reportedBy;
+  }
+
+  function createLogEdge(sourceAgentId: string, targetAgentId: string, logData: any) {
+    const edgeId = `edge-${sourceAgentId}-${targetAgentId}-${logData.logNumber}`;
+    
+    // Remove any existing edge for this log
+    const newEdges = edges.filter(edge => edge.id !== selectedLogEdge);
+    
+    // Add new edge
+    newEdges.push({
+      id: edgeId,
+      type: 'logEdge',
+      source: sourceAgentId,
+      target: targetAgentId,
+      data: {
+        logNumber: logData.logNumber,
+        message: logData.message,
+        timestamp: logData.timestamp
+      }
+    });
+    
+    edges = newEdges;
+    selectedLogEdge = edgeId;
+    
+    console.log('Created edge:', edgeId, 'from', sourceAgentId, 'to', targetAgentId);
+  }
+
+  function getAgentChipData(agentIdOrName: string) {
+    // Convert reported_by names to agent IDs if possible
+    const actualAgentId = getAgentIdFromReportedBy(agentIdOrName);
+    
+    // First try to find by agent ID
+    let agentData = agentDataMap.get(actualAgentId);
+    
+    // If not found by ID, try to find by name (for system messages, etc.)
+    if (!agentData) {
+      // For green agent, use greenAgentInfo
+      if (actualAgentId === battle?.green_agent_id && greenAgentInfo) {
+        agentData = greenAgentInfo;
+      }
+      // For system or other names, create a basic structure
+      else {
+        console.log('Creating basic agent data for:', agentIdOrName);
+        return {
+          identifier: agentIdOrName,
+          description: agentIdOrName,
+          avatar_url: undefined
+        };
+      }
+    }
+    
+    const result = {
+      identifier: agentData?.register_info?.alias || agentData?.register_info?.name || agentData?.agent_card?.name || agentIdOrName,
+      description: agentData?.agent_card?.description || agentData?.register_info?.description || agentIdOrName,
+      avatar_url: agentData?.register_info?.avatar_url || agentData?.agent_card?.avatar_url
+    };
+    
+    console.log('Agent chip data for', agentIdOrName, ':', result);
+    return result;
   }
   
   function renderMarkdown(content: string): string {
@@ -122,17 +374,6 @@
     
     const result = marked(content);
     return typeof result === 'string' ? result : '';
-  }
-  
-  function scrollToBottom() {
-    if (interactHistoryContainer) {
-      setTimeout(() => {
-        interactHistoryContainer?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'end' 
-        });
-      }, 100);
-    }
   }
   
   function isBattleInProgress(): boolean {
@@ -167,7 +408,7 @@
         }
       };
       
-      const response = await fetch(`/api/battles/${battleId}`, {
+      const response = await fetch(`/api/battles/${$page.params.battle_id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -194,7 +435,7 @@
     isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
     
     try {
-      const res = await fetchWithTimeout(`/api/battles/${battleId}`);
+      const res = await fetchWithTimeout(`/api/battles/${$page.params.battle_id}`);
       if (!res.ok) {
         error = 'Failed to load battle';
         return;
@@ -237,12 +478,58 @@
       
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === 'battle_update' && data.battle.battle_id === battleId) {
-          const previousHistoryLength = battle?.interact_history?.length || 0;
+        if (data.type === 'battle_update' && data.battle.battle_id === $page.params.battle_id) {
+          const oldBattle = battle;
+          const newBattle = { ...data.battle };
           
-          // create a new battle object to trigger Svelte's reactivity
-          battle = { ...data.battle };
+          // Check if there are new log entries
+          if (newBattle.interact_history && oldBattle?.interact_history) {
+            const oldLength = oldBattle.interact_history.length;
+            const newLength = newBattle.interact_history.length;
+            
+            if (newLength > oldLength) {
+              // New log entries added - auto-expand the latest
+              const newEntries = newBattle.interact_history.slice(oldLength);
+              
+              // Close all currently open agents and logs
+              openAgents = new Set();
+              openLogs = new Set();
+              closingAgents = new Set();
+              closingLogs = new Set();
+              
+              // Find the agent group for the latest entry
+              const latestEntry = newEntries[newEntries.length - 1];
+              const agentGroups = getChronologicalAgentGroups();
+                             const latestAgentGroup = agentGroups.find(group => 
+                 group.entries.some((entry: any) => 
+                   entry.timestamp === latestEntry.timestamp && 
+                   entry.message === latestEntry.message
+                 )
+               );
+              
+              if (latestAgentGroup) {
+                // Open the agent group for the latest entry
+                openAgents = new Set([latestAgentGroup.groupId]);
+                
+                // Open the specific log entry
+                const latestLogEntry = latestAgentGroup.entries[latestAgentGroup.entries.length - 1];
+                const logId = `${latestAgentGroup.groupId}-log${latestLogEntry.logNumber}`;
+                openLogs = new Set([logId]);
+                
+                // Auto-open message and detail sections for the new log
+                const messageSectionId = `${logId}-message`;
+                const detailSectionId = `${logId}-detail`;
+                openLogSections = new Set([messageSectionId, detailSectionId]);
+                
+                console.log('Auto-expanded agent:', latestAgentGroup.agent, 'and log:', logId);
+              }
+            }
+          }
+          
+          // Update battle data
+          battle = newBattle;
 
+          // Handle asciinema tabs for new entries
           if (battle?.interact_history && Array.isArray(battle.interact_history)) {
             battle.interact_history.forEach((entry: any, idx: number) => {
               if (entryActiveTabs[idx] === undefined) {
@@ -260,18 +547,6 @@
               const agentName = await fetchAgentName(opponent.agent_id);
               return `${agentName} (${opponent.name})`;
             })).then(names => opponentNames = names);
-          }
-          
-          // Auto-scroll if new interact history entries were added
-          const currentHistoryLength = battle?.interact_history?.length || 0;
-          if (currentHistoryLength > previousHistoryLength) {
-            scrollToBottom();
-          }
-          
-          // Also scroll when battle state changes (for loading indicator updates)
-          if (battle.state === 'finished' || battle.state === 'error') {
-            console.log('Battle finished, triggering scroll');
-            scrollToBottom();
           }
         }
       };
@@ -293,234 +568,566 @@
   });
   
   // Cleanup function
-  import { onDestroy } from 'svelte';
   onDestroy(() => {
     if (ws) {
       ws.close();
     }
   });
-  </script>
+</script>
+
+<style>
+  /* Custom animations for battle logs */
+  .fade-in {
+    animation: fadeIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
   
-  <main class="p-4 flex flex-col min-h-[60vh] max-w-xl mx-auto">
-    {#if loading}
-      <div class="text-gray-900">Loading...</div>
-    {:else if error}
-      <div class="text-red-500">{error}</div>
-    {:else if battle}
-      <div class="mb-8 space-y-2 border-b pb-4">
-        <h1 class="text-2xl font-bold text-gray-900">Battle #{battle.battle_id?.slice(0, 8)}</h1>
-        <div class="text-sm text-gray-600 break-all">ID: <span class="font-semibold">{battle.battle_id}</span></div>
-        <div class="text-sm text-gray-600">State: <span class="font-semibold">{battle.state}</span></div>
-        <div class="text-sm text-gray-600">Green Agent: <span class="font-semibold">{greenAgentName}</span></div>
-        <div class="text-sm text-gray-600">Opponents: <span class="font-semibold">{opponentNames.join(', ')}</span></div>
-        {#if battle.result && battle.state === 'finished'}
-          <div class="text-green-700">Winner: <span class="font-semibold">{battle.result.winner}</span></div>
-        {/if}
-        {#if battle.error && battle.state === 'error'}
-          <div class="text-red-700">Error: <span class="font-semibold">{battle.error}</span></div>
-        {/if}
-        
-        {#if canCancelBattle}
-          <div class="mt-3 pt-3 border-t">
-            <button 
-              on:click={cancelBattle}
-              class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 text-sm font-medium transition-colors"
-              title="Cancel this battle and end it with a draw result"
-            >
-              Cancel Battle
-            </button>
-          </div>
-        {/if}
-      </div>
-      <!-- Interact History -->
-      {#if battle.interact_history && battle.interact_history.length > 0}
-        <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
-          <h2 class="text-lg font-semibold text-gray-900 mb-2">Interact History</h2>
-          {#each battle.interact_history as entry, i (entry.timestamp + entry.message + i)}
-            <div class="border rounded-lg p-3 {getEntryBackgroundClass(entry.reported_by)}">
-              <div class="flex flex-row justify-between items-center mb-1">
-                <span class="text-xs text-gray-600">{new Date(entry.timestamp).toLocaleString()}</span>
-                <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{entry.reported_by}</span>
-                {#if entry.is_result}
-                  <span class="text-xs font-bold text-green-700 ml-2">Result</span>
-                {/if}
-              </div>
-              <div class="text-sm font-medium text-gray-900 mb-1">{entry.message}</div>
-              {#if entry.markdown_content}
-                <div class="markdown-content mt-2 bg-white p-3 rounded border text-sm">
-                  {@html renderMarkdown(entry.markdown_content)}
+  .fade-out {
+    animation: fadeOut 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+  
+  .log-entries {
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .log-content {
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  /* Quick fade animations for agent sections */
+  .agent-fade-in {
+    animation: fadeIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .agent-fade-out {
+    animation: fadeOut 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+</style>
+
+<main class="p-6 max-w-6xl mx-auto">
+  {#if loading}
+    <div class="flex items-center justify-center h-64">
+      <div class="text-lg text-gray-600">Loading...</div>
+    </div>
+  {:else if error}
+    <div class="flex items-center justify-center h-64">
+      <div class="text-lg text-red-500">Error: {error}</div>
+    </div>
+  {:else if battle}
+    <!-- Battle Title -->
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Battle {battle.battle_id}</h1>
+    </div>
+    <!-- Battle Details Section -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+          <AgentChip 
+            agent={getAgentChipData(battle.green_agent_id)}
+            agent_id={battle.green_agent_id}
+            clickable={true}
+          />
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-500">Status:</span>
+            <span class="px-3 py-1 rounded-full text-sm font-medium {battle.state === 'finished' ? 'bg-green-100 text-green-800' : battle.state === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+              {battle.state}
+            </span>
                 </div>
-              {/if}
-              {#if (entry.terminal_input && entry.terminal_output) || entry.asciinema_url}
-                <div class="mt-2 rounded-md border border-zinc-800 text-zinc-100 font-mono text-xs overflow-hidden" style="background-color: #121314;">
-                  <div class="flex items-center gap-2 px-3 py-1.5" style="background-color: #121314;">
-                    <div class="flex items-center gap-2 border-b border-zinc-800 pb-1.5 -mb-1.5">
-                      <span class="h-2 w-2 rounded-full bg-red-500"></span>
-                      <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
-                      <span class="h-2 w-2 rounded-full bg-green-500"></span>
-                      <span class="ml-2 text-[10px] text-zinc-400">Terminal</span>
-                    </div>
-                    
-                    <!-- Terminal-style tabs -->
-                    <div class="ml-4 flex flex-1 gap-px -mb-px">
-                      {#if entry.asciinema_url}
-                        <button 
-                          class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[i] === 'asciinema' ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
-                          style="{entryActiveTabs[i] === 'asciinema' ? 'background-color: #121314;' : ''}"
-                          on:click={() => entryActiveTabs[i] = 'asciinema'}
-                        >
-                          Live
-                        </button>
-                      {/if}
-                      <button 
-                        class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[i] === 'logs' || !entryActiveTabs[i] ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
-                        style="{entryActiveTabs[i] === 'logs' || !entryActiveTabs[i] ? 'background-color: #121314;' : ''}"
-                        on:click={() => entryActiveTabs[i] = 'logs'}
-                      >
-                        Logs
-                      </button>
-                      
-                    </div>
                   </div>
-                  <!-- Tab content -->
-                  {#if entryActiveTabs[i] === 'asciinema' && entry.asciinema_url}
-                    <div class="p-2">
-                      <AsciinemaPlayerView src={entry.asciinema_url} options={{ fit: 'width', autoplay: true, loop: false, speed: 0.3 }} />
+        {#if canCancelBattle}
+          <button 
+            onclick={cancelBattle}
+            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
+          >
+            Cancel Battle
+          </button>
+        {/if}
+              </div>
+
+      <!-- Opponents Section -->
+      {#if battle.opponents && battle.opponents.length > 0}
+        <div class="flex items-start gap-3">
+          <span class="text-sm font-medium text-gray-700 w-24 pt-1">Opponents:</span>
+          <div class="flex-1">
+            <Carousel.Root 
+              class="w-full"
+              opts={{
+                align: "start",
+                loop: true,
+                dragFree: true,
+              }}
+              plugins={[
+                Autoplay({
+                  delay: 6000,
+                }),
+              ]}
+            >
+              <Carousel.Content class="gap-2">
+            {#each battle.opponents as opponent, i}
+                  <Carousel.Item class="basis-auto">
+                    <div class="p-1">
+              <AgentChip 
+                        agent={getAgentChipData(opponent.agent_id)}
+                agent_id={opponent.agent_id}
+                clickable={true}
+              />
                     </div>
-                  {:else if entryActiveTabs[i] === 'logs' || (!entryActiveTabs[i] && !entry.asciinema_url)}
-                    {#if entry.terminal_input && entry.terminal_output}
-                      <pre class="px-3 py-2 whitespace-pre-wrap leading-relaxed max-h-100 overflow-y-auto"><span class="text-green-400">docker $ </span><span class="text-yellow-300 font-medium">{entry.terminal_input}</span>
-<span class="text-white">{entry.terminal_output}</span></pre>
-                    {/if}
+                  </Carousel.Item>
+            {/each}
+              </Carousel.Content>
+            </Carousel.Root>
+          </div>
+              </div>
+            {/if}
+    </div>
+
+    <!-- Big Card in the Middle -->
+    <Card.Root class="min-h-[500px] p-4">
+      <Card.Content class="h-full relative">
+        <div class="w-full h-[500px]">
+          <SvelteFlow {nodes} {edges} {nodeTypes} {edgeTypes} class="w-full h-full">
+            <Background />
+          </SvelteFlow>
+          </div>
+      </Card.Content>
+    </Card.Root>
+
+        <!-- Battle Logs - Minimalist Custom Design -->
+    {#if battle?.interact_history && battle.interact_history.length > 0}
+      {@const agentGroups = getChronologicalAgentGroups()}
+      <div class="mt-8">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold text-gray-900">Battle Logs</h2>
+          <a 
+            href="https://github.com/agentbeats/agentbeats" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center justify-center p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-300 hover:border-gray-400 rounded-md transition-colors"
+            title="Download from GitHub"
+          >
+            <DownloadIcon class="w-3.5 h-3.5" />
+          </a>
+        </div>
+        <div class="space-y-6 -ml-2">
+          {#each agentGroups as group}
+            <div class="group">
+              <!-- Agent Header -->
+              <div class="flex items-center gap-3 w-full p-2">
+                <button 
+                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                  onclick={() => {
+                    // Prevent multiple rapid clicks
+                    if (closingAgents.has(group.groupId)) return;
+                    
+                    const newOpenAgents = new Set(openAgents);
+                    const newClosingAgents = new Set(closingAgents);
+                    
+                    if (newOpenAgents.has(group.groupId)) {
+                      // Start closing animation
+                      newClosingAgents.add(group.groupId);
+                      closingAgents = newClosingAgents;
+                      
+                      // Remove from open after animation
+                      setTimeout(() => {
+                        const currentOpenAgents = new Set(openAgents);
+                        const currentClosingAgents = new Set(closingAgents);
+                        
+                        currentOpenAgents.delete(group.groupId);
+                        currentClosingAgents.delete(group.groupId);
+                        
+                        openAgents = currentOpenAgents;
+                        closingAgents = currentClosingAgents;
+                      }, 200);
+                    } else {
+                      // Open immediately
+                      newOpenAgents.add(group.groupId);
+                      openAgents = newOpenAgents;
+                    }
+                  }}
+                >
+                  {#if openAgents.has(group.groupId)}
+                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                  {:else}
+                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
                   {/if}
+                </button>
+                  <AgentChip 
+                  agent={getAgentChipData(group.agent)}
+                  agent_id={getAgentIdFromReportedBy(group.agent)}
+                    clickable={false}
+                  />
+                <span class="text-gray-500 text-sm">({group.entries.length})</span>
+                {#if group.entries.some((entry: any) => entry.is_result)}
+                  <span class="text-xs text-green-600">✓</span>
+                {/if}
+                <div class="flex-1"></div>
+                <span class="text-xs text-gray-400">
+                  {new Date(group.entries[0].timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              
+              <!-- Log Entries -->
+              {#if openAgents.has(group.groupId) || closingAgents.has(group.groupId)}
+                <div class="mt-2 space-y-1 log-entries {closingAgents.has(group.groupId) ? 'agent-fade-out' : 'agent-fade-in'}">
+                  {#each group.entries as entry}
+                    {@const logId = `${group.groupId}-log${(entry as any).logNumber}`}
+                    {@const messageSectionId = `${logId}-message`}
+                    {@const detailSectionId = `${logId}-detail`}
+                    {@const markdownSectionId = `${logId}-markdown`}
+                    {@const winnerSectionId = `${logId}-winner`}
+                    <div class="ml-8">
+                      <div class="flex items-center gap-2 w-full p-2">
+                                           <button 
+                          class="p-1 hover:bg-gray-100 rounded transition-colors"
+                    onclick={() => {
+                            // Prevent multiple rapid clicks
+                            if (closingLogs.has(logId)) return;
+                            
+                            const newOpenLogs = new Set(openLogs);
+                            const newClosingLogs = new Set(closingLogs);
+                            
+                            if (newOpenLogs.has(logId)) {
+                              // Start closing animation
+                              newClosingLogs.add(logId);
+                              closingLogs = newClosingLogs;
+                              
+                              // Remove from open after animation
+                              setTimeout(() => {
+                                const currentOpenLogs = new Set(openLogs);
+                                const currentClosingLogs = new Set(closingLogs);
+                                
+                                currentOpenLogs.delete(logId);
+                                currentClosingLogs.delete(logId);
+                                
+                                openLogs = currentOpenLogs;
+                                closingLogs = currentClosingLogs;
+                              }, 200);
+                      } else {
+                              // Open immediately
+                              newOpenLogs.add(logId);
+                              openLogs = newOpenLogs;
+                              
+                              // Auto-open message and detail sections for this log
+                              const messageSectionId = `${logId}-message`;
+                              const detailSectionId = `${logId}-detail`;
+                              const newOpenSections = new Set(openLogSections);
+                              newOpenSections.add(messageSectionId);
+                              newOpenSections.add(detailSectionId);
+                              openLogSections = newOpenSections;
+                              
+                              // Create edge between agents involved in this log
+                              const sourceAgentId = getAgentIdFromReportedBy(group.agent);
+                              let targetAgentId = null;
+                              
+                              // Try to find target agent from log data
+                              if (entry.detail?.target_agent) {
+                                targetAgentId = getAgentIdFromReportedBy(entry.detail.target_agent);
+                              } else if (entry.detail?.opponent) {
+                                targetAgentId = getAgentIdFromReportedBy(entry.detail.opponent);
+                              } else if (battle.green_agent_id && sourceAgentId !== battle.green_agent_id) {
+                                // If source is not green agent, connect to green agent
+                                targetAgentId = battle.green_agent_id;
+                              } else if (battle.opponents && battle.opponents.length > 0) {
+                                // If source is green agent, connect to first opponent
+                                targetAgentId = battle.opponents[0].agent_id;
+                              }
+                              
+                              if (targetAgentId && sourceAgentId !== targetAgentId) {
+                                createLogEdge(sourceAgentId, targetAgentId, entry);
+                              }
+                            }
+                          }}
+                        >
+                          {#if openLogs.has(logId)}
+                            <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                          {:else}
+                            <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                          {/if}
+                        </button>
+                        <span class="text-xs text-gray-500 font-mono min-w-[3ch]">#{entry.logNumber}</span>
+                        <span class="text-gray-700 text-sm flex-1 truncate">
+                          {entry.message.length > 60 ? entry.message.substring(0, 60) + '...' : entry.message}
+                        </span>
+                        <span class="text-xs text-gray-400">
+                          {new Date(entry.timestamp).toLocaleTimeString()}
+                        </span>
+                              {#if entry.is_result}
+                          <span class="text-xs text-green-600">✓</span>
+                              {/if}
+                      </div>
+                      
+                                            <!-- Log Content -->
+                      {#if openLogs.has(logId) || closingLogs.has(logId)}
+                        <div class="ml-8 mt-1 log-content {closingLogs.has(logId) ? 'fade-out' : 'fade-in'}">
+                          <!-- Message -->
+                          <div class="mb-2">
+                            <div class="flex items-center gap-2 w-full p-2">
+                              <button 
+                                class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                onclick={() => {
+                                  if (closingLogSections.has(messageSectionId)) return;
+                                  
+                                  const newOpenSections = new Set(openLogSections);
+                                  const newClosingSections = new Set(closingLogSections);
+                                  
+                                  if (newOpenSections.has(messageSectionId)) {
+                                    newClosingSections.add(messageSectionId);
+                                    closingLogSections = newClosingSections;
+                                    
+                                    setTimeout(() => {
+                                      const currentOpenSections = new Set(openLogSections);
+                                      const currentClosingSections = new Set(closingLogSections);
+                                      
+                                      currentOpenSections.delete(messageSectionId);
+                                      currentClosingSections.delete(messageSectionId);
+                                      
+                                      openLogSections = currentOpenSections;
+                                      closingLogSections = currentClosingSections;
+                                    }, 200);
+                                  } else {
+                                    newOpenSections.add(messageSectionId);
+                                    openLogSections = newOpenSections;
+                                  }
+                                }}
+                              >
+                                {#if openLogSections.has(messageSectionId)}
+                                  <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                {:else}
+                                  <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                {/if}
+                              </button>
+                              <span class="text-gray-700 text-sm flex-1 truncate">Message</span>
+                            </div>
+                            {#if openLogSections.has(messageSectionId) || closingLogSections.has(messageSectionId)}
+                              <div class="ml-8 mt-1 log-content {closingLogSections.has(messageSectionId) ? 'fade-out' : 'fade-in'}">
+                                <pre class="bg-gray-50 p-2 rounded text-xs overflow-x-auto">{entry.message}</pre>
+                              </div>
+                            {/if}
+                          </div>
+
+                          <!-- Detail -->
+                          {#if entry.detail}
+                            <div class="mb-2">
+                              <div class="flex items-center gap-2 w-full p-2">
+                                <button 
+                                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                  onclick={() => {
+                                    if (closingLogSections.has(detailSectionId)) return;
+                                    
+                                    const newOpenSections = new Set(openLogSections);
+                                    const newClosingSections = new Set(closingLogSections);
+                                    
+                                    if (newOpenSections.has(detailSectionId)) {
+                                      newClosingSections.add(detailSectionId);
+                                      closingLogSections = newClosingSections;
+                                      
+                                      setTimeout(() => {
+                                        const currentOpenSections = new Set(openLogSections);
+                                        const currentClosingSections = new Set(closingLogSections);
+                                        
+                                        currentOpenSections.delete(detailSectionId);
+                                        currentClosingSections.delete(detailSectionId);
+                                        
+                                        openLogSections = currentOpenSections;
+                                        closingLogSections = currentClosingSections;
+                                      }, 200);
+                                    } else {
+                                      newOpenSections.add(detailSectionId);
+                                      openLogSections = newOpenSections;
+                                    }
+                                  }}
+                                >
+                                  {#if openLogSections.has(detailSectionId)}
+                                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                  {:else}
+                                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                  {/if}
+                                </button>
+                                <span class="text-gray-700 text-sm flex-1 truncate">Detail</span>
+                              </div>
+                              {#if openLogSections.has(detailSectionId) || closingLogSections.has(detailSectionId)}
+                                <div class="ml-8 mt-1 log-content {closingLogSections.has(detailSectionId) ? 'fade-out' : 'fade-in'}">
+                                  <pre class="bg-gray-50 p-2 rounded text-xs overflow-x-auto">{JSON.stringify(entry.detail, null, 2)}</pre>
+                                </div>
+                              {/if}
+                            </div>
+                          {/if}
+
+                                                    <!-- Markdown Content -->
+                          {#if entry.markdown_content}
+                            <div class="mb-2">
+                              <div class="flex items-center gap-2 w-full p-2">
+                                <button 
+                                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                  onclick={() => {
+                                    if (closingLogSections.has(markdownSectionId)) return;
+                                    
+                                    const newOpenSections = new Set(openLogSections);
+                                    const newClosingSections = new Set(closingLogSections);
+                                    
+                                    if (newOpenSections.has(markdownSectionId)) {
+                                      newClosingSections.add(markdownSectionId);
+                                      closingLogSections = newClosingSections;
+                                      
+                                      setTimeout(() => {
+                                        const currentOpenSections = new Set(openLogSections);
+                                        const currentClosingSections = new Set(closingLogSections);
+                                        
+                                        currentOpenSections.delete(markdownSectionId);
+                                        currentClosingSections.delete(markdownSectionId);
+                                        
+                                        openLogSections = currentOpenSections;
+                                        closingLogSections = currentClosingSections;
+                                      }, 200);
+                                    } else {
+                                      newOpenSections.add(markdownSectionId);
+                                      openLogSections = newOpenSections;
+                                    }
+                                  }}
+                                >
+                                  {#if openLogSections.has(markdownSectionId)}
+                                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                  {:else}
+                                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                  {/if}
+                                </button>
+                                <span class="text-gray-700 text-sm flex-1 truncate">Markdown Content</span>
+                              </div>
+                              {#if openLogSections.has(markdownSectionId) || closingLogSections.has(markdownSectionId)}
+                                <div class="ml-8 mt-1 log-content {closingLogSections.has(markdownSectionId) ? 'fade-out' : 'fade-in'}">
+                                  <div class="text-sm prose prose-sm max-w-none bg-gray-50 p-2 rounded">
+                              {@html renderMarkdown(entry.markdown_content)}
+                                  </div>
+                                </div>
+                              {/if}
+                            </div>
+                          {/if}
+
+                          <!-- Winner (only for results) -->
+                          {#if entry.winner}
+                            <div class="mb-2">
+                              <div class="flex items-center gap-2 w-full p-2">
+                                <button 
+                                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                  onclick={() => {
+                                    if (closingLogSections.has(winnerSectionId)) return;
+                                    
+                                    const newOpenSections = new Set(openLogSections);
+                                    const newClosingSections = new Set(closingLogSections);
+                                    
+                                    if (newOpenSections.has(winnerSectionId)) {
+                                      newClosingSections.add(winnerSectionId);
+                                      closingLogSections = newClosingSections;
+                                      
+                                      setTimeout(() => {
+                                        const currentOpenSections = new Set(openLogSections);
+                                        const currentClosingSections = new Set(closingLogSections);
+                                        
+                                        currentOpenSections.delete(winnerSectionId);
+                                        currentClosingSections.delete(winnerSectionId);
+                                        
+                                        openLogSections = currentOpenSections;
+                                        closingLogSections = currentClosingSections;
+                                      }, 200);
+                                    } else {
+                                      newOpenSections.add(winnerSectionId);
+                                      openLogSections = newOpenSections;
+                                    }
+                                  }}
+                                >
+                                  {#if openLogSections.has(winnerSectionId)}
+                                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                  {:else}
+                                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                  {/if}
+                                </button>
+                                <span class="text-gray-700 text-sm flex-1 truncate">Winner</span>
+                              </div>
+                              {#if openLogSections.has(winnerSectionId) || closingLogSections.has(winnerSectionId)}
+                                <div class="ml-8 mt-1 log-content {closingLogSections.has(winnerSectionId) ? 'fade-out' : 'fade-in'}">
+                                  <span class="text-green-700 font-mono">🏆 {entry.winner}</span>
+                                </div>
+                              {/if}
+                            </div>
+                          {/if}
+                          
+                          <!-- Asciinema Terminal Output -->
+                          {#if (entry.terminal_input && entry.terminal_output) || entry.asciinema_url}
+                            <div class="mt-2 rounded-md border border-zinc-800 text-zinc-100 font-mono text-xs overflow-hidden" style="background-color: #121314;">
+                              <div class="flex items-center gap-2 px-3 py-1.5" style="background-color: #121314;">
+                                <div class="flex items-center gap-2 border-b border-zinc-800 pb-1.5 -mb-1.5">
+                                  <span class="h-2 w-2 rounded-full bg-red-500"></span>
+                                  <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
+                                  <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                                  <span class="ml-2 text-[10px] text-zinc-400">Terminal</span>
+                                </div>
+                                
+                                <!-- Terminal-style tabs -->
+                                <div class="ml-4 flex flex-1 gap-px -mb-px">
+                                  {#if entry.asciinema_url}
+                                    <button 
+                                      class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[entry.logNumber] === 'asciinema' ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
+                                      style="{entryActiveTabs[entry.logNumber] === 'asciinema' ? 'background-color: #121314;' : ''}"
+                                      onclick={() => entryActiveTabs[entry.logNumber] = 'asciinema'}
+                                    >
+                                      Live
+                                    </button>
+                                  {/if}
+                                  <button 
+                                    class="flex-1 py-1 text-[10px] border-t border-l border-r {entryActiveTabs[entry.logNumber] === 'logs' || !entryActiveTabs[entry.logNumber] ? 'text-zinc-200 border-zinc-400 font-medium rounded-t-sm' : 'text-zinc-400 border-transparent hover:text-zinc-300'}"
+                                    style="{entryActiveTabs[entry.logNumber] === 'logs' || !entryActiveTabs[entry.logNumber] ? 'background-color: #121314;' : ''}"
+                                    onclick={() => entryActiveTabs[entry.logNumber] = 'logs'}
+                                  >
+                                    Logs
+                                  </button>
+                                </div>
+                              </div>
+                              <!-- Tab content -->
+                              {#if entryActiveTabs[entry.logNumber] === 'asciinema' && entry.asciinema_url}
+                                <div class="p-2">
+                                  <AsciinemaPlayerView src={entry.asciinema_url} options={{ fit: 'width', autoplay: true, loop: false, speed: 0.3 }} />
+                                </div>
+                              {:else if entryActiveTabs[entry.logNumber] === 'logs' || (!entryActiveTabs[entry.logNumber] && !entry.asciinema_url)}
+                                {#if entry.terminal_input && entry.terminal_output}
+                                  <pre class="px-3 py-2 whitespace-pre-wrap leading-relaxed max-h-100 overflow-y-auto"><span class="text-green-400">docker $ </span><span class="text-yellow-300 font-medium">{entry.terminal_input}</span>
+<span class="text-white">{entry.terminal_output}</span></pre>
+                                {/if}
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      {/if}
+                    </div>
+                  {/each}
                 </div>
-              {/if}
-              {#if entry.detail}
-                <pre class="text-xs bg-muted p-2 rounded overflow-x-auto mt-1">{JSON.stringify(entry.detail, null, 2)}</pre>
-              {/if}
-              {#if entry.winner}
-                <div class="text-xs text-green-700 mt-1">Winner: <span class="font-mono">{entry.winner}</span></div>
               {/if}
             </div>
           {/each}
-          
-          <!-- Loading indicator for battles in progress -->
-          {#if battleInProgress}
-            <div class="border rounded-lg p-4 bg-purple-50 border-purple-200 flex items-center justify-center space-x-3">
-              <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-              <span class="text-sm text-purple-700 font-medium">Battle in progress...</span>
-            </div>
-          {/if}
         </div>
-      {:else if battle && battleInProgress}
-        <!-- Show loading if no history yet but battle is starting -->
-        <div class="flex flex-col gap-3 mt-6" bind:this={interactHistoryContainer}>
-          <h2 class="text-lg font-semibold mb-2">Interact History</h2>
-          <div class="border rounded-lg p-4 bg-purple-50 border-purple-200 flex items-center justify-center space-x-3">
-            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-            <span class="text-sm text-purple-700 font-medium">Waiting for battle to start...</span>
-          </div>
-        </div>
-      {/if}
+      </div>
     {/if}
-  </main>
-  
-  <style>
-    :global(.markdown-content h1) {
-      font-size: 1.125rem;
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      margin-top: 1rem;
-    }
-    
-    :global(.markdown-content h2) {
-      font-size: 1rem;
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      margin-top: 0.75rem;
-    }
-    
-    :global(.markdown-content h3) {
-      font-size: 0.875rem;
-      font-weight: bold;
-      margin-bottom: 0.25rem;
-      margin-top: 0.5rem;
-    }
-    
-    :global(.markdown-content p) {
-      margin-bottom: 0.5rem;
-      line-height: 1.625;
-    }
-    
-    :global(.markdown-content ul, .markdown-content ol) {
-      margin-left: 1rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    :global(.markdown-content li) {
-      margin-bottom: 0.25rem;
-    }
-    
-    :global(.markdown-content code) {
-      background-color: #f3f4f6;
-      padding: 0.125rem 0.25rem;
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-    
-    :global(.markdown-content pre) {
-      background-color: #f3f4f6;
-      padding: 0.5rem;
-      border-radius: 0.25rem;
-      overflow-x: auto;
-      margin-bottom: 0.5rem;
-    }
-    
-    :global(.markdown-content pre code) {
-      background-color: transparent;
-      padding: 0;
-    }
-    
-    :global(.markdown-content blockquote) {
-      border-left: 4px solid #d1d5db;
-      padding-left: 1rem;
-      font-style: italic;
-      margin-bottom: 0.5rem;
-    }
-    
-    :global(.markdown-content img) {
-      max-width: 100%;
-      height: auto;
-      border-radius: 0.25rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-      margin-bottom: 0.5rem;
-    }
-    
-    :global(.markdown-content a) {
-      color: #2563eb;
-      text-decoration: none;
-    }
-    
-    :global(.markdown-content a:hover) {
-      text-decoration: underline;
-    }
-    
-    :global(.markdown-content table) {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid #d1d5db;
-      margin-bottom: 0.5rem;
-    }
-    
-    :global(.markdown-content th, .markdown-content td) {
-      border: 1px solid #d1d5db;
-      padding: 0.25rem 0.5rem;
-      text-align: left;
-    }
-    
-    :global(.markdown-content th) {
-      background-color: #f3f4f6;
-      font-weight: bold;
-    }
-  </style> 
+  {/if}
+</main>

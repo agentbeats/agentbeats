@@ -141,11 +141,10 @@
     </div>
 
     <!-- Example Battles Carousel -->
-    <!-- Temporarily commented out
     <Card class="mb-6">
       <CardHeader>
         <CardTitle>Example Battles</CardTitle>
-        <CardDescription>Pre-configured battle scenarios for demonstration</CardDescription>
+        <CardDescription>Finished battle scenarios for demonstration</CardDescription>
       </CardHeader>
       <CardContent>
         {#if exampleBattlesLoading}
@@ -191,7 +190,6 @@
         {/if}
       </CardContent>
     </Card>
-    -->
 
     <!-- Two Cards Layout -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
