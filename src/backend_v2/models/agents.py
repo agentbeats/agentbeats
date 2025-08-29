@@ -25,12 +25,11 @@ class AgentBase(BaseModel):
     is_green: bool = Field(..., description="Whether this is a green agent (judge/coordinator)")
     battle_description: Optional[str] = Field(None, description="Battle description for selection UI")
     participant_requirements: Optional[List[ParticipantRequirement]] = Field(None, description="Participant requirements")
+    battle_timeout: Optional[int] = Field(None, description="Battle timeout in seconds")
 
 
 class AgentCreateRequest(AgentBase):
     """Request model for creating a new agent"""
-
-    user_id: str = Field(..., description="Owner user ID")
 
     # Will use is_hosted field to determine if this is a hosted agent
     # Which is inherited from AgentBase
@@ -51,6 +50,7 @@ class AgentResponse(AgentBase):
     agent_card_status: AgentCardStatus = Field(..., description="Current status of the agent card")
     agent_card: Optional[Dict[str, Any]] = Field(None, description="Agent card data (JSON)")
     created_at: datetime = Field(..., description="Creation timestamp")
+    live: Optional[bool] = Field(None, description="Whether the agent is currently live/reachable")
 
 
 class AgentListResponse(BaseModel):
@@ -65,4 +65,10 @@ class AgentDeleteResponse(BaseModel):
     is_hosted: bool = Field(..., description="Whether this was a hosted agent")
     instances_deleted: int = Field(..., description="Number of instances deleted")
     docker_stopping: bool = Field(False, description="Whether Docker containers are being stopped in background")
-    
+
+
+class AgentCardAnalysisResponse(BaseModel):
+    """Response model for agent card analysis"""
+    is_green: bool = Field(..., description="Whether the agent is a hosted agent")
+    battle_timeout: Optional[int] = Field(..., description="Battle timeout in seconds")
+    participant_requirements: Optional[List[ParticipantRequirement]] = Field(None, description="Participant requirements")

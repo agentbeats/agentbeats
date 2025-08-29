@@ -25,7 +25,7 @@ class ParticipantRequirement(BaseModel):
     """Model for participant requirements"""
     name: str = Field(..., description="Name of the requirement")
     required: bool = Field(True, description="Whether the requirement is mandatory")
-
+    role: str = Field(..., description="Role of the participant (e.g., 'red', 'blue')")
 
 class Participant(BaseModel):
     """Model for battle participants"""

@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter, HTTPException, Path, Query, status, Depends
 from typing import Optional, Dict, Any
-
 from ..db import agent_repo, instance_repo
 from ..utils.auth import *
 from agentbeats.utils.agents import get_agent_card
-from ..utils.agent_utils import check_launcher_status
+from ..models.agents import AgentCardAnalysisResponse
+from ..utils.agent_utils import check_launcher_status, analyze_agent_card
 
 router = APIRouter()
 
@@ -99,4 +99,21 @@ async def services_check_launcher_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error checking launcher status: {str(e)}",
+        )
+
+
+@router.post(
+    "/services/agent_card_analysis", tags=["Services"], status_code=status.HTTP_200_OK
+)
+async def services_analyze_agent_card(
+    agent_card: Dict[str, Any],
+) -> AgentCardAnalysisResponse:
+    """Analyze an agent card to detect if the agent is a hosted agent. And parse the participant requirements and battle timeout etc."""
+    try:
+        analysis = await analyze_agent_card(agent_card)
+        return AgentCardAnalysisResponse(**analysis)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing agent card: {str(e)}",
         )

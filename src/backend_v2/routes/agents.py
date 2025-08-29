@@ -163,7 +163,7 @@ async def register_agent(
 @router.get("/agents", response_model=AgentListResponse, tags=["Agents"], status_code=status.HTTP_200_OK)
 async def list_all_agents(
     scope: str = Query("all", description="Agent visibility scope: 'mine' for user agents only, 'all' for user + public + dev agents"),
-    is_green: bool = Query(False, description="Filter by green agent status"),
+    is_green: Optional[bool] = Query(None, description="Filter by green agent status. If not provided, returns all agents regardless of green status"),
     check_liveness: bool = Query(False, description="Check agent liveness status"),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
