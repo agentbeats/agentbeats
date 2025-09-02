@@ -35,7 +35,7 @@ onMount(() => {
         recalcBattles();
       }
       if (msg && msg.type === "battle_update" && msg.battle) {
-        const idx = battles.findIndex(b => b.id === msg.battle.id);
+        const idx = battles.findIndex(b => b.battle_id === msg.battle.battle_id);
         if (idx !== -1) {
           battles[idx] = msg.battle;
         } else {
@@ -53,9 +53,9 @@ onMount(() => {
 <div class="flex flex-1 flex-col items-center justify-center min-h-[80vh]">
   <div class="w-full max-w-5xl flex flex-col items-center">
     <div class="grid grid-cols-1 gap-4 px-4 lg:px-6 w-full">
-      {#each ongoingBattles as battle (battle.id)}
-        <button type="button" class="cursor-pointer" on:click={() => goto(`/battle/${battle.id}`)} transition:fade={{ duration: 220 }}>
-          <BattleCard battleId={battle.id} />
+              {#each ongoingBattles as battle (battle.battle_id)}
+        <button type="button" class="cursor-pointer" on:click={() => goto(`/battles/${battle.battle_id}`)} transition:fade={{ duration: 220 }}>
+          <BattleCard battleId={battle.battle_id} />
         </button>
       {/each}
     </div>

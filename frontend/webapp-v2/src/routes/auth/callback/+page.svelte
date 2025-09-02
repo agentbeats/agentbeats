@@ -14,11 +14,13 @@
 		const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
 			console.log('Auth callback - Auth state changed:', event, session?.user?.email);
 			
-			if (event === 'SIGNED_IN' && session) {
-				console.log('Auth callback - User signed in successfully, redirecting to dashboard');
-				loading = false;
-				goto('/dashboard');
-			} else if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
+					if (event === 'SIGNED_IN' && session) {
+			console.log('Auth callback - User signed in successfully, redirecting to intended destination');
+			loading = false;
+			// Redirect to intended destination or dashboard as fallback
+			const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+			goto(redirectTo);
+		} else if (event === 'SIGNED_OUT' || (!session && event !== 'INITIAL_SESSION')) {
 				console.log('Auth callback - No valid session, redirecting to login');
 				loading = false;
 				goto('/login');
@@ -40,9 +42,11 @@
 
 				console.log('Auth callback - Fallback session data:', data);
 				if (data.session) {
-					console.log('Auth callback - Fallback: Successfully authenticated, redirecting to dashboard');
+					console.log('Auth callback - Fallback: Successfully authenticated, redirecting to intended destination');
 					loading = false;
-					goto('/dashboard');
+					// Redirect to intended destination or dashboard as fallback
+					const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+					goto(redirectTo);
 				} else {
 					console.log('Auth callback - Fallback: No session found, redirecting to login');
 					loading = false;

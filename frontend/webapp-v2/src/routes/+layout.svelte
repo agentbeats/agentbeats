@@ -46,14 +46,17 @@
 					goto('/login');
 				}
 			} else if (currentPath === '/login' && ($user || isDevMode)) {
-				// If user is authenticated (or dev mode) and on login page, redirect to dashboard
-				console.log('User authenticated (or dev mode), redirecting to dashboard');
+				// If user is authenticated (or dev mode) and on login page, redirect to intended destination
+				console.log('User authenticated (or dev mode), redirecting to intended destination');
 				try {
-					await goto('/dashboard');
+					// Redirect to intended destination or dashboard as fallback
+					const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+					await goto(redirectTo);
 					console.log('goto completed successfully');
 				} catch (error) {
 					console.error('goto failed, using window.location:', error);
-					window.location.href = '/dashboard';
+					const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+					window.location.href = redirectTo;
 				}
 			}
 		});
