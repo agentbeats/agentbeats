@@ -22,8 +22,10 @@
 			// Check if user is already authenticated
 			user.subscribe(currentUser => {
 				if (currentUser) {
-					console.log('Dev mode: User already authenticated, redirecting to dashboard');
-					goto('/dashboard');
+					console.log('Dev mode: User already authenticated, redirecting to intended destination');
+					// Redirect to intended destination or dashboard as fallback
+					const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+					goto(redirectTo);
 				}
 			});
 		}
@@ -49,8 +51,10 @@
 		try {
 			// In dev mode, we don't need to actually call supabase
 			// The mock client will handle this, or we can set user directly
-			console.log("Dev login successful - redirecting to dashboard");
-			goto('/dashboard');
+			console.log("Dev login successful - redirecting to intended destination");
+			// Redirect to intended destination or dashboard as fallback
+			const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
+			goto(redirectTo);
 			
 		} catch (err) {
 			console.error("Dev login error:", err);
