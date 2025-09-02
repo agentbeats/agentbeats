@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.2.5 (2025-09-02)
+
+### Bug Fixes
+
+- Change to server side routing instead of client-side
+  ([`0c98c77`](https://github.com/agentbeats/agentbeats/commit/0c98c775912f642a0b9cc2e8a051d4d3fc24ead8))
+
+- Fix url routing error
+  ([`11003dc`](https://github.com/agentbeats/agentbeats/commit/11003dc77a783eb8bde042c6995fd962df855bd1))
+
+- Remove auth req for GET role matches
+  ([`dec4aad`](https://github.com/agentbeats/agentbeats/commit/dec4aada7b5345c6062e67a1412c0e7e5db1c1e1))
+
+
 ## v1.2.4 (2025-08-13)
 
 ### Bug Fixes
