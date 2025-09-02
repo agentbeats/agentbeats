@@ -35,15 +35,19 @@ async def get_matches_for_green_agent(
     green_agent_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
-    """Get all role matches for a specific green agent."""
+    """Get all role matches for a specific green agent.
+    
+    Note: All authenticated users can view matches for any agent.
+    This enables battle creation by allowing users to see compatible agents.
+    """
     try:
-        # Verify green agent exists and user has access
+        # Verify green agent exists
         green_agent = db.read("agents", green_agent_id)
         if not green_agent:
             raise HTTPException(status_code=404, detail="Green agent not found")
         
-        if green_agent.get("user_id") != current_user["id"]:
-            raise HTTPException(status_code=403, detail="Not authorized")
+        # REMOVED: Ownership check - all authenticated users can view matches
+        # This enables cross-user battle creation by showing compatible agents
         
         # Get all matches for this green agent
         matches = match_storage.get_matches_for_green_agent(green_agent_id)
@@ -74,15 +78,19 @@ async def get_matches_for_agent(
     agent_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """Get all matches where an agent appears (either as green or other)."""
+    """Get all matches where an agent appears (either as green or other).
+    
+    Note: All authenticated users can view matches for any agent.
+    This enables battle creation by allowing users to see compatible agents.
+    """
     try:
-        # Verify agent exists and user has access
+        # Verify agent exists
         agent = db.read("agents", agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent not found")
         
-        if agent.get("user_id") != current_user["id"]:
-            raise HTTPException(status_code=403, detail="Not authorized")
+        # REMOVED: Ownership check - all authenticated users can view matches
+        # This enables cross-user battle creation by showing compatible agents
         
         return match_storage.get_matches_for_agent(agent_id)
         
@@ -95,7 +103,11 @@ async def get_matches_by_role(
     min_confidence: float = 0.0,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:
-    """Get all matches for a specific role."""
+    """Get all matches for a specific role.
+    
+    Note: This endpoint is already public for all authenticated users.
+    It shows role-based compatibility across all agents.
+    """
     try:
         matches = match_storage.get_matches_by_role(role_name, min_confidence)
         
@@ -235,7 +247,11 @@ async def delete_matches_for_agent(
     agent_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    """Delete all matches involving a specific agent."""
+    """Delete all matches involving a specific agent.
+    
+    Note: This operation requires ownership of the agent.
+    Only the agent owner can delete their matches.
+    """
     try:
         # Verify agent exists and user has access
         agent = db.read("agents", agent_id)
