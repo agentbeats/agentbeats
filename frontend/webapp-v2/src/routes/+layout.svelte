@@ -29,27 +29,17 @@
 		// Check if we're in dev mode
 		const isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
 		
-		// Subscribe to auth state changes
+		// Subscribe to auth state changes - ONLY for UI state, not navigation
 		unsubscribe = user.subscribe(async ($user) => {
-			// Check if we're on a public page that doesn't require auth
-			const publicPages = ['/', '/login', '/auth/callback', '/about'];
 			const currentPath = window.location.pathname;
-			const isDocsPage = currentPath.startsWith('/docs');
 			
-			console.log('Layout auth check:', { user: $user?.email, loading: $loading, currentPath, isDevMode });
+			console.log('Layout auth state update:', { user: $user?.email, loading: $loading, currentPath, isDevMode });
 			
-			if (!publicPages.includes(currentPath) && !isDocsPage) {
-				// If user is not authenticated and not on a public page or docs page, redirect to login
-				// Skip in dev mode
-				if (!isDevMode && !$user && !$loading) {
-					console.log('User not authenticated, redirecting to login');
-					goto('/login');
-				}
-			} else if (currentPath === '/login' && ($user || isDevMode)) {
-				// If user is authenticated (or dev mode) and on login page, redirect to intended destination
-				console.log('User authenticated (or dev mode), redirecting to intended destination');
+			// Only handle redirects from login page when user is already authenticated
+			// Let server-side guards handle all other authentication redirects
+			if (currentPath === '/login' && ($user || isDevMode)) {
+				console.log('User authenticated (or dev mode) on login page, redirecting to intended destination');
 				try {
-					// Redirect to intended destination or dashboard as fallback
 					const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '/dashboard';
 					await goto(redirectTo);
 					console.log('goto completed successfully');
@@ -61,7 +51,7 @@
 			}
 		});
 
-		// Check for existing session on mount (skip in dev mode)
+		// Only check session for logging purposes, not for navigation
 		if (!isDevMode) {
 			const checkSession = async () => {
 				try {
