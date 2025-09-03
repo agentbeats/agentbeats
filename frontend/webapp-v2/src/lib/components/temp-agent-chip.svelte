@@ -6,7 +6,7 @@
   // Determine color based on agent name or if it's a system log
   function getColor(name: string, isSystem: boolean): { bg: string; text: string } {
     if (isSystem) {
-      return { bg: 'bg-gray-100', text: 'text-gray-700' };
+      return { bg: 'bg-muted', text: 'text-muted-foreground' };
     }
     
     // Simple hash function to get consistent colors

@@ -14,7 +14,7 @@
   };
 
   const colorClasses = {
-    gray: 'border-gray-900',
+    gray: 'border-muted-foreground',
     blue: 'border-blue-600',
     purple: 'border-purple-600',
     primary: 'border-primary'

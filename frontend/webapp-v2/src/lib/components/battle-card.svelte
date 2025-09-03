@@ -86,7 +86,7 @@
       case 'pending':
         return 'bg-blue-100 text-blue-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   }
 
@@ -122,12 +122,12 @@
   }
 </script>
 
-<div class="bg-white border rounded-lg p-4 w-full shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:bg-gray-50" onclick={handleCardClick} onkeydown={handleKeyDown} tabindex="0" role="button" aria-label="View battle details">
+<div class="bg-card border rounded-lg p-4 w-full shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:bg-muted" onclick={handleCardClick} onkeydown={handleKeyDown} tabindex="0" role="button" aria-label="View battle details">
   <div class="flex flex-col h-full space-y-3 text-center">
     <!-- Green Agent as Title -->
     {#if loading}
       <div class="flex items-center justify-center py-2">
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-muted-foreground"></div>
       </div>
     {:else if greenAgent}
       <div class="space-y-2">
@@ -170,7 +170,7 @@
 
     <!-- Time Since Start -->
     {#if battle.created_at}
-      <div class="text-xs text-gray-500 mt-auto">
+      <div class="text-xs text-muted-foreground mt-auto">
         Started {formatTimeSince(battle.created_at)}
       </div>
     {/if}
