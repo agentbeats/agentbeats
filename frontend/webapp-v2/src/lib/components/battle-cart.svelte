@@ -301,7 +301,7 @@
   >
     <SwordsIcon class="w-8 h-8" />
     {#if cartCount > 0}
-      <div class="absolute -top-1 -right-1 bg-white text-black text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border border-gray-300">
+      <div class="absolute -top-1 -right-1 bg-background text-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border border-border">
         {cartCount}
       </div>
     {/if}
@@ -310,173 +310,135 @@
   <!-- Cart Popup -->
   {#if isOpen}
     <div 
-      class="absolute bottom-20 right-0 w-[500px] h-[700px] bg-white border border-gray-200 rounded-lg shadow-xl flex flex-col"
+      class="absolute bottom-20 right-0 w-[500px] h-[700px] bg-background border border-border rounded-lg shadow-xl flex flex-col"
       transition:fly={{ y: 10, duration: 200 }}
     >
       <!-- Header -->
-      <div class="flex items-center justify-between p-4 border-b flex-shrink-0">
+      <div class="flex items-center justify-between p-4 border-b border-border">
         <h3 class="text-lg font-semibold">Battle Cart</h3>
-        <Button
+        <button 
           onclick={toggleCart}
-          variant="ghost"
-          size="sm"
-          class="h-6 w-6 p-0"
+          class="text-muted-foreground hover:text-foreground transition-colors"
         >
-          <XIcon class="w-4 h-4" />
-        </Button>
+          <XIcon class="h-5 w-5" />
+        </button>
       </div>
 
-      <!-- Scrollable Content -->
-      <div class="flex-1 overflow-y-auto p-4">
-        {#if cartItems.length === 0}
-          <div class="text-center py-8 text-muted-foreground">
-            <SwordsIcon class="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p class="text-sm">Your battle cart is empty</p>
-            <p class="text-xs">Add agents to start a battle</p>
-          </div>
-        {:else}
-          <!-- Green Agent Section -->
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        <!-- Green Agent Section -->
+        <div class="bg-muted border-2 border-border rounded-lg p-4">
+          <h4 class="text-sm font-medium mb-2">Green Agent (Coordinator)</h4>
           {#if greenAgent}
-            <div class="mb-6">
-              <h3 class="text-lg font-semibold mb-3">Green Agent (Coordinator)</h3>
-              <div class="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
-                <AgentChip
-                  agent={{
-                    identifier: greenAgent.agent.register_info?.alias || greenAgent.agent.agent_card?.name || 'Unknown Agent',
-                    avatar_url: greenAgent.agent.register_info?.avatar_url,
-                    description: greenAgent.agent.agent_card?.description
-                  }}
-                  agent_id={greenAgent.agent.agent_id || greenAgent.agent.id}
-                  isOnline={greenAgent.agent.live || false}
-                  isLoading={greenAgent.agent.livenessLoading || false}
-                />
-                
-                <!-- Participant Requirements -->
-                <div class="mt-4">
-                  <h4 class="text-sm font-medium text-gray-700 mb-2">
-                    Participant Requirements ({participantRequirements.length})
-                  </h4>
-                  {#if participantRequirements.length > 0}
-                    <div class="space-y-2">
-                      {#each participantRequirements as requirement, index}
-                        <div 
-                          class="h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 transition-all duration-200 {participantSlots[index] ? 'border-gray-400 bg-gray-100' : 'hover:border-gray-400'} {draggedOverSlot === index && draggedAgent !== null ? 'border-blue-400 bg-blue-50' : ''}"
-                          ondragover={(e) => handleParticipantDragOver(e, index)}
-                          ondrop={(e) => handleParticipantDrop(e, index)}
-                          ondragleave={handleParticipantDragLeave}
-                        >
-                          {#if participantSlots[index]}
-                            <div class="flex items-center space-x-2">
-                              <div class="pointer-events-none">
-                                <AgentChip
-                                  agent={{
-                                    identifier: participantSlots[index]!.agent.register_info?.alias || participantSlots[index]!.agent.agent_card?.name || 'Unknown Agent',
-                                    avatar_url: participantSlots[index]!.agent.register_info?.avatar_url,
-                                    description: participantSlots[index]!.agent.agent_card?.description
-                                  }}
-                                  agent_id={participantSlots[index]!.agent.agent_id || participantSlots[index]!.agent.id}
-                                  isOnline={participantSlots[index]!.agent.live || false}
-                                  isLoading={participantSlots[index]!.agent.livenessLoading || false}
-                                />
-                              </div>
-                                                              <Button
-                                  onclick={(e) => {
-                                    e.stopPropagation();
-                                    removeParticipant(index);
-                                  }}
-                                  variant="ghost"
-                                  size="sm"
-                                  class="h-6 w-6 p-0"
-                                >
-                                  <XIcon class="w-3 h-3" />
-                                </Button>
-                            </div>
-                          {:else}
-                            <div class="text-center">
-                              <span class="text-xs text-gray-500 block">Drop opponent here</span>
-                              <span class="text-xs text-gray-400 block">{requirement.role || 'Participant'}</span>
-                            </div>
-                          {/if}
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="text-center py-4 text-gray-500">
-                      <span class="text-sm">No participant requirements defined</span>
-                    </div>
-                  {/if}
-                </div>
-              </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">{greenAgent.agent.register_info?.alias || greenAgent.agent.agent_card?.name || 'Unknown Agent'}</span>
+              <button 
+                onclick={() => removeFromCart(cartItems.findIndex(item => item.agent.agent_id === greenAgent.agent.agent_id || item.agent.id === greenAgent.agent.id))}
+                class="text-destructive hover:text-destructive/80 text-sm"
+              >
+                Remove
+              </button>
+            </div>
+          {:else}
+            <div 
+              class="h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted transition-all duration-200 {participantSlots[0] ? 'border-muted-foreground bg-muted/50' : 'hover:border-muted-foreground'} {draggedOverSlot === 0 && draggedAgent !== null ? 'border-primary bg-primary/10' : ''}"
+              onclick={() => handleParticipantDrop(new DragEvent('dragover'), 0)}
+              onmouseenter={() => handleParticipantDragOver(new DragEvent('dragover'), 0)}
+              onmouseleave={() => handleParticipantDragLeave()}
+              ondragover={(e) => e.preventDefault()}
+              ondrop={(e) => handleParticipantDrop(e, 0)}
+            >
+              <span class="text-xs text-muted-foreground block">Drop green agent here</span>
             </div>
           {/if}
+        </div>
 
-          <!-- Available Opponents -->
-          {#if opponentAgents.length > 0}
-            <div class="flex-1 min-h-0">
-              <h3 class="text-sm font-medium text-gray-700 mb-2">Available Opponents</h3>
-              <ScrollArea class="h-full">
-                <div class="space-y-2 pr-4">
-                  {#each opponentAgents as item, index}
-                    <div 
-                      class="flex items-center justify-between p-2 border rounded-lg bg-gray-50 transition-all duration-200 cursor-grab active:cursor-grabbing {draggedAgent && (draggedAgent.agent.agent_id === item.agent.agent_id || draggedAgent.agent.id === item.agent.id) ? 'opacity-50 scale-95' : ''}"
-                      draggable="true"
-                      ondragstart={(e) => handleDragStart(e, item.agent)}
-                      ondragend={handleDragEnd}
-                    >
-                      <div class="flex-1">
-                        <AgentChip
-                          agent={{
-                            identifier: item.agent.register_info?.alias || item.agent.agent_card?.name || 'Unknown Agent',
-                            avatar_url: item.agent.register_info?.avatar_url,
-                            description: item.agent.agent_card?.description
-                          }}
-                          agent_id={item.agent.agent_id || item.agent.id}
-                          isOnline={item.agent.live || false}
-                          isLoading={item.agent.livenessLoading || false}
-                        />
-                      </div>
-                                              <Button
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            removeFromCart(index);
-                          }}
-                          variant="ghost"
-                          size="sm"
-                          class="h-6 w-6 p-0 ml-2"
-                        >
-                          <XIcon class="w-3 h-3" />
-                        </Button>
-                    </div>
-                  {/each}
+        <!-- Opponent Slots -->
+        {#each participantSlots as slot, index}
+          {#if index > 0}
+            <div class="bg-muted border-2 border-border rounded-lg p-4">
+              <h4 class="text-sm font-medium mb-2">Opponent {index}</h4>
+              {#if slot}
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">{slot.agent.register_info?.alias || slot.agent.agent_card?.name || 'Unknown Agent'}</span>
+                  <button 
+                    onclick={() => removeParticipant(index)}
+                    class="text-destructive hover:text-destructive/80 text-sm"
+                  >
+                    Remove
+                  </button>
                 </div>
-              </ScrollArea>
+              {:else}
+                <div 
+                  class="h-20 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted transition-all duration-200 {participantSlots[index] ? 'border-muted-foreground bg-muted/50' : 'hover:border-muted-foreground'} {draggedOverSlot === index && draggedAgent !== null ? 'border-primary bg-primary/10' : ''}"
+                  onclick={() => handleParticipantDrop(new DragEvent('dragover'), index)}
+                  onmouseenter={() => handleParticipantDragOver(new DragEvent('dragover'), index)}
+                  onmouseleave={() => handleParticipantDragLeave()}
+                  ondragover={(e) => e.preventDefault()}
+                  ondrop={(e) => handleParticipantDrop(e, index)}
+                >
+                  <span class="text-xs text-muted-foreground block">Drop opponent here</span>
+                  <span class="text-xs text-muted-foreground/70 block">{participantRequirements[index]?.role || 'Participant'}</span>
+                </div>
+              {/if}
             </div>
           {/if}
+        {/each}
+
+        <!-- No Items Message -->
+        {#if cartItems.length === 0 && participantSlots.filter(slot => slot).length === 0}
+          <div class="text-center py-4 text-muted-foreground">
+            <p>No agents in cart. Drag agents here to start building your battle.</p>
+          </div>
         {/if}
       </div>
 
-      <!-- Fixed Buttons at Bottom -->
-      {#if cartItems.length > 0}
-        <div class="p-4 border-t bg-white flex-shrink-0">
-          <div class="flex gap-2">
-            <Button
-              onclick={clearCart}
-              class="btn-primary flex-1"
-              size="sm"
+      <!-- Available Opponents Section -->
+      <div class="border-t border-border p-4">
+        <h3 class="text-sm font-medium mb-2">Available Opponents</h3>
+        <div class="space-y-2 max-h-32 overflow-y-auto">
+          {#each opponentAgents as item, index}
+            <div 
+              class="flex items-center justify-between p-2 border rounded-lg bg-muted transition-all duration-200 cursor-grab active:cursor-grabbing {draggedAgent && (draggedAgent.agent.agent_id === item.agent.agent_id || draggedAgent.agent.id === item.agent.id) ? 'opacity-50' : 'hover:bg-muted/80'}"
+              draggable="true"
+              ondragstart={(e) => handleDragStart(e, item.agent)}
+              ondragend={() => handleDragEnd()}
             >
-              Clear Cart
-            </Button>
-            <Button
-              onclick={goToBattle}
-              class="btn-primary flex-1"
-              size="sm"
-              disabled={!greenAgent || participantSlots.filter(slot => slot).length === 0}
-            >
-              Start Battle
-            </Button>
-          </div>
+              <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <span class="text-sm">{item.agent.register_info?.alias || item.agent.agent_card?.name || 'Unknown Agent'}</span>
+              </div>
+              <button 
+                onclick={() => removeFromCart(index)}
+                class="text-primary hover:text-primary/80 text-sm"
+              >
+                Add
+              </button>
+            </div>
+          {/each}
         </div>
-      {/if}
+      </div>
+
+      <!-- Footer -->
+      <div class="p-4 border-t bg-background flex-shrink-0">
+        <div class="flex gap-2">
+          <Button
+            onclick={clearCart}
+            class="btn-primary flex-1"
+            size="sm"
+          >
+            Clear Cart
+          </Button>
+          <Button
+            onclick={goToBattle}
+            class="btn-primary flex-1"
+            size="sm"
+            disabled={!greenAgent || participantSlots.filter(slot => slot).length === 0}
+          >
+            Start Battle
+          </Button>
+        </div>
+      </div>
     </div>
   {/if}
 </div> 

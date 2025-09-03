@@ -11,6 +11,6 @@
 <div class="flex items-center justify-center min-h-[50vh]">
   <div class="text-center">
     <Spinner size="lg" centered />
-    <p class="text-gray-600">Redirecting to My Agents...</p>
+    <p class="text-muted-foreground">Redirecting to My Agents...</p>
   </div>
 </div>

@@ -77,7 +77,7 @@
 <div class="space-y-8">
   <div class="text-center">
     <h1 class="text-3xl font-bold mb-2">Ongoing Battles</h1>
-    <p class="text-gray-600">Currently active and queued battles</p>
+    <p class="text-muted-foreground">Currently active and queued battles</p>
   </div>
 
   {#if loading}
@@ -93,7 +93,7 @@
     </div>
   {:else}
     <div class="text-center py-12">
-      <p class="text-gray-600">No ongoing battles at the moment.</p>
+      <p class="text-muted-foreground">No ongoing battles at the moment.</p>
     </div>
   {/if}
 </div> 

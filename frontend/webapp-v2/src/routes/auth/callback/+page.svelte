@@ -62,13 +62,13 @@
 	});
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50">
+<div class="min-h-screen flex items-center justify-center bg-background">
 	<div class="text-center">
 		{#if loading}
 			      <Spinner size="lg" centered />
-			<p class="text-gray-600">Completing authentication...</p>
+			<p class="text-muted-foreground">Completing authentication...</p>
 		{:else if error}
-			<div class="text-red-600 mb-4">{error}</div>
+			<div class="text-destructive mb-4">{error}</div>
 			<button onclick={() => goto('/login')} class="btn-primary">
 				Back to Login
 			</button>

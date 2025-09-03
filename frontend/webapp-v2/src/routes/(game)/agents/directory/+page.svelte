@@ -312,7 +312,7 @@
                 <Table.Cell class="text-right">{agent.battles}</Table.Cell>
 
                 <Table.Cell>
-                  <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                     {agent.is_green ? 'Green' : 'Opponent'}
                   </div>
                 </Table.Cell>

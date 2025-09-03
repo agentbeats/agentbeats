@@ -63,7 +63,7 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+<div class="min-h-screen flex items-center justify-center bg-background p-4">
 	<div class="w-full max-w-md">
 		<div class="flex items-center gap-4 mb-6">
 			<Button 

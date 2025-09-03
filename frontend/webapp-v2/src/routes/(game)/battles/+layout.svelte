@@ -29,49 +29,27 @@
 <div class="flex flex-col min-h-screen">
   <!-- Tab Switcher Carousel - Only show if not on battle details page -->
   {#if !isBattleDetailsPage}
-    <div class="flex justify-center items-center py-3 bg-white">
-      <Carousel.Root 
-        setApi={(emblaApi) => (api = emblaApi)}
-        opts={{
-          align: "center"
-        }}
-        class="w-full max-w-sm relative"
-      >
-        <Carousel.Content class="flex items-center justify-center">
-          <Carousel.Item class="basis-1/3 flex justify-center">
-            <div class="p-1">
-              <a 
-                href="/battles/ongoing"
-                class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-colors duration-200 rounded-md {currentTab === 'ongoing' ? 'text-black font-medium' : 'text-gray-500 hover:text-gray-700'}"
-              >
-                Ongoing
-              </a>
-            </div>
-          </Carousel.Item>
-          
-          <Carousel.Item class="basis-1/3 flex justify-center">
-            <div class="p-1">
-              <a 
-                href="/battles/past"
-                class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-colors duration-200 rounded-md {currentTab === 'past' ? 'text-black font-medium' : 'text-gray-500 hover:text-gray-700'}"
-              >
-                Past
-              </a>
-            </div>
-          </Carousel.Item>
-          
-          <Carousel.Item class="basis-1/3 flex justify-center">
-            <div class="p-1">
-              <a 
-                href="/battles/stage-battle"
-                class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-colors duration-200 rounded-md {currentTab === 'stage-battle' ? 'text-black font-medium' : 'text-gray-500 hover:text-gray-700'}"
-              >
-                Stage
-              </a>
-            </div>
-          </Carousel.Item>
-        </Carousel.Content>
-      </Carousel.Root>
+    <div class="flex justify-center items-center py-3 bg-background">
+      <nav class="flex space-x-8">
+        <a 
+          href="/battles/ongoing" 
+          class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {$page.url.pathname === '/battles/ongoing' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
+        >
+          Ongoing
+        </a>
+        <a 
+          href="/battles/past" 
+          class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {$page.url.pathname === '/battles/past' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
+        >
+          Past
+        </a>
+        <a 
+          href="/battles/stage-battle" 
+          class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {$page.url.pathname === '/battles/stage-battle' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
+        >
+          Stage Battle
+        </a>
+      </nav>
     </div>
   {/if}
 

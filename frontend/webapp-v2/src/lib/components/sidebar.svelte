@@ -46,11 +46,11 @@
 <Sidebar.Root
     variant="floating" 
     collapsible="none"
-    class="ml-8 h-48 bg-white border rounded-full flex items-center shadow-sm relative"
+    class="ml-8 h-48 bg-background border rounded-full flex items-center shadow-sm relative"
     style="width: 60px; z-index: 10; position: fixed; top: 50%; transform: translateY(-50%);"
 >
 	<!-- Active indicator -->
-	<div class="absolute left-0 w-1 h-3 bg-gray-600 rounded-r-full transition-all duration-300 ease-in-out"
+	<div class="absolute left-0 w-1 h-3 bg-primary rounded-r-full transition-all duration-300 ease-in-out"
 		 style="top: {(() => {
 			 const activeIndex = items.findIndex(item => isActive(item.url));
 			 return activeIndex >= 0 ? `${(activeIndex * 48) + 39}px` : '26px';
@@ -69,7 +69,7 @@
 							>
 								{#snippet child({ props })}
 									<a href={item.url} {...props}>
-										<item.icon class="text-gray-600 hover:text-gray-900" />
+										<item.icon class="text-muted-foreground hover:text-foreground" />
 									</a>
 								{/snippet}
 							</Sidebar.MenuButton>

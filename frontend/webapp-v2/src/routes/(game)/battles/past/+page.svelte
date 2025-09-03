@@ -203,7 +203,7 @@
 <div class="space-y-8">
   <div class="text-center">
     <h1 class="text-3xl font-bold mb-2">Past Battles</h1>
-    <p class="text-gray-600">Browse and search completed battles</p>
+    <p class="text-muted-foreground">Browse and search completed battles</p>
     {#if totalBattles > 0}
       <p class="text-sm text-muted-foreground mt-2">
         Showing {totalBattles} battles
@@ -227,7 +227,7 @@
     </div>
   {:else}
     <div class="text-center py-12">
-      <p class="text-gray-600">No past battles found.</p>
+      <p class="text-muted-foreground">No past battles found.</p>
     </div>
   {/if}
 </div> 

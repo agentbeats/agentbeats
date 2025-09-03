@@ -100,14 +100,14 @@
   }
 </script>
 
-<div class="bg-white border rounded-lg p-4 w-full h-80 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:bg-gray-50" onclick={handleCardClick} onkeydown={handleKeyDown} tabindex="0" role="button" aria-label="View example battle details">
+<div class="bg-card border rounded-lg p-4 w-full h-80 shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:bg-muted" onclick={handleCardClick} onkeydown={handleKeyDown} tabindex="0" role="button" aria-label="View example battle details">
   <div class="flex flex-col h-full space-y-3 text-center">
     <!-- Battle Title -->
     <div class="space-y-2">
-      <h3 class="text-sm font-semibold text-gray-900">
+      <h3 class="text-sm font-semibold text-foreground">
         {exampleBattle.title}
       </h3>
-      <p class="text-xs text-gray-600">
+      <p class="text-xs text-muted-foreground">
         {exampleBattle.description}
       </p>
     </div>
@@ -115,11 +115,11 @@
     <!-- Green Agent -->
     {#if loading}
       <div class="flex items-center justify-center py-2">
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-muted-foreground"></div>
       </div>
     {:else if greenAgent}
       <div class="space-y-2">
-        <div class="text-xs font-medium text-gray-500">Green Agent (Coordinator)</div>
+        <div class="text-xs font-medium text-muted-foreground">Green Agent (Coordinator)</div>
         <AgentChip 
           agent={{
             identifier: greenAgent.register_info?.alias || greenAgent.agent_card?.name || 'Unknown',
@@ -134,15 +134,15 @@
     {:else}
       <!-- No Green Agent Data -->
       <div class="space-y-2">
-        <div class="text-xs font-medium text-gray-500">Green Agent (Coordinator)</div>
-        <div class="text-xs text-gray-500">Agent data not available</div>
+        <div class="text-xs font-medium text-muted-foreground">Green Agent (Coordinator)</div>
+        <div class="text-xs text-muted-foreground">Agent data not available</div>
       </div>
     {/if}
 
     <!-- Opponent Agents -->
     {#if opponentAgents.length > 0}
       <div class="space-y-2 flex-1">
-        <div class="text-xs font-medium text-gray-500">Opponents</div>
+        <div class="text-xs font-medium text-muted-foreground">Opponents</div>
         <div class="space-y-1">
           {#each opponentAgents as agent}
             <AgentChip 
@@ -161,13 +161,13 @@
     {:else}
       <!-- No Opponent Agents Data -->
       <div class="space-y-2 flex-1">
-        <div class="text-xs font-medium text-gray-500">Opponents</div>
-        <div class="text-xs text-gray-500">No opponent data available</div>
+        <div class="text-xs font-medium text-muted-foreground">Opponents</div>
+        <div class="text-xs text-muted-foreground">No opponent data available</div>
       </div>
     {/if}
 
     <!-- Battle ID -->
-    <div class="text-xs text-gray-500">
+    <div class="text-xs text-muted-foreground">
       ID: {exampleBattle.battle_id}
     </div>
   </div>

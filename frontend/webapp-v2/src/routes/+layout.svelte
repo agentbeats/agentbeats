@@ -76,19 +76,19 @@
 	});
 </script>
 
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-background">
 	<!-- Sticky Header - Only show on root and info pages -->
 	{#if showNavigation}
-		<header class="sticky top-0 z-50 bg-white border-b border-gray-300">
+		<header class="sticky top-0 z-50 bg-background border-b border-border">
 			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div class="flex justify-end items-center h-16">
 					<!-- Simple Navigation with Line Separators -->
 					<nav class="flex items-center">
-						<a href="/" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Home</a>
-						<div class="w-px h-4 bg-gray-300 mx-2"></div>
-						<a href="https://github.com/agentbeats/agentbeats/tree/main/docs" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Docs</a>
-						<div class="w-px h-4 bg-gray-300 mx-2"></div>
-						<a href="/login" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Login</a>
+						<a href="/" class="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors duration-200">Home</a>
+						<div class="w-px h-4 bg-border mx-2"></div>
+						<a href="https://github.com/agentbeats/agentbeats/tree/main/docs" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors duration-200">Docs</a>
+						<div class="w-px h-4 bg-border mx-2"></div>
+						<a href="/login" class="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors duration-200">Login</a>
 					</nav>
 				</div>
 			</div>
