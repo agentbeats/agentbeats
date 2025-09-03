@@ -68,12 +68,12 @@
 >
   <HoverCard.Root openDelay={300} closeDelay={1000}>
     <HoverCard.Trigger 
-      class="inline-flex items-center space-x-1.5 w-48 p-1 bg-white border rounded-full hover:bg-muted/50 hover:border-gray-400 hover:shadow-md transition-all duration-200 {clickable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}"
+      class="inline-flex items-center space-x-1.5 w-48 p-1 bg-background border rounded-full hover:bg-muted/50 hover:border-border hover:shadow-md transition-all duration-200 {clickable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}"
       onclick={handleClick}
     >
       <Avatar.Root class="h-5 w-5">
         <Avatar.Image src={agent.avatar_url} alt={agent.identifier} />
-        <Avatar.Fallback class="text-xs bg-gray-200 border border-gray-300 rounded-full flex items-center justify-center">
+        <Avatar.Fallback class="text-xs bg-muted border border-border rounded-full flex items-center justify-center">
           {agent.identifier.charAt(0).toUpperCase()}
         </Avatar.Fallback>
       </Avatar.Root>
@@ -86,13 +86,13 @@
         {#if isLoading}
           <div class="w-2 h-2 border border-blue-500 border-t-transparent rounded-full animate-spin" title="Checking status..."></div>
         {:else}
-          <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}" title={isOnline ? 'Online' : 'Offline'}></div>
+          <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}" title={isOnline ? 'Online' : 'Offline'}></div>
         {/if}
       </div>
     </HoverCard.Trigger>
 
     {#if !isDragging}
-      <HoverCard.Content align="start" sideOffset={8} class="w-80 z-50 bg-white border shadow-lg rounded-xl hover:bg-gray-50" forceMount>
+      <HoverCard.Content align="start" sideOffset={8} class="w-80 z-50 bg-background border shadow-lg rounded-xl hover:bg-muted" forceMount>
         {#snippet child({ wrapperProps, props, open })}
           {#if open}
             <div {...wrapperProps}>
@@ -100,7 +100,7 @@
                 <div class="flex items-center space-x-3 mb-3">
                   <Avatar.Root>
                     <Avatar.Image src={agent.avatar_url} alt={agent.identifier} />
-                    <Avatar.Fallback class="bg-gray-200 border border-gray-300 rounded-full flex items-center justify-center">
+                    <Avatar.Fallback class="bg-muted border border-border rounded-full flex items-center justify-center">
                       {agent.identifier.charAt(0).toUpperCase()}
                     </Avatar.Fallback>
                   </Avatar.Root>
@@ -111,7 +111,7 @@
                         <div class="w-2 h-2 border border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         <span class="text-xs text-blue-600">Checking status...</span>
                       {:else}
-                        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-gray-900' : 'bg-gray-300'}"></div>
+                        <div class="w-2 h-2 rounded-full {isOnline ? 'bg-green-500' : 'bg-red-500'}"></div>
                         <span class="text-xs text-muted-foreground">{isOnline ? 'Online' : 'Offline'}</span>
                       {/if}
                     </div>

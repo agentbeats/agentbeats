@@ -284,7 +284,7 @@
                             <div class="w-4 h-4 bg-red-500 rounded-full" title="Agent URL is not accessible"></div>
                           {/if}
                         {:else}
-                          <div class="w-4 h-4 bg-gray-300 rounded-full" title="No URL entered"></div>
+                          <div class="w-4 h-4 bg-muted rounded-full" title="No URL entered"></div>
                         {/if}
                       </div>
                     </div>
@@ -349,10 +349,10 @@
                           {:else if launcherStatus === 'offline'}
                             <div class="w-4 h-4 bg-red-500 rounded-full" title="Launcher server is not accessible"></div>
                           {:else}
-                            <div class="w-4 h-4 bg-gray-300 rounded-full" title="Status unknown"></div>
+                            <div class="w-4 h-4 bg-muted rounded-full" title="Status unknown"></div>
                           {/if}
                         {:else}
-                          <div class="w-4 h-4 bg-gray-300 rounded-full" title="No URL entered"></div>
+                          <div class="w-4 h-4 bg-muted rounded-full" title="No URL entered"></div>
                         {/if}
                       </div>
                     </div>
@@ -365,7 +365,7 @@
                 <Form.Control>
                   {#snippet children({ props })}
                     <div class="flex items-center space-x-2">
-                      <Switch {...props} bind:checked={$formData.green} class="data-[state=checked]:bg-gray-900 data-[state=unchecked]:bg-gray-200" />
+                      <Switch {...props} bind:checked={$formData.green} class="data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted" />
                       <Label for="green">Green?</Label>
                     </div>
                   {/snippet}
@@ -448,7 +448,7 @@
                             class="w-32 text-sm"
                           />
                           <div class="flex items-center gap-1">
-                            <Switch bind:checked={requirement.required} class="data-[state=checked]:bg-gray-900 data-[state=unchecked]:bg-gray-200" />
+                            <Switch bind:checked={requirement.required} class="data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted" />
                             <Label class="text-xs">Required</Label>
                           </div>
                           <Button

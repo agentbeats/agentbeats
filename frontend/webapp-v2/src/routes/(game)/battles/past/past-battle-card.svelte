@@ -50,7 +50,7 @@
       case 'error':
         return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   }
 
@@ -83,7 +83,7 @@
           {getStatusText(battle.state)}
         </span>
       </div>
-      <div class="text-sm text-gray-500">
+      <div class="text-sm text-muted-foreground">
         {formatTimestamp(battle.created_at)}
       </div>
     </div>
@@ -92,10 +92,10 @@
   <Card.Content class="space-y-4">
     <!-- Participants -->
     <div class="space-y-2">
-      <h4 class="text-sm font-medium text-gray-700">Participants</h4>
+      <h4 class="text-sm font-medium text-foreground">Participants</h4>
       <div class="flex flex-wrap gap-2">
         {#if loading}
-          <div class="animate-pulse bg-gray-200 h-6 w-20 rounded-full"></div>
+          <div class="animate-pulse bg-muted h-6 w-20 rounded-full"></div>
         {:else if greenAgent}
           <AgentChip 
             agent={{
@@ -108,8 +108,8 @@
         {/if}
         
         {#if loading}
-          <div class="animate-pulse bg-gray-200 h-6 w-20 rounded-full"></div>
-          <div class="animate-pulse bg-gray-200 h-6 w-20 rounded-full"></div>
+          <div class="animate-pulse bg-muted h-6 w-20 rounded-full"></div>
+          <div class="animate-pulse bg-muted h-6 w-20 rounded-full"></div>
         {:else}
           {#each opponentAgents as agent, i}
             {#if agent}

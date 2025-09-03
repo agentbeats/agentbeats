@@ -125,8 +125,8 @@
     <!-- Welcome Message and Logout -->
     <div class="mb-6 flex justify-between items-center">
       <h1 class="text-xl">
-        <span class="text-gray-500">Welcome, </span>
-        <span class="font-bold text-black">{username}</span>
+        <span class="text-muted-foreground">Welcome, </span>
+        <span class="font-semibold">{username}</span>
       </h1>
       <Button 
         onclick={async () => {
@@ -139,6 +139,11 @@
         Sign Out
       </Button>
     </div>
+
+    <!-- Debug Info -->
+    {#if import.meta.env.DEV}
+      <!-- Debug info removed -->
+    {/if}
 
     <!-- Example Battles Carousel -->
     <Card class="mb-6">
@@ -155,7 +160,6 @@
         {:else if exampleBattles.length === 0}
           <div class="text-center py-8">
             <p class="text-muted-foreground text-sm">No example battles found</p>
-            <p class="text-xs text-gray-500 mt-1">Debug: Loading state was {exampleBattlesLoading}</p>
             <Button 
               onclick={() => goto('/battles/stage-battle')}
               class="mt-2 btn-primary"
@@ -203,8 +207,8 @@
           <CardContent>
             <div class="space-y-4">
               <div class="flex items-center space-x-4">
-                <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <span class="text-lg font-semibold text-gray-600">{username.charAt(0).toUpperCase()}</span>
+                <div class="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                  <span class="text-lg font-semibold text-muted-foreground">{username.charAt(0).toUpperCase()}</span>
                 </div>
                 <div>
                   <h3 class="font-medium">{username}</h3>

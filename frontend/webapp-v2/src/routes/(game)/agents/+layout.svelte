@@ -27,49 +27,27 @@
 <div class="flex flex-col min-h-screen">
   <!-- Tab Switcher Carousel -->
   {#if !isAgentDetailsPage}
-    <div class="flex justify-center items-center py-3 bg-white">
-      <Carousel.Root 
-        setApi={(emblaApi) => (api = emblaApi)}
-        opts={{
-          align: "center"
-        }}
-        class="w-full max-w-md"
-      >
-        <Carousel.Content class="flex items-center justify-center">
-          <Carousel.Item class="basis-1/3 flex justify-center">
-            <div class="p-1">
-              <a 
-                href="/agents/my-agents"
-                class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-colors duration-200 rounded-md {currentTab === 'my-agents' ? 'text-black font-medium' : 'text-gray-500 hover:text-gray-700'}"
-              >
-                My Agents
-              </a>
-            </div>
-          </Carousel.Item>
-          
-          <Carousel.Item class="basis-1/3 flex justify-center">
-            <div class="p-1">
-              <a 
-                href="/agents/directory"
-                class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-colors duration-200 rounded-md {currentTab === 'directory' ? 'text-black font-medium' : 'text-gray-500 hover:text-gray-700'}"
-              >
-                Directory
-              </a>
-            </div>
-          </Carousel.Item>
-          
-          <Carousel.Item class="basis-1/3 flex justify-center">
-            <div class="p-1">
-              <a 
-                href="/agents/register"
-                class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium transition-colors duration-200 rounded-md {currentTab === 'register' ? 'text-black font-medium' : 'text-gray-500 hover:text-gray-700'}"
-              >
-                Register
-              </a>
-            </div>
-          </Carousel.Item>
-        </Carousel.Content>
-      </Carousel.Root>
+    <div class="flex justify-center items-center py-3 bg-background">
+      <nav class="flex space-x-8">
+        <a 
+          href="/agents/my-agents" 
+          class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {$page.url.pathname === '/agents/my-agents' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
+        >
+          My Agents
+        </a>
+        <a 
+          href="/agents/directory" 
+          class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {$page.url.pathname === '/agents/directory' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
+        >
+          Agent Directory
+        </a>
+        <a 
+          href="/agents/register" 
+          class="px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 {$page.url.pathname === '/agents/register' ? 'text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
+        >
+          Register Agent
+        </a>
+      </nav>
     </div>
   {/if}
 

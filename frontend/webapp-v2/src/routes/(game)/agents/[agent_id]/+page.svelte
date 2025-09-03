@@ -69,108 +69,97 @@
         <!-- Agent Info Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Agent Card Info -->
-          <div class="bg-white border rounded-lg p-6">
+          <div class="bg-card border rounded-lg p-6">
             <h2 class="text-xl font-semibold mb-4">Agent Information</h2>
-            <div class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <span class="font-medium">Name:</span>
-                <span class="text-muted-foreground ml-2">{agent.agent_card?.name || 'Not set'}</span>
+                <label class="block text-sm font-medium mb-1">Name</label>
+                <p class="text-sm">{agent?.agent_card?.name || 'Unnamed Agent'}</p>
               </div>
               <div>
-                <span class="font-medium">Description:</span>
-                <div class="mt-1 max-h-32 overflow-y-auto p-2">
-                  <p class="text-muted-foreground text-sm">{agent.agent_card?.description || 'No description available'}</p>
+                <label class="block text-sm font-medium mb-1">Identifier</label>
+                <p class="text-sm">{agent?.identifier || 'Unknown'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Description</label>
+                <p class="text-sm">{agent?.agent_card?.description || 'No description available'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Status</label>
+                <div class="flex items-center gap-2">
+                  <div class="w-3 h-3 rounded-full {agent?.live ? 'bg-green-500' : 'bg-red-500'}"></div>
+                  <span class="text-sm">{agent?.live ? 'Online' : 'Offline'}</span>
                 </div>
-              </div>
-              <div>
-                {#if agent.register_info?.task_config}
-                  <span class="font-medium">Task Index:</span>
-                  <div class="mt-1 max-h-32 overflow-y-auto p-2">
-                    <p class="text-muted-foreground text-sm">{agent.register_info.task_config}</p>
-                  </div>
-                {/if}
-              </div>
-              <div>
-                <span class="font-medium">Agent URL:</span>
-                <p class="text-muted-foreground font-mono text-sm mt-1">{agent.register_info?.agent_url || 'Not set'}</p>
-              </div>
-              <div>
-                <span class="font-medium">Launcher URL:</span>
-                <p class="text-muted-foreground font-mono text-sm mt-1">{agent.register_info?.launcher_url || 'Not set'}</p>
-              </div>
-              <div>
-                <span class="font-medium">Status:</span>
-                <span class="text-muted-foreground ml-2 capitalize">{agent.status || 'Unknown'}</span>
-              </div>
-              <div>
-                <span class="font-medium">Ready:</span>
-                <span class="text-muted-foreground ml-2">{agent.ready ? 'Yes' : 'No'}</span>
               </div>
             </div>
           </div>
 
           <!-- Performance Info -->
-          <div class="bg-white border rounded-lg p-6">
+          <div class="bg-card border rounded-lg p-6">
             <h2 class="text-xl font-semibold mb-4">Performance</h2>
-            <div class="space-y-4">
-              <!-- Battle count for last 24 hours -->
-              <div>
-                <span class="font-medium">Battles (24h):</span>
-                <span class="text-muted-foreground ml-2">
-                  {loadingBattles ? 'Loading...' : battleCount}
-                </span>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-primary">{agent?.stats?.total_battles || 0}</div>
+                <div class="text-sm text-muted-foreground">Total Battles</div>
               </div>
-              
-              {#if agent.elo?.rating}
-                <div>
-                  <span class="font-medium">ELO Rating:</span>
-                  <span class="text-muted-foreground ml-2">{agent.elo.rating}</span>
-                </div>
-                <div>
-                  <span class="font-medium">Win Rate:</span>
-                  <span class="text-muted-foreground ml-2">{((agent.elo.win_rate || 0) * 100).toFixed(1)}%</span>
-                </div>
-                <div>
-                  <span class="font-medium">Total Battles:</span>
-                  <span class="text-muted-foreground ml-2">{agent.elo.battles || 0}</span>
-                </div>
-              {/if}
+              <div class="text-center">
+                <div class="text-2xl font-bold text-primary">{agent?.stats?.wins || 0}</div>
+                <div class="text-sm text-muted-foreground">Wins</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-primary">{agent?.stats?.win_rate || 0}%</div>
+                <div class="text-sm text-muted-foreground">Win Rate</div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Participant Requirements -->
-        {#if agent.register_info?.participant_requirements?.length > 0}
-          <div class="mt-8 bg-white border rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Competitor Requirements</h2>
-            <div class="grid gap-3">
-              {#each agent.register_info.participant_requirements as req}
-                <div class="flex items-center justify-between p-3 border rounded">
+        <div class="bg-card border rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Competitor Requirements</h2>
+          {#if agent?.agent_card?.participant_requirements && agent.agent_card.participant_requirements.length > 0}
+            <div class="space-y-3">
+              {#each agent.agent_card.participant_requirements as requirement, index}
+                <div class="flex items-center justify-between p-3 border rounded-lg">
                   <div>
-                    <div class="font-medium">{req.name}</div>
-                    <div class="text-sm text-muted-foreground">Role: {req.role}</div>
+                    <span class="text-sm font-medium">{requirement.role || 'Participant'}</span>
+                    {#if requirement.description}
+                      <p class="text-xs text-muted-foreground">{requirement.description}</p>
+                    {/if}
                   </div>
-                  <span class="text-sm px-2 py-1 rounded bg-gray-100">
-                    {req.required ? 'Required' : 'Optional'}
+                  <span class="text-xs px-2 py-1 rounded bg-muted">
+                    {requirement.required ? 'Required' : 'Optional'}
                   </span>
                 </div>
               {/each}
             </div>
-          </div>
-        {/if}
+          {:else}
+            <p class="text-muted-foreground">No specific requirements defined</p>
+          {/if}
+        </div>
 
         <!-- Battle Configuration - Only for Green Agents -->
-        {#if agent.register_info?.battle_timeout && agent.register_info?.participant_requirements}
-          <div class="mt-8 bg-white border rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Battle Configuration</h2>
-            <div class="space-y-3">
-              <div>
-                <span class="font-medium">Battle Timeout:</span>
-                <span class="text-muted-foreground ml-2">{agent.register_info.battle_timeout} seconds</span>
+        <div class="bg-card border rounded-lg p-6">
+          <h2 class="text-xl font-semibold mb-4">Battle Configuration</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Agent Type</label>
+              <p class="text-sm">{agent?.agent_card?.agent_type || 'Unknown'}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Capabilities</label>
+              <div class="flex flex-wrap gap-2">
+                {#if agent?.agent_card?.capabilities}
+                  {#each agent.agent_card.capabilities as capability}
+                    <span class="text-xs px-2 py-1 rounded bg-muted">{capability}</span>
+                  {/each}
+                {:else}
+                  <span class="text-muted-foreground">No capabilities listed</span>
+                {/if}
               </div>
             </div>
           </div>
-        {/if}
+        </div>
       </div>
     {/if}
   </div>

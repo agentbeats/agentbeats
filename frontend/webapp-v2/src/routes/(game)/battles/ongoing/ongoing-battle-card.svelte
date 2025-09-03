@@ -137,11 +137,11 @@
       case 'pending':
         return 'bg-blue-100 text-blue-800';
       case 'finished':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
       case 'error':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-muted-foreground';
     }
   }
 
@@ -199,11 +199,11 @@
   <!-- Simple top card with green agent chip -->
   <button 
     onclick={handleCardClick}
-    class="w-full p-6 border rounded-lg bg-black hover:bg-gray-900 hover:border-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer text-white"
+    class="w-full p-6 border rounded-lg bg-card hover:bg-muted hover:border-border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
   >
     <div class="flex flex-col items-center space-y-3">
       {#if greenAgent && (greenAgent.register_info || greenAgent.agent_card)}
-        <div class="text-black">
+        <div class="text-foreground">
           <AgentChip 
             agent={{
               identifier: greenAgent.register_info?.alias || greenAgent.agent_card?.name || 'Unknown',
@@ -222,11 +222,11 @@
       {/if}
       
       <div class="text-center space-y-1">
-        <div class="text-sm text-white font-mono">
+        <div class="text-sm text-foreground font-mono">
           #{shortId(battle.battle_id || '')}
         </div>
         {#if battle.created_at}
-          <div class="text-xs text-white">
+          <div class="text-xs text-foreground">
             {formatTimestamp(battle.created_at)}
           </div>
         {/if}
@@ -321,7 +321,7 @@
                 </div>
                 {#if log.reported_by}
                   <div class="flex-shrink-0">
-                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                       {log.reported_by}
                     </div>
                   </div>

@@ -261,7 +261,7 @@
   function getAgentBackgroundClass(agentName: string): string {
     const lowerAgentName = agentName.toLowerCase();
     if (agentName === 'system') {
-      return 'bg-gray-50 border-gray-200';
+      return 'bg-muted border-border';
     } else if (lowerAgentName.includes('blue')) {
       return 'bg-blue-50 border-blue-200';
     } else if (lowerAgentName.includes('red')) {
@@ -630,16 +630,16 @@
 <main class="p-6 max-w-6xl mx-auto">
   {#if loading}
     <div class="flex items-center justify-center h-64">
-      <div class="text-lg text-gray-600">Loading...</div>
+      <div class="text-lg text-muted-foreground">Loading...</div>
     </div>
   {:else if error}
     <div class="flex items-center justify-center h-64">
-      <div class="text-lg text-red-500">Error: {error}</div>
+      <div class="text-lg text-destructive">Error: {error}</div>
     </div>
   {:else if battle}
     <!-- Battle Title -->
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Battle {battle.battle_id}</h1>
+      <h1 class="text-2xl font-bold text-foreground">Battle {battle.battle_id}</h1>
     </div>
     <!-- Battle Details Section -->
     <div class="mb-8">
@@ -651,7 +651,7 @@
             clickable={true}
           />
           <div class="flex items-center gap-3">
-            <span class="text-sm text-gray-500">Status:</span>
+            <span class="text-sm text-muted-foreground">Status:</span>
             <span class="px-3 py-1 rounded-full text-sm font-medium {battle.state === 'finished' ? 'bg-green-100 text-green-800' : battle.state === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
               {battle.state}
             </span>
@@ -670,7 +670,7 @@
       <!-- Opponents Section -->
       {#if battle.opponents && battle.opponents.length > 0}
         <div class="flex items-start gap-3">
-          <span class="text-sm font-medium text-gray-700 w-24 pt-1">Opponents:</span>
+          <span class="text-sm font-medium text-foreground w-24 pt-1">Opponents:</span>
           <div class="flex-1">
             <Carousel.Root 
               class="w-full"
@@ -720,12 +720,12 @@
       {@const agentGroups = getChronologicalAgentGroups()}
       <div class="mt-8">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-gray-900">Battle Logs</h2>
+          <h2 class="text-xl font-semibold text-foreground">Battle Logs</h2>
           <a 
             href="https://github.com/agentbeats/agentbeats" 
             target="_blank" 
             rel="noopener noreferrer"
-            class="flex items-center justify-center p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 border border-gray-300 hover:border-gray-400 rounded-md transition-colors"
+            class="flex items-center justify-center p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted border border-border hover:border-border rounded-md transition-colors"
             title="Download from GitHub"
           >
             <DownloadIcon class="w-3.5 h-3.5" />
@@ -737,7 +737,7 @@
               <!-- Agent Header -->
               <div class="flex items-center gap-3 w-full p-2">
                 <button 
-                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                  class="p-1 hover:bg-muted rounded transition-colors"
                   onclick={() => {
                     // Prevent multiple rapid clicks
                     if (closingAgents.has(group.groupId)) return;
@@ -769,9 +769,9 @@
                   }}
                 >
                   {#if openAgents.has(group.groupId)}
-                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                    <ChevronDownIcon class="w-4 h-4 text-muted-foreground" />
                   {:else}
-                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                    <ChevronUpIcon class="w-4 h-4 text-muted-foreground" />
                   {/if}
                 </button>
                   <AgentChip 
@@ -779,12 +779,12 @@
                   agent_id={getAgentIdFromReportedBy(group.agent)}
                     clickable={false}
                   />
-                <span class="text-gray-500 text-sm">({group.entries.length})</span>
+                <span class="text-muted-foreground text-sm">({group.entries.length})</span>
                 {#if group.entries.some((entry: any) => entry.is_result)}
                   <span class="text-xs text-green-600">✓</span>
                 {/if}
                 <div class="flex-1"></div>
-                <span class="text-xs text-gray-400">
+                <span class="text-xs text-muted-foreground">
                   {new Date(group.entries[0].timestamp).toLocaleTimeString()}
                 </span>
               </div>
@@ -801,7 +801,7 @@
                     <div class="ml-8">
                       <div class="flex items-center gap-2 w-full p-2">
                                            <button 
-                          class="p-1 hover:bg-gray-100 rounded transition-colors"
+                          class="p-1 hover:bg-muted rounded transition-colors"
                     onclick={() => {
                             // Prevent multiple rapid clicks
                             if (closingLogs.has(logId)) return;
@@ -862,16 +862,16 @@
                           }}
                         >
                           {#if openLogs.has(logId)}
-                            <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                            <ChevronDownIcon class="w-4 h-4 text-muted-foreground" />
                           {:else}
-                            <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                            <ChevronUpIcon class="w-4 h-4 text-muted-foreground" />
                           {/if}
                         </button>
-                        <span class="text-xs text-gray-500 font-mono min-w-[3ch]">#{entry.logNumber}</span>
-                        <span class="text-gray-700 text-sm flex-1 truncate">
+                        <span class="text-xs text-muted-foreground font-mono min-w-[3ch]">#{entry.logNumber}</span>
+                        <span class="text-foreground text-sm flex-1 truncate">
                           {entry.message.length > 60 ? entry.message.substring(0, 60) + '...' : entry.message}
                         </span>
-                        <span class="text-xs text-gray-400">
+                        <span class="text-xs text-muted-foreground">
                           {new Date(entry.timestamp).toLocaleTimeString()}
                         </span>
                               {#if entry.is_result}
@@ -885,8 +885,8 @@
                           <!-- Message -->
                           <div class="mb-2">
                             <div class="flex items-center gap-2 w-full p-2">
-                              <button 
-                                class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                                            <button 
+                                class="p-1 hover:bg-muted rounded transition-colors"
                                 onclick={() => {
                                   if (closingLogSections.has(messageSectionId)) return;
                                   
@@ -900,10 +900,10 @@
                                     setTimeout(() => {
                                       const currentOpenSections = new Set(openLogSections);
                                       const currentClosingSections = new Set(closingLogSections);
-                                      
+                                        
                                       currentOpenSections.delete(messageSectionId);
                                       currentClosingSections.delete(messageSectionId);
-                                      
+                                        
                                       openLogSections = currentOpenSections;
                                       closingLogSections = currentClosingSections;
                                     }, 200);
@@ -914,16 +914,16 @@
                                 }}
                               >
                                 {#if openLogSections.has(messageSectionId)}
-                                  <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                  <ChevronDownIcon class="w-4 h-4 text-muted-foreground" />
                                 {:else}
-                                  <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                  <ChevronUpIcon class="w-4 h-4 text-muted-foreground" />
                                 {/if}
                               </button>
-                              <span class="text-gray-700 text-sm flex-1 truncate">Message</span>
+                              <span class="text-foreground text-sm flex-1 truncate">Message</span>
                             </div>
                             {#if openLogSections.has(messageSectionId) || closingLogSections.has(messageSectionId)}
                               <div class="ml-8 mt-1 log-content {closingLogSections.has(messageSectionId) ? 'fade-out' : 'fade-in'}">
-                                <pre class="bg-gray-50 p-2 rounded text-xs overflow-x-auto">{entry.message}</pre>
+                                <pre class="bg-muted p-2 rounded text-xs overflow-x-auto">{entry.message}</pre>
                               </div>
                             {/if}
                           </div>
@@ -933,7 +933,7 @@
                             <div class="mb-2">
                               <div class="flex items-center gap-2 w-full p-2">
                                 <button 
-                                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                  class="p-1 hover:bg-muted rounded transition-colors"
                                   onclick={() => {
                                     if (closingLogSections.has(detailSectionId)) return;
                                     
@@ -961,16 +961,16 @@
                                   }}
                                 >
                                   {#if openLogSections.has(detailSectionId)}
-                                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                    <ChevronDownIcon class="w-4 h-4 text-muted-foreground" />
                                   {:else}
-                                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                    <ChevronUpIcon class="w-4 h-4 text-muted-foreground" />
                                   {/if}
                                 </button>
-                                <span class="text-gray-700 text-sm flex-1 truncate">Detail</span>
+                                <span class="text-foreground text-sm flex-1 truncate">Detail</span>
                               </div>
                               {#if openLogSections.has(detailSectionId) || closingLogSections.has(detailSectionId)}
                                 <div class="ml-8 mt-1 log-content {closingLogSections.has(detailSectionId) ? 'fade-out' : 'fade-in'}">
-                                  <pre class="bg-gray-50 p-2 rounded text-xs overflow-x-auto">{JSON.stringify(entry.detail, null, 2)}</pre>
+                                  <pre class="bg-muted p-2 rounded text-xs overflow-x-auto">{JSON.stringify(entry.detail, null, 2)}</pre>
                                 </div>
                               {/if}
                             </div>
@@ -981,7 +981,7 @@
                             <div class="mb-2">
                               <div class="flex items-center gap-2 w-full p-2">
                                 <button 
-                                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                  class="p-1 hover:bg-muted rounded transition-colors"
                                   onclick={() => {
                                     if (closingLogSections.has(markdownSectionId)) return;
                                     
@@ -1009,16 +1009,16 @@
                                   }}
                                 >
                                   {#if openLogSections.has(markdownSectionId)}
-                                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                    <ChevronDownIcon class="w-4 h-4 text-muted-foreground" />
                                   {:else}
-                                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                    <ChevronUpIcon class="w-4 h-4 text-muted-foreground" />
                                   {/if}
                                 </button>
-                                <span class="text-gray-700 text-sm flex-1 truncate">Markdown Content</span>
+                                <span class="text-foreground text-sm flex-1 truncate">Markdown Content</span>
                               </div>
                               {#if openLogSections.has(markdownSectionId) || closingLogSections.has(markdownSectionId)}
                                 <div class="ml-8 mt-1 log-content {closingLogSections.has(markdownSectionId) ? 'fade-out' : 'fade-in'}">
-                                  <div class="text-sm prose prose-sm max-w-none bg-gray-50 p-2 rounded">
+                                  <div class="text-sm prose prose-sm max-w-none bg-muted p-2 rounded">
                               {@html renderMarkdown(entry.markdown_content)}
                                   </div>
                                 </div>
@@ -1031,7 +1031,7 @@
                             <div class="mb-2">
                               <div class="flex items-center gap-2 w-full p-2">
                                 <button 
-                                  class="p-1 hover:bg-gray-100 rounded transition-colors"
+                                  class="p-1 hover:bg-muted rounded transition-colors"
                                   onclick={() => {
                                     if (closingLogSections.has(winnerSectionId)) return;
                                     
@@ -1059,12 +1059,12 @@
                                   }}
                                 >
                                   {#if openLogSections.has(winnerSectionId)}
-                                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                                    <ChevronDownIcon class="w-4 h-4 text-muted-foreground" />
                                   {:else}
-                                    <ChevronUpIcon class="w-4 h-4 text-gray-400" />
+                                    <ChevronUpIcon class="w-4 h-4 text-muted-foreground" />
                                   {/if}
                                 </button>
-                                <span class="text-gray-700 text-sm flex-1 truncate">Winner</span>
+                                <span class="text-foreground text-sm flex-1 truncate">Winner</span>
                               </div>
                               {#if openLogSections.has(winnerSectionId) || closingLogSections.has(winnerSectionId)}
                                 <div class="ml-8 mt-1 log-content {closingLogSections.has(winnerSectionId) ? 'fade-out' : 'fade-in'}">

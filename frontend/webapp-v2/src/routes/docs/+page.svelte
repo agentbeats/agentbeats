@@ -11,6 +11,6 @@
 <div class="flex items-center justify-center min-h-screen">
   <div class="text-center">
     <Spinner size="lg" centered />
-    <p class="text-gray-600">Redirecting to Getting Started...</p>
+    <p class="text-muted-foreground">Redirecting to Getting Started...</p>
   </div>
 </div> 

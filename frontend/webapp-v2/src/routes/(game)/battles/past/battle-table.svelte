@@ -155,7 +155,7 @@
           {#each paginatedBattles as battle}
             <Table.Row>
               <Table.Cell>
-                <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   {getBattleResult(battle)}
                 </div>
               </Table.Cell>
@@ -171,7 +171,7 @@
                     isLoading={battle.green_agent.livenessLoading || false}
                   />
                 {:else}
-                  <span class="text-gray-500">Loading...</span>
+                  <span class="text-muted-foreground">Loading...</span>
                 {/if}
               </Table.Cell>
               <Table.Cell>
@@ -204,7 +204,7 @@
                     </Carousel.Root>
                   </div>
                 {:else}
-                  <span class="text-gray-500">No opponents</span>
+                  <span class="text-muted-foreground">No opponents</span>
                 {/if}
               </Table.Cell>
 
