@@ -167,13 +167,13 @@
 
 <div class="recommended-agents-dropdown relative w-full">
   {#if label}
-    <label class="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+    <label class="block text-sm font-medium text-foreground mb-2">{label}</label>
   {/if}
   
   <button
     type="button"
     onclick={() => isOpen = !isOpen}
-    class="w-full p-3 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 hover:border-gray-400 flex items-center justify-between"
+    class="w-full p-3 border border-border bg-background rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 hover:border-border hover:bg-muted flex items-center justify-between"
   >
     <div class="flex-1 text-left">
       {#if selectedOption && selectedOption.agent}
@@ -189,7 +189,7 @@
             isLoading={selectedOption.agent.livenessLoading || false}
           />
           {#if selectedOption.confidence > 0}
-            <span class="text-xs text-gray-500">({Math.round(selectedOption.confidence * 100)}%)</span>
+            <span class="text-xs text-muted-foreground">({Math.round(selectedOption.confidence * 100)}%)</span>
           {/if}
           {#if selectedOption.isRecommended}
             <div class="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
@@ -199,21 +199,21 @@
           {/if}
         </div>
       {:else if selectedOption}
-        <span class="text-gray-900">{selectedOption.label}</span>
+        <span class="text-foreground">{selectedOption.label}</span>
       {:else}
-        <span class="text-gray-500 text-xs">{placeholder}</span>
+        <span class="text-muted-foreground text-xs">{placeholder}</span>
       {/if}
     </div>
-    <ChevronDownIcon class="w-4 h-4 text-gray-400 ml-2 transition-transform duration-200 {isOpen ? 'rotate-180' : ''}" />
+    <ChevronDownIcon class="w-4 h-4 text-muted-foreground ml-2 transition-transform duration-200 {isOpen ? 'rotate-180' : ''}" />
   </button>
 
   {#if isOpen}
     <div 
-      class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+      class="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto"
       transition:fly={{ y: -10, duration: 200 }}
     >
       {#if loadingMatches}
-        <div class="p-3 text-center text-sm text-gray-500">
+        <div class="p-3 text-center text-sm text-muted-foreground">
           Loading recommendations...
         </div>
       {:else}
@@ -225,16 +225,16 @@
             type="button"
             onclick={() => !isDisabled && handleSelect(option.value)}
             disabled={isDisabled}
-            class="w-full p-3 text-left transition-colors duration-150 {isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} {option.value === value ? 'bg-gray-100 border-l-2 border-gray-400' : ''} {!option.isMatch ? 'text-gray-400 hover:bg-gray-50' : 'hover:bg-gray-50 focus:bg-gray-50 focus:outline-none'}"
+            class="w-full p-3 text-left transition-colors duration-150 {isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} {option.value === value ? 'bg-muted border-l-2 border-border' : ''} {!option.isMatch ? 'text-muted-foreground hover:bg-muted' : 'hover:bg-muted focus:bg-muted focus:outline-none'}"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center flex-1">
                 {#if option.agent}
                   <div class="mr-2">
                     {#if isLocked}
-                      <LockIcon class="w-4 h-4 text-gray-400" />
+                      <LockIcon class="w-4 h-4 text-muted-foreground" />
                     {:else}
-                      <UnlockIcon class="w-4 h-4 text-gray-400" />
+                      <UnlockIcon class="w-4 h-4 text-muted-foreground" />
                     {/if}
                   </div>
                 {/if}
@@ -251,14 +251,14 @@
                       isLoading={option.agent.livenessLoading || false}
                     />
                   {:else}
-                    <span class="{!option.isMatch ? 'text-gray-400' : 'text-gray-900'}">{option.label}</span>
+                    <span class="{!option.isMatch ? 'text-muted-foreground' : 'text-foreground'}">{option.label}</span>
                   {/if}
                 </div>
               </div>
               
               <div class="flex items-center gap-2 ml-2">
                 {#if option.confidence > 0}
-                  <span class="text-xs text-gray-500 font-medium">
+                  <span class="text-xs text-muted-foreground font-medium">
                     {Math.round(option.confidence * 100)}%
                   </span>
                 {/if}
@@ -272,7 +272,7 @@
                     <span>Match</span>
                   </div>
                 {:else}
-                  <div class="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
+                  <div class="flex items-center gap-1 px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full">
                     <span>No match</span>
                   </div>
                 {/if}
@@ -282,7 +282,7 @@
         {/each}
         
         {#if sortedOptions.length === 0}
-          <div class="p-3 text-center text-sm text-gray-500">
+          <div class="p-3 text-center text-sm text-muted-foreground">
             No agents available
           </div>
         {/if}
