@@ -25,7 +25,7 @@ async def get_agent_card(target_url: str) -> Optional[Dict[str, Any]]:
     """Get agent card/metadata from a target URL."""
     httpx_client = None
     try:
-        httpx_client = httpx.AsyncClient(timeout=1.0)
+        httpx_client = httpx.AsyncClient(timeout=1.5)
         resolver = A2ACardResolver(httpx_client=httpx_client, base_url=target_url)
         
         agent_card = await resolver.get_agent_card()

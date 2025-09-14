@@ -11,6 +11,9 @@ from fastapi import HTTPException
 from typing import Dict, Any, List, Optional
 from agentbeats.utils.agents import get_agent_card
 from a2a.client import A2ACardResolver
+from agents import Agent, Runner
+from pydantic import BaseModel, Field
+from typing import Literal
 
 from pathlib import Path as FilePath
 
@@ -26,7 +29,7 @@ async def check_launcher_status(launcher_url: str) -> Dict[str, Any]:
             
         launcher_url_clean = launcher_url.rstrip('/')
         
-        async with httpx.AsyncClient(timeout=1.0) as client:
+        async with httpx.AsyncClient(timeout=1.5) as client:
             response = await client.get(f"{launcher_url_clean}/status")
             
             if response.status_code == 200:
@@ -64,7 +67,7 @@ async def check_agents_liveness(agents: List[Dict[str, Any]], max_concurrent: in
             return agent
 
         # Else is remote agent, get tne instance and then get URLs
-        agent_id = agent.get("id")
+        agent_id = agent.get("agent_id")
         instance = instance_repo.get_agent_instances_by_agent_id(agent_id)[0]
         agent_url = instance.get("agent_url")
         launcher_url = instance.get("launcher_url")
@@ -77,7 +80,7 @@ async def check_agents_liveness(agents: List[Dict[str, Any]], max_concurrent: in
                 # Use asyncio.wait_for to add additional timeout layer
                 agent_card = await asyncio.wait_for(
                     get_agent_card(agent_url), 
-                    timeout=1.5
+                    timeout=3
                 )
                 return bool(agent_card)
             except (asyncio.TimeoutError, Exception):
@@ -90,8 +93,8 @@ async def check_agents_liveness(agents: List[Dict[str, Any]], max_concurrent: in
             try:
                 # Use asyncio.wait_for to add additional timeout layer
                 launcher_status = await asyncio.wait_for(
-                    check_launcher_status({"launcher_url": launcher_url}),
-                    timeout=1.5
+                    check_launcher_status(launcher_url),
+                    timeout=3
                 )
                 return launcher_status.get("online", False)
             except (asyncio.TimeoutError, Exception):
@@ -758,4 +761,85 @@ def read_live_docker_log(agent_instance_id: str, lines: int = 100) -> tuple[str,
             status_code=500,
             detail=f"Error retrieving live Docker logs: {str(e)}"
         )
+
     
+async def analyze_agent_card(agent_card: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Analyze an agent card and to detect if the agent is a hosted agent. And parse the participant requirements and battle timeout etc.
+    
+    Args:
+        agent_card: The agent card 
+
+    Returns:
+        dict: Analysis results including is_hosted, participant_requirements, battle_timeout, and errors if any.
+    """
+
+    
+
+    ANALYZE_PROMPT = """
+    You are an expert system for analyzing agent cards in a multi-agent battle framework.
+    Given a JSON object representing an agent card, identify:
+    1. Whether this agent is likely to be a "green agent" (i.e. judge or coordinator).
+    2. If it is a green agent, what participant requirements should be set based on its skills or description. 'role' can be 'red_agent', 'blue_agent', etc. 'red_agent' is the attacker, 'blue_agent' is the defender. 'name' should be a simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). 'required' should be true if the agent is mandatory for the battle, false otherwise.
+    3. If it is a green agent, analyze the battle timeout, if it is in the agent card, otherwise default to 300 seconds.
+    """
+
+    class ParticipantRequirement(BaseModel):
+        role: Literal["red_agent", "blue_agent"]
+        
+        name: str
+        "Simple agent name in underscore format (e.g., 'prompt_injector', 'defense_agent'). AVOID descriptive suffixes, make it simple."
+        
+        required: bool
+
+
+    class AnalyzeResult(BaseModel):
+        is_green: bool
+        "Whether the agent is a green agent (i.e. judge or coordinator)",
+
+        participant_requirements: list[ParticipantRequirement]
+        "List of participant requirements for the participant agents.",
+
+        battle_timeout: int
+        "Battle timeout in seconds. If not specified in the agent card, default to 300 seconds.",
+        
+    try:
+        analyze_agent = Agent(
+            name="Agent Card Analyzer",
+            instructions=ANALYZE_PROMPT,
+            output_type=AnalyzeResult,
+            model="gpt-4o",
+        )
+
+        response = await Runner.run(
+            analyze_agent,
+            input=str(agent_card),
+        )
+
+        analysis_result = response.final_output_as(AnalyzeResult)
+
+        participant_requirements_list = []
+        for req in analysis_result.participant_requirements:
+            participant_requirements_list.append(
+                {
+                    "role": req.role,
+                    "name": req.name,
+                    "required": req.required,
+                }
+            )
+
+        analysis_result = {
+            "is_green": analysis_result.is_green,
+            "participant_requirements": participant_requirements_list,
+            "battle_timeout": analysis_result.battle_timeout,
+        }
+
+        print("Analysis result:", analysis_result)
+        return analysis_result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error analyzing agent card: {str(e)}"
+        )

@@ -1,0 +1,90 @@
+<script lang="ts">
+	import '../app.css';
+	import { onMount, onDestroy } from 'svelte';
+	import { goto, onNavigate } from '$app/navigation';
+	import { useAuth } from '$lib/hooks';
+	import { page } from '$app/stores';
+	import { fade } from 'svelte/transition';
+	
+	// Use the new useAuth hook
+	const authHook = useAuth();
+	
+	let { children } = $props();
+	let unsubscribe: (() => void) | null = null;
+
+	// Get reactive auth data
+	let user = $derived(authHook.user);
+	let isLoading = $derived(authHook.isLoading);
+
+	// Check if we should show navigation (root page, info pages, but not login page or docs pages)
+	let showNavigation = $derived($page.url.pathname === '/' || $page.url.pathname.startsWith('/about'));
+
+	// Page transitions
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+	
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
+
+	// Handle auth state changes and routing
+	$effect(() => {
+		// Check if we're in dev mode
+		const isDevMode = import.meta.env.VITE_DEV_LOGIN === "true";
+		
+		// Check if we're on a public page that doesn't require auth
+		const publicPages = ['/', '/login', '/auth/callback', '/about'];
+		const currentPath = $page.url.pathname;
+		const isDocsPage = currentPath.startsWith('/docs');
+		
+		console.log('Layout auth check:', { user: user?.email, loading: isLoading, currentPath, isDevMode });
+		
+		if (!publicPages.includes(currentPath) && !isDocsPage) {
+			// If user is not authenticated and not on a public page or docs page, redirect to login
+			// Skip in dev mode
+			if (!isDevMode && !user && !isLoading) {
+				console.log('User not authenticated, redirecting to login');
+				goto('/login');
+			}
+		} else if (currentPath === '/login' && (user || isDevMode)) {
+			// If user is authenticated (or dev mode) and on login page, redirect to dashboard
+			console.log('User authenticated (or dev mode), redirecting to dashboard');
+			goto('/dashboard').catch(error => {
+				console.error('goto failed, using window.location:', error);
+				window.location.href = '/dashboard';
+			});
+		}
+	});
+
+</script>
+
+<div class="min-h-screen bg-white">
+	<!-- Sticky Header - Only show on root and info pages -->
+	{#if showNavigation}
+		<header class="sticky top-0 z-50 bg-white border-b border-gray-300">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="flex justify-end items-center h-16">
+					<!-- Simple Navigation with Line Separators -->
+					<nav class="flex items-center">
+						<a href="/" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Home</a>
+						<div class="w-px h-4 bg-gray-300 mx-2"></div>
+						<a href="https://github.com/agentbeats/agentbeats/tree/main/docs" target="_blank" rel="noopener noreferrer" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Docs</a>
+						<div class="w-px h-4 bg-gray-300 mx-2"></div>
+						<a href="/login" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200">Login</a>
+					</nav>
+				</div>
+			</div>
+		</header>
+	{/if}
+	
+	<!-- Page Content -->
+	<main>
+		<div in:fade={{ duration: 200 }} out:fade={{ duration: 150 }}>
+			{@render children()}
+		</div>
+	</main>
+</div>
