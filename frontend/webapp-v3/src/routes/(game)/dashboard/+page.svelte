@@ -209,7 +209,7 @@
                                     avatar_url: agent.avatar_url,
                                     description: agent.agent_card?.description
                                   }} 
-                                  agent_id={agent.agent_id || agent.id}
+                                  agent_id={agent.agent_id}
                                   isOnline={agent.live || false}
                                   isLoading={agent.livenessLoading || false}
                                 />
@@ -268,7 +268,7 @@
                       <div class="flex-1">
                         {#if battle.green_agent_id}
                           {#if agentsHook.data.length > 0}
-                            {@const greenAgent = agentsHook.data.find(agent => agent.agent_id === battle.green_agent_id || agent.id === battle.green_agent_id)}
+                            {@const greenAgent = agentsHook.data.find(agent => agent.agent_id === battle.green_agent_id)}
                             {#if greenAgent}
                               <AgentChip 
                                 agent={{
@@ -276,7 +276,7 @@
                                   avatar_url: greenAgent?.avatar_url,
                                   description: greenAgent.agent_card?.description
                                 }} 
-                                agent_id={greenAgent.agent_id || greenAgent.id}
+                                agent_id={greenAgent.agent_id}
                                 isOnline={greenAgent.live || false}
                                 isLoading={greenAgent.livenessLoading || false}
                               />

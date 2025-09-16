@@ -54,7 +54,7 @@ const createAgentsStore = () => {
     removeAgent: (agentId: string) => {
       update(state => ({
         ...state,
-        agents: state.agents.filter(a => a.id !== agentId && a.agent_id !== agentId),
+        agents: state.agents.filter(a => a.agent_id !== agentId),
         lastUpdated: new Date()
       }));
     },
@@ -63,7 +63,7 @@ const createAgentsStore = () => {
       update(state => ({
         ...state,
         agents: state.agents.map(agent =>
-          (agent.id === agentId || agent.agent_id === agentId)
+          (agent.agent_id === agentId)
             ? { ...agent, ...updates }
             : agent
         ),
@@ -143,7 +143,7 @@ const createAgentsStore = () => {
       if (result.success) {
         update(state => ({
           ...state,
-          agents: state.agents.filter(a => a.id !== agentId && a.agent_id !== agentId),
+          agents: state.agents.filter(a => a.agent_id !== agentId),
           lastUpdated: new Date()
         }));
       } else {

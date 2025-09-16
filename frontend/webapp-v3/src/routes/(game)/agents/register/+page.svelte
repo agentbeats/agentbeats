@@ -299,7 +299,7 @@
   <div class="flex gap-6 w-full max-w-4xl transition-all duration-500 ease-in-out">
     
     <!-- Vertical Agent Type Tabs (Left Side) -->
-    <div class="flex flex-col gap-2 pt-20">
+    <div class="flex flex-col gap-2 pt-20 transition-transform duration-650 ease-in-out" style="transform: translateX({originalFormMoved ? '-250px' : '0px'});">
       <button
         onclick={() => agentType = 'remote'}
         class="flex items-center justify-center p-3 w-16 h-12 rounded-lg border transition-all duration-200 {agentType === 'remote' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}"
@@ -363,9 +363,9 @@
     {/if}
     
     <!-- Forms Row -->
-    <div class="flex gap-4 relative" style="transform: translateY({formsPushedDown ? '60px' : '0px'}); transition: transform 500ms ease-in-out;">
+    <div class="flex gap-4 relative justify-center" style="transform: translateY({formsPushedDown ? '60px' : '0px'}); transition: transform 500ms ease-in-out;">
       <!-- Original Form -->
-      <div class="w-full" style="transform: translateX({originalFormMoved ? '-52%' : '0px'}); transition: transform 500ms ease-in-out;">
+      <div class="w-full max-w-md" style="transform: translateX({originalFormMoved ? '-250px' : '0px'}); transition: transform 500ms ease-in-out;">
         <Card.Root class="w-full">
           <Card.Header>
             <Card.Title>Register Agent</Card.Title>
@@ -551,7 +551,7 @@
 
       <!-- Green Agent Form (only shown when green is checked) -->
       {#if showGreenForm}
-        <div class="absolute left-1/2 top-0 w-full ml-4" transition:fly={{ x: 300, duration: 500, delay: 250 }}>
+        <div class="absolute left-1/2 top-0 w-full max-w-md ml-4" transition:fly={{ x: 300, duration: 500, delay: 250 }}>
           <Card.Root class="w-full transition-all duration-300 ease-in-out">
             <Card.Header>
               <Card.Title>Green Agent Setup</Card.Title>
@@ -629,6 +629,18 @@
                         type="number"
                         bind:value={$formData.battle_timeout}
                         min="1"
+                        class="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div class="border-t pt-4">
+                    <div>
+                      <Label for="battle_description" class="text-sm">Battle Description</Label>
+                      <Input
+                        id="battle_description"
+                        type="text"
+                        bind:value={$formData.battle_description}
+                        placeholder="Configure the battle here..."
                         class="mt-1"
                       />
                     </div>
