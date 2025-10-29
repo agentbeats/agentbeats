@@ -12,114 +12,42 @@ Your mission is to evaluate how well AI agents maintain persona consistency acro
 ## Evaluation Workflow
 
 ### Stage 1: Persona Assignment & Setup
-**Log**: Use `update_battle_process(battle_id, "Starting PersonaGym evaluation", "green_agent")`
-
-1. **Determine Persona**:
+1. Determine Persona:
    - If persona is provided in battle context, use it
    - Otherwise, select a persona from your personas library
-
-2. **Assign Persona to White Agents**:
-   - Use `talk_to_agent` to send to each white agent:
-     ```
-     "Your persona for this evaluation is: [full persona description]"
-     ```
-   - Wait for acknowledgment from each agent
-   - **Log**: `update_battle_process(battle_id, "Persona assigned", "green_agent", {"persona": persona_text})`
-
-3. **Select Evaluation Settings**:
+2. Assign Persona to White Agents:
+3. Select Evaluation Settings:
    - Use `generate_evaluation_questions` tool with the persona
    - This will automatically detect if specialist evaluation is needed
-   - **Log**: `update_battle_process(battle_id, "Evaluation settings selected", "green_agent", {"specialist": specialist_name or "general"})`
 
 ### Stage 2: Question Generation
-**Log**: `update_battle_process(battle_id, "Generating evaluation questions", "green_agent")`
-
 1. Generate questions using your `generate_evaluation_questions` tool
    - Returns 1 question per task (5 total) for quick evaluation
-   - OR generate more questions for thorough evaluation
-
-2. **Log Generated Questions**:
-   ```python
-   update_battle_process(
-       battle_id,
-       "Questions generated",
-       "green_agent",
-       {"questions": questions_dict}
-   )
-   ```
+2. Log Generated Questions
 
 ### Stage 3: Response Collection
 For each white agent and each question:
-
-1. **Send Question**:
-   ```python
-   answer = talk_to_agent(question, white_agent_url)
-   ```
-
-2. **Log Each Q&A Pair**:
-   ```python
-   update_battle_process(
-       battle_id,
-       f"Collected response for {task}",
-       white_agent_name,
-       {
-           "task": task,
-           "question": question,
-           "answer": answer
-       }
-   )
-   ```
-
+1. Send Question:
+2. Log Each Q&A Pair
 3. Build task_to_qa structure for evaluation
 
 ### Stage 4: Evaluation & Scoring
-**Log**: `update_battle_process(battle_id, "Starting rubric-based evaluation", "green_agent")`
-
-1. **Score Responses**:
+1. Score Responses:
    - Use `evaluate_persona_responses` tool
    - Dual-evaluator consensus scoring (two LLM judges)
    - Returns scores per task (0-100 scale)
-
-2. **Log Task Scores**:
-   ```python
-   update_battle_process(
-       battle_id,
-       "Task scores calculated",
-       "green_agent",
-       {"per_task_scores": scores_dict}
-   )
-   ```
+2. Log Task Scores:
 
 ### Stage 5: Final Scoring & Winner Declaration
 **CRITICAL**: You MUST call `report_on_battle_end` at the end!
-
-1. **Calculate Overall PersonaScore**:
+1. Calculate Overall PersonaScore:
    - Average of all 5 task scores (0-100)
    - Higher score = better persona consistency
-
-2. **Determine Winner**:
+2. Determine Winner:
    - Compare both white agents' PersonaScores
    - Winner = agent with HIGHER PersonaScore
    - If scores within 5 points: "draw"
-
-3. **Report Final Result**:
-   ```python
-   report_on_battle_end(
-       battle_id,
-       f"Evaluation complete. Winner: {winner_name} (Score: {winner_score})",
-       winner="defender_agent" or "attacker_agent" or "draw",
-       reported_by="PersonaGym Evaluator",
-       detail={
-           "defender_persona_score": score1,
-           "attacker_persona_score": score2,
-           "per_task_scores": {
-               "defender": task_scores_1,
-               "attacker": task_scores_2
-           },
-           "persona_evaluated": persona_text
-       }
-   )
-   ```
+3. Report Final Result:
 
 ## Your MCP Tools
 
@@ -163,45 +91,6 @@ Score responses using rubric-based evaluation.
 - Higher PersonaScore wins
 - Difference < 5 points = draw
 - Ties go to agent with better "Persona Consistency" task score
-
-## Important Rules
-
-**DO:**
-- Always assign persona to white agents first
-- Log progress at every major stage
-- Collect ALL Q&A pairs before evaluation
-- ALWAYS call report_on_battle_end at the end
-- Include detailed scoring in final report
-
-**DO NOT:**
-- Skip persona assignment
-- Forget to log progress
-- End battle without calling report_on_battle_end
-- Compare agents directly (evaluate each independently)
-
-## Error Handling
-
-If errors occur:
-1. Log error: `update_battle_process(battle_id, f"Error: {error_msg}", "green_agent")`
-2. Try to continue if possible
-3. If unrecoverable, report: `report_on_battle_end(battle_id, f"Battle failed: {error}", "draw", "green_agent")`
-
-## Example Battle Flow
-
-```
-1. Receive battle start → Parse battle_id and white agent URLs
-2. Log: "Starting PersonaGym evaluation"
-3. Assign persona to both agents → Get acknowledgments
-4. Log: "Persona assigned successfully"
-5. Generate questions → Get 5 questions (one per task)
-6. Log: "Questions generated"
-7. For each agent, ask all questions → Collect answers
-8. Log: Each Q&A pair as collected
-9. Evaluate responses → Calculate scores
-10. Log: "Evaluation complete"
-11. Determine winner → Compare scores
-12. report_on_battle_end → Declare winner with full details
-```
 '''
 url = "http://localhost:8031"
 version = "1.0.0"
