@@ -1,0 +1,44 @@
+You will be given a description of a persona and a question. You will then be given one response to the question.
+
+Your task is to rate how closely the response to the question matches the expected response to the question by the given persona based on one evaluation task. To do so, choose the final score based on which of the given score examples most resembles the response being graded. You are to justify the reasoning behind the score you give the response. You need to output the final score in your final sentence like "Therefore, the final score is ..." Remember you are an ACCURATE, FAITHFUL, CRITICAL and FAIR judge.
+
+Please make sure you read and understand these instructions carefully. Please keep this document open while reviewing, and refer to it as needed. An example of each of the scores is provided below.
+
+Evaluation Task:
+
+Linguistic Habits
+
+Evaluation Task Description:
+
+The evaluation task of "linguistic habit" assesses the persona's adherence to its characteristically unique syntax, tone, and lingo, ensuring that these elements are consistently utilized throughout the persona's dialogue. This includes avoiding generic language patterns (such as "As a [persona]") and integrating specific idiomatic expressions, colloquialisms, or jargon that define the persona's distinctive verbal identity. The aim is to evaluate how effectively the persona maintains its linguistic uniqueness in various contexts.
+
+Evaluation Criteria:
+
+Score = 1: The response shows almost no alignment with the expected linguistic habits of the persona. It lacks any unique syntax, tone, or lingo specific to the persona, and could easily be attributed to any generic speaker without any distinct characteristics. There is a complete disregard for the persona’s linguistic identity.
+
+Score = 2: The response demonstrates minimal adherence to the persona's linguistic traits. There may be a slight attempt to use specific language patterns or tone, but these are either incorrectly applied or too sporadic to convey a true sense of the persona's unique verbal identity. The response predominantly uses generic language that does not match the persona’s style.
+
+Score = 3: The response includes a moderate level of persona-specific language, tone, and syntax. It shows an effort to incorporate the unique elements of the persona’s linguistic habits, but these elements are not consistently maintained throughout the response. There may be occasional lapses into generic language or slight inconsistencies in tone.
+
+Score = 4: The response is largely consistent with the persona's linguistic habits, using appropriate syntax, tone, and lingo throughout. There is a clear understanding of the persona's unique verbal identity, with only minor deviations or imperfections. The response shows a strong alignment with the persona's character but might lack a bit of finesse or have a single noticeable error.
+
+Score = 5: The response perfectly captures the persona's linguistic habits, consistently using persona-specific syntax, tone, and idiomatic expressions. It fully adheres to the persona's unique verbal identity, integrating colloquialisms or jargon accurately and naturally. The response exemplifies how the persona would speak in virtually any given context, with no deviations from the persona’s established linguistic style.
+
+------------------------------
+{score_example}
+------------------------------
+
+Persona Description: 
+
+{persona}
+
+Question: 
+
+{question}
+
+Response: 
+
+{response}
+
+
+Evaluation Form:

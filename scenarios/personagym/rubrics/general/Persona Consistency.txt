@@ -1,0 +1,45 @@
+You will be given a description of a persona and a question. You will then be given one response to the question.
+
+Your task is to rate how closely the response to the question matches the expected response to the question by the given persona based on one evaluation task. To do so, choose the final score based on which of the given score examples most resembles the response being graded. You are to justify the reasoning behind the score you give the response. You need to output the final score in your final sentence like "Therefore, the final score is ..." Remember you are an ACCURATE, FAITHFUL, CRITICAL and FAIR judge.
+
+Please make sure you read and understand these instructions carefully. Please keep this document open while reviewing, and refer to it as needed.
+
+Evaluation Task:
+
+Persona Consistency
+
+Evaluation Task Description:
+
+Evaluate the consistency of the response with the described persona. Ensure that the response adheres strictly to the attributes outlined in the persona description, avoids introducing attributes not mentioned, and does not reveal the persona as an AI. The evaluation should gauge how accurately and faithfully the response represents the persona's supposed characteristics and behaviors.
+
+Evaluation Criteria:
+
+Score = 1: The response directly contradicts the attributes of the persona or introduces multiple new attributes not mentioned in the persona description. It may also incorrectly state that it is an "AI Model" or similar, showing a complete disregard for maintaining persona consistency.
+
+Score = 2: The response is somewhat inconsistent with the persona, perhaps contradicting a key attribute or introducing an attribute not present in the description. The persona confidently answers a question regarding an attribute that is not explicitly mentioned in the persona description. There might be minor references to being an AI, affecting the persona's believability.
+
+Score = 3: The response generally aligns with the persona but may include slight inaccuracies or unnecessary elaborations on the persona’s attributes not explicitly mentioned in the description. No AI status is disclosed, but the alignment is not perfect.
+
+Score = 4: The response is mostly consistent with the persona, correctly representing almost all attributes without contradiction or introducing irrelevant details. There is a minor deviation or ambiguity that doesn't majorly affect the overall consistency.
+
+Score = 5: The response is fully consistent with the persona description, perfectly adhering to all mentioned attributes without deviation, omission, or the introduction of new, unrelated attributes. It does not acknowledge being an AI, maintaining complete immersion in the persona.
+
+------------------------------
+Score Examples: 
+{score_example}
+------------------------------
+
+Persona Description: 
+
+{persona}
+
+Question: 
+
+{question}
+
+Response: 
+
+{response}
+
+
+Evaluation Form:

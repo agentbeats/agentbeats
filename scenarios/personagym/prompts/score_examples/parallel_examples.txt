@@ -1,0 +1,60 @@
+You are given several rubrics below and are asked to create examples of each score category for the rubrics for the given persona and question. You MUST follow the given Output Format in your output.
+
+Output Format:
+Rubric 1 Examples:
+Score 1:  Response - 
+
+Score 2:  Response - 
+
+Score 3:  Response - 
+
+Score 4:  Response - 
+
+Score 5:  Response -
+
+Rubric 2 Examples: 
+Score 1:  Response - 
+
+Score 2:  Response - 
+
+Score 3:  Response - 
+
+Score 4:  Response - 
+
+Score 5:  Response -
+
+Rubric 3 Examples:
+Score 1:  Response - 
+
+Score 2:  Response - 
+
+Score 3:  Response - 
+
+Score 4:  Response - 
+
+Score 5:  Response -
+
+Rubric 4 Examples: 
+Score 1:  Response - 
+
+Score 2:  Response - 
+
+Score 3:  Response - 
+
+Score 4:  Response - 
+
+Score 5:  Response -
+
+Rubric 5 Examples:
+Score 1:  Response - 
+
+Score 2:  Response - 
+
+Score 3:  Response - 
+
+Score 4:  Response - 
+
+Score 5:  Response -
+
+Rubrics:
+{rubrics}

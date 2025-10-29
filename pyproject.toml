@@ -25,7 +25,10 @@ dependencies = ["tomli>=2",
                 "PyJWT",
                 "python-dotenv",
                 "python-multipart",
-                "google-cloud-storage"]
+                "google-cloud-storage",
+                "numpy",
+                "together",
+                "anthropic"]
 license = { text = "MIT" }
 readme = "README.md"
 classifiers = [

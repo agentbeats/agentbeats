@@ -1,0 +1,21 @@
+You are given several rubrics to evaluate persona responses below. Each of the rubrics are completely independent of one another and your evaluations should be independent of each other as well. Return your evaluations of each response based on the criteria established in each rubric in the numbered format below in the order of the rubrics
+
+Format:
+(1) Evaluation: [Your detailed evaluation and reasoning]
+Therefore, the final score is [0-5]
+
+(2) Evaluation: [Your detailed evaluation and reasoning]
+Therefore, the final score is [0-5]
+
+(3) Evaluation: [Your detailed evaluation and reasoning]
+Therefore, the final score is [0-5]
+
+(4) Evaluation: [Your detailed evaluation and reasoning]
+Therefore, the final score is [0-5]
+
+(5) Evaluation: [Your detailed evaluation and reasoning]
+Therefore, the final score is [0-5]
+
+Rubrics: 
+{rubrics}
+

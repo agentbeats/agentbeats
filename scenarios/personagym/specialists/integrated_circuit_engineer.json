@@ -1,0 +1,20 @@
+{
+  "domain_name": "integrated circuit",
+  
+  "keywords": [
+    "IC designer",
+    "IC engineer",
+    "...",
+    "..."
+  ],
+  "static_questions_file": "specialist_questions/integrated_circuit_questions.json",
+  "settings_list": [
+    "IC lab",
+    "IC office",
+    "....",
+    "...",
+    "....",
+    "..."
+  ],
+  "rubrics_path": "rubrics/integrated_circuit"
+}

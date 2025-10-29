@@ -1,0 +1,60 @@
+[scenario]
+name = "personagym"
+description = "Personagym AI challenge scenario"
+version = "1.0.0"
+
+# Agents to be launched
+[[agents]]
+name = "White Agent One"
+card = "white_weaker_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8010
+agent_host = "0.0.0.0"
+agent_port = 8011
+model_type = "openai"
+model_name = "gpt-5-mini"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "White Agent Two"
+card = "white_stronger_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8020
+agent_host = "0.0.0.0"
+agent_port = 8021
+model_type = "openai"
+model_name = "gpt-5"
+tools = []
+mcp_servers = []
+
+[[agents]]
+name = "Green Agent"
+card = "green_agent/green_agent_card.toml"
+launcher_host = "0.0.0.0"
+launcher_port = 8030
+agent_host = "0.0.0.0"
+agent_port = 8031
+model_type = "openai"
+model_name = "gpt-5"
+tools = ["green_agent/tools.py"]
+mcp_servers = ["http://localhost:9001/sse"]
+is_green = true
+
+[[agents.participant_requirements]]
+role = "blue_agent"
+name = "white_agent_one"
+required = true
+participant_agent = "White Agent One"
+
+[[agents.participant_requirements]]
+role = "red_agent"
+name = "white_agent_two"
+required = true
+participant_agent = "White Agent Two"
+
+[launch]
+mode = "separate"
+tmux_session_name = "agentbeats-personagym"
+startup_interval = 1
+wait_for_services = true

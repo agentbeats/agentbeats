@@ -1,0 +1,27 @@
+Given the following persona, question, and rubric, generate an example  for each of the possible scores in the rubric for the given persona and question. You are only giving an example of a response from the given persona for the given question that would attain each score and you must follow the output format and fill in an example for each of the scores. 
+
+Persona: 
+
+{persona}
+
+Question: 
+
+{question}
+
+Rubric:
+
+{rubric}
+ 
+-------------------------  
+Output Format (example responses ONLY): 
+Score 1:  Response - 
+
+Score 2:  Response - 
+
+Score 3:  Response - 
+
+Score 4:  Response - 
+
+Score 5:  Response - 
+-------------------------
+

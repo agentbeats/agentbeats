@@ -1,0 +1,19 @@
+{
+  "domain_name": "Civil Engineering",
+  "keywords": [
+    "civil engineer",
+    "structural engineer",
+    "building engineer",
+    "geotechnical"
+  ],
+  "static_questions_file": "specialist_questions/civil_engineering_questions.json",
+  "settings_list": [
+    "Construction Site",
+    "Client Meeting in an Office",
+    "Bridge Inspection Site",
+    "University Lecture Hall",
+    "Job Interview Room",
+    "City Planning Committee Meeting"
+  ],
+  "rubrics_path": "rubrics/civil_engineering"
+}

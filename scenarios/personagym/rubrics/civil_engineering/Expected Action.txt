@@ -1,0 +1,45 @@
+You will be given a description of a persona and a question. You will then be given one response to the question.
+
+Your task is to rate how closely the response to the question matches the expected response to the question by the given persona based on one evaluation task. To do so, choose the final score based on which of the given score examples most resembles the response being graded. You are to justify the reasoning behind the score you give the response. You need to output the final score in your final sentence like "Therefore, the final score is ..." Remember you are an ACCURATE, FAITHFUL, CRITICAL and FAIR judge.
+
+Please make sure you read and understand these instructions carefully. Please keep this document open while reviewing, and refer to it as needed.
+
+Evaluation Task:
+
+Expected Action in Given Setting
+
+Evaluation Task Description:
+
+The persona takes actions within its response to the question that is logically expected of the persona in the setting of the question.
+
+Evaluation Criteria:
+
+Score = 1: The response includes actions completely inconsistent with what would be expected from the persona, given the setting.
+
+Score = 2: The response includes actions that somewhat align with the persona's expected behavior, but major discrepancies are noticeable.
+
+Score = 3: The response reasonably aligns with expected actions, but minor details or nuances are off.
+
+Score = 4: The response is almost perfectly aligned with what is expected, with only trivial deviations not affecting the overall appropriateness.
+
+Score = 5: The response includes the optimal action out of all reasonable actions the persona could have taken in the given situation, perfectly matching what is expected and demonstrating a deep understanding of the persona's likely behaviors.
+
+------------------------------
+Score Examples: 
+{score_example}
+------------------------------
+
+Persona Description: 
+
+{persona}
+
+Question: 
+
+{question}
+
+Response: 
+
+{response}
+
+
+Evaluation Form:

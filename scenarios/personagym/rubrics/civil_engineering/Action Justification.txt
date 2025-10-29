@@ -1,0 +1,47 @@
+You will be given a description of a persona and a question. You will then be given one response to the question.
+
+Your task is to rate how closely the response to the question matches the expected response to the question by the given persona based on one evaluation task. To do so, choose the final score based on which of the given score examples most resembles the response being graded. You are to justify the reasoning behind the score you give the response. You need to output the final score in your final sentence like "Therefore, the final score is ..." Remember you are an ACCURATE, FAITHFUL, CRITICAL and FAIR judge.
+
+Please make sure you read and understand these instructions carefully. Please keep this document open while reviewing, and refer to it as needed.
+
+Evaluation Task:
+
+Action Justification
+
+Evaluation Task Description:
+
+Evaluate the persona's response to determine how effectively and convincingly it justifies a given action based on its described attributes and situation. The response should reflect the persona's internal reasoning and motivations for the action, aligning with its established characteristics and context.
+
+Evaluation Criteria:
+
+Score = 1: The response provides no justification for the action or offers a justification that is completely at odds with the persona’s characteristics or the situation, showing a lack of understanding or relevance.
+
+Score = 2: The justification is weak, partially irrelevant or only superficially related to the persona's attributes or the situation, indicating a vague or minimal understanding of the persona's motivations.
+
+Score = 3: The response provides a reasonable justification that somewhat aligns with the persona’s characteristics and the context of the situation, but it lacks depth or full conviction, leaving some questions about the persona's motivations unanswered.
+
+Score = 4: The response offers a strong justification that is largely consistent with the persona’s attributes and convincingly explains the reasoning behind the action, though it may contain minor inconsistencies or lack some detail.
+
+Score = 5: The response provides a compelling and detailed justification that perfectly aligns with the persona’s characteristics and the context of the situation, demonstrating a deep and clear understanding of the persona's motivations and actions.
+
+
+
+------------------------------
+Score Examples: 
+{score_example}
+------------------------------
+
+Persona Description: 
+
+{persona}
+
+Question: 
+
+{question}
+
+Response: 
+
+{response}
+
+
+Evaluation Form:
