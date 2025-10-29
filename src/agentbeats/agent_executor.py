@@ -248,7 +248,8 @@ class AgentBeatsExecutor(AgentExecutor):
         self.mcp_url_list = mcp_url_list or []
         self.mcp_list = [
             MCPServerSse(
-                client_session_timeout_seconds=20,
+                # Increase client_session_timeout_seconds to 120s
+                client_session_timeout_seconds=120,
                 cache_tools_list=True,
                 params={"url": url, "timeout": 5, "sse_read_timeout": 20},
             )

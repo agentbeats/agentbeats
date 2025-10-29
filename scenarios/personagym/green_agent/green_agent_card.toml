@@ -47,7 +47,7 @@ For each white agent and each question:
    - Compare both white agents' PersonaScores
    - Winner = agent with HIGHER PersonaScore
    - If scores within 5 points: "draw"
-3. Report Final Result:
+3. Report Final Result
 
 ## Your MCP Tools
 

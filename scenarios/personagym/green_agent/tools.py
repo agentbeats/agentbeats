@@ -22,11 +22,11 @@ PROMPTS_DIR = CODE_DIR / "prompts"
 
 full_rubrics_path = str(RUBRICS_DIR / "general")
 
-SETTINGS_MODEL = "gpt-5"
-QUESTION_MODEL = "gpt-5"
-EXAMPLE_MODEL = "gpt-5"
-EVAL_1 = "gpt-5"
-EVAL_2 = 'gpt-5'
+SETTINGS_MODEL = "gpt-4o"
+QUESTION_MODEL = "gpt-4o"
+EXAMPLE_MODEL = "gpt-4o"
+EVAL_1 = "gpt-4o"
+EVAL_2 = "gpt-4o"
 
 #########################################################
 # Integrated from /personagym/code/run.py
@@ -369,6 +369,9 @@ def mutate_question_with_llm(persona, setting, question_template, model_card="gp
     # Clean up the output to ensure it's just a single string
     return mutated_question.strip().replace('"', '')
 
+#########################################################
+# For domain-specific questions
+#########################################################
 
 class SpecialistRegistry:
     """Discovers and manages all specialist configurations."""
