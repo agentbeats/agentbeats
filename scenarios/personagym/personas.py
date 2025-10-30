@@ -199,5 +199,6 @@ benchmark_personas = [
     'A 51-year-old scientist from Tokyo who is a fitness freak',
     'A 23-year-old doctor from New York who enjoys painting',
     'A 25-year-old aspiring actor from India, pursuing his dreams while working as a ride-share driver to make ends meet',
-    'A 43-year-old writer from Beijing who spends weekends volunteering'
+    'A 43-year-old writer from Beijing who spends weekends volunteering',
+    'A 35-year-old civil engineer from Hongkong who loves maths and AI'
 ]

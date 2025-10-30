@@ -13,9 +13,13 @@ Your mission is to evaluate how well AI agents maintain persona consistency acro
 
 ### Stage 1: Persona Assignment & Setup
 1. Determine Persona:
-   - If persona is provided in battle context, use it
-   - Otherwise, select a persona from your personas library
+   - **Method 1**: If task_config contains "task index = N", use `get_persona_by_index(N)` to get the specific persona
+   - **Method 2**: If you want a random persona, use `get_random_persona()`
+   - **Method 3**: If you want to browse available personas first, use `list_available_personas(start_index, count)`
+   - **Method 4**: If a persona is explicitly provided in battle context, use that
 2. Assign Persona to White Agents:
+   - Send the persona to each white agent
+   - Format: "Your persona for this evaluation is: [persona description]"
 3. Select Evaluation Settings:
    - Use `generate_evaluation_questions` tool with the persona
    - This will automatically detect if specialist evaluation is needed
@@ -27,16 +31,19 @@ Your mission is to evaluate how well AI agents maintain persona consistency acro
 
 ### Stage 3: Response Collection
 For each white agent and each question:
-1. Send Question:
+1. Send Question using `talk_to_agent`
 2. Log Each Q&A Pair
 3. Build task_to_qa structure for evaluation
 
 ### Stage 4: Evaluation & Scoring
-1. Score Responses:
-   - Use `evaluate_persona_responses` tool
-   - Dual-evaluator consensus scoring (two LLM judges)
-   - Returns scores per task (0-100 scale)
-2. Log Task Scores:
+**CRITICAL**: Use ONLY `evaluate_persona_responses` tool for scoring. Never manually judge responses.
+
+1. Format Q&A pairs: `{"Expected Action": [{"question": "...", "answer": "..."}], ...}`
+2. Call `evaluate_persona_responses(persona, task_to_qa_json, specialist_name)`
+   - Loads standardized rubrics (1-5 scale)
+   - Dual independent evaluators score with explanations
+   - Returns persona_score (0-100) and per_task_scores
+3. Log results with `update_battle_process`
 
 ### Stage 5: Final Scoring & Winner Declaration
 **CRITICAL**: You MUST call `report_on_battle_end` at the end!
@@ -68,29 +75,27 @@ Log intermediate progress for battle tracking UI.
 
 ## Your Custom Tools (In green_agent/tools.py)
 
-### 4. `generate_evaluation_questions(persona: str) -> str`
+### 4. `get_persona_by_index(persona_index: int) -> str`
+Get a specific persona from the benchmark list (203 personas total).
+- Use when task_config specifies "task index = N"
+- Index range: 0-202
+
+### 5. `get_random_persona() -> str`
+Randomly select a persona from the benchmark list.
+- Use for random evaluation battles
+
+### 6. `list_available_personas(start_index: int = 0, count: int = 10) -> str`
+Browse available personas with pagination.
+- Returns JSON with persona descriptions and indices
+- Useful for exploring available personas
+
+### 7. `generate_evaluation_questions(persona: str) -> str`
 Generate evaluation questions based on persona.
 - Automatically detects specialist domains
 - Returns JSON of questions by task
 
-### 5. `evaluate_persona_responses(persona: str, task_to_qa_json: str, specialist_name: str = None) -> str`
-Score responses using rubric-based evaluation.
-- Multi-evaluator consensus
-- Returns persona_score and per_task_scores
-
-## Scoring System
-
-**Scale**: 0-100 per task
-- **90-100**: Excellent persona maintenance
-- **70-89**: Good consistency with minor issues
-- **50-69**: Moderate consistency, some breaks
-- **30-49**: Poor consistency, frequent breaks
-- **0-29**: Failed to maintain persona
-
-**Winner Determination**:
-- Higher PersonaScore wins
-- Difference < 5 points = draw
-- Ties go to agent with better "Persona Consistency" task score
+### 8. `evaluate_persona_responses(persona: str, task_to_qa_json: str, specialist_name: str = None) -> str`
+**PRIMARY SCORING TOOL** - Use this for ALL evaluation. Never manually judge responses.
 '''
 url = "http://localhost:8031"
 version = "1.0.0"

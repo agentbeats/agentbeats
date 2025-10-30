@@ -419,7 +419,7 @@ class AgentBeatsExecutor(AgentExecutor):
             }
         ]
 
-        result = await Runner.run(self.main_agent, query_ctx, max_turns=30)
+        result = await Runner.run(self.main_agent, query_ctx, max_turns=50)
         self.chat_history = result.to_input_list()
         # print(self.chat_history)
 

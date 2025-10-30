@@ -1,17 +1,15 @@
-import ast
-import os
 import json
 import random
 import re
 import httpx
 import agentbeats as ab
 from pathlib import Path
-from openai import OpenAI
 
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from eval_tasks import tasks, settings_list, question_requirements
 from utils import run_model
+from personas import benchmark_personas
 
 
 CODE_DIR = Path(__file__).parent.parent
@@ -31,14 +29,6 @@ EVAL_2 = "gpt-4o"
 #########################################################
 # Integrated from /personagym/code/run.py
 #########################################################
-
-def extract_list(original_string):
-    list_string = original_string.replace("```python", "")
-    list_string = list_string.replace("```", "")
-    list_string = list_string.lstrip().rstrip()
-    actual_list = ast.literal_eval(list_string)
-    return actual_list
-
 
 # Short-listing relevant scenarios/enviornments
 def select_settings(persona, settings_options):
@@ -120,15 +110,6 @@ def process_examples(text):
     filtered_lines = [line for line in lines if line.startswith("Score")]
 
     return "\n\n".join(filtered_lines)
-
-
-def parse_full_examples(text):
-    rubrics = re.split(r'Rubric \d+ Examples:', text)
-    if rubrics[0].strip() == '':
-        rubrics.pop(0)
-    rubrics = [rubric.strip() for rubric in rubrics]
-    
-    return rubrics
 
 
 def gen_score_examples(persona, qa, rubric, model):
@@ -238,20 +219,6 @@ def score_rubrics(sys_prompt, scoring_prompt, num_evals=1, return_explanations=T
         return sum(scores) / len(scores)
 
 
-def gen_answers(persona, questions, model):
-    task_to_qa = {}
-
-    for task in questions:
-        task_to_qa[task] = []
-        task_questions = questions[task]
-
-        for question in task_questions:
-            answer = run_model(input_prompt=question, persona=persona, model_card=model)
-            task_to_qa[task].append((question, answer))
-    
-    return task_to_qa
-
-
 def score_answers(persona, task_to_qa, rubrics_path=full_rubrics_path, score_example=True, return_explanations=True):
     result = {task: {"scores": [], "reasons": []} for task in task_to_qa}
     
@@ -291,59 +258,6 @@ def score_answers(persona, task_to_qa, rubrics_path=full_rubrics_path, score_exa
                 result[task]["scores"].append(score)
  
     return result
-
-
-def save_responses(persona, task_to_qa, model_name):
-    dir = f"../results/{model_name}"
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-    with open(f'{dir}/{persona}_qa.json', 'w') as file:
-        json.dump(task_to_qa, file, indent=4)
-
-
-def save_scores(save_name, scores):
-    dir = f"../scores/{save_name}"
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-    # Issac: I changed to save the json directly.
-    with open(f'{dir}/scores.json', 'w') as file:
-        json.dump(scores, file, indent=4)
-      
-      
-def load_questions(persona, saved_questions):
-    dir = f"../questions/{saved_questions}"
-    if not os.path.exists(dir):
-        print(f"No questions directory {dir}")
-        exit(0)
-    
-    file_path = f'{dir}/{persona}.json'
-    if not os.path.exists(file_path):
-        print(f"No JSON file {file_path}")
-        exit(0)
-
-    with open(file_path, 'r') as file:
-        questions = json.load(file)
-
-    return questions
-
-
-def load_responses(persona, saved_responses): 
-    dir = saved_responses
-    if not os.path.exists(dir):
-        print(f"No responses directory {saved_responses}")
-        exit(0)
-    
-    file_path = f'{dir}/{persona}_qa.json'
-    if not os.path.exists(file_path):
-        print(f"No JSON file {file_path}")
-        exit(0)
-
-    with open(file_path, 'r') as file:
-        task_to_qa = json.load(file)
-
-    return task_to_qa
 
 
 def mutate_question_with_llm(persona, setting, question_template, model_card="gpt-4o-mini"):
@@ -403,6 +317,66 @@ class SpecialistRegistry:
 
 # Initialize registry
 specialist_registry = SpecialistRegistry(SPECIALISTS_DIR)
+
+#########################################################
+# Tools called by MCP
+#########################################################
+
+@ab.tool
+def get_persona_by_index(persona_index: int) -> str:
+    """
+    Get a specific persona from the benchmark personas list by index.
+
+    Args:
+        persona_index: Index of the persona to retrieve (0-202)
+
+    Returns:
+        Persona description string
+
+    Raises:
+        ValueError: If index is out of range
+    """
+    if persona_index < 0 or persona_index >= len(benchmark_personas):
+        raise ValueError(f"Persona index {persona_index} out of range. Valid range: 0-{len(benchmark_personas)-1}")
+
+    return benchmark_personas[persona_index]
+
+
+@ab.tool
+def get_random_persona() -> str:
+    """
+    Select a random persona from the benchmark personas list.
+
+    Returns:
+        Randomly selected persona description string
+    """
+    return random.choice(benchmark_personas)
+
+
+@ab.tool
+def list_available_personas(start_index: int = 0, count: int = 10) -> str:
+    """
+    List available personas from the benchmark list.
+
+    Args:
+        start_index: Starting index (default: 0)
+        count: Number of personas to return (default: 10)
+
+    Returns:
+        JSON string with list of personas and their indices
+    """
+    end_index = min(start_index + count, len(benchmark_personas))
+    personas_subset = [
+        {"index": i, "persona": benchmark_personas[i]}
+        for i in range(start_index, end_index)
+    ]
+
+    return json.dumps({
+        "total_personas": len(benchmark_personas),
+        "start_index": start_index,
+        "count": len(personas_subset),
+        "personas": personas_subset
+    }, indent=2)
 
 
 @ab.tool
@@ -506,13 +480,17 @@ def evaluate_persona_responses(persona: str, task_to_qa_json: str, specialist_na
 
     scores = score_answers(persona, formatted_task_to_qa, full_rubrics_path, return_explanations=True)
 
-    # Calculate persona score
+    # Calculate persona score - average all batch scores for each task first
     numeric_scores = {}
     for task, data in scores.items():
-        if isinstance(data, dict) and 'scores' in data:
-            score_value = data['scores'][0] if data['scores'] else 0
-            numeric_scores[task] = score_value
+        if isinstance(data, dict) and 'scores' in data and data['scores']:
+            # Average all batch scores for this task
+            task_avg = sum(data['scores']) / len(data['scores'])
+            numeric_scores[task] = task_avg
+        else:
+            numeric_scores[task] = 0
 
+    # Then average across all tasks
     persona_score = sum(numeric_scores.values()) / len(numeric_scores) if numeric_scores else 0
 
     result = {
@@ -522,8 +500,3 @@ def evaluate_persona_responses(persona: str, task_to_qa_json: str, specialist_na
     }
 
     return json.dumps(result, indent=2)
-
-
-# This is the main tool that will be called by AgentBeats to orchestrate the entire evaluation
-# It uses MCP tools (talk_to_agent, update_battle_process, report_on_battle_end) which will be available through the MCP server
-# Note: These MCP tools are NOT defined here - they come from the MCP server connection specified in scenario.toml
