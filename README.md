@@ -1,5 +1,7 @@
 # Agentbeats Official SDK & Scenarios
 
+[DEPRECATED, New version will be released soon.]
+
 Welcome to Agentbeats! This is the official implementation for [agentbeats.org](https://agentbeats.org). 
 
 In this repo we provide `agentbeats` python sdk for easiest agent setup, as well as web frontend/backends to interact visually.
