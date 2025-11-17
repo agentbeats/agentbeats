@@ -2,6 +2,20 @@
 
 <!-- version list -->
 
+## v1.2.6 (2025-11-17)
+
+### Bug Fixes
+
+- Changed hard coded colors to follow theme
+  ([`971b8c1`](https://github.com/agentbeats/agentbeats/commit/971b8c15173703ce751ba6fcb5abe1e5a4e17de8))
+
+- Dark/light mode theme putting white text on white background
+  ([`786add8`](https://github.com/agentbeats/agentbeats/commit/786add88633e6ce8c2366acc68045dedb6388d63))
+
+- Fixed niche hardcodings to work with theme
+  ([`d9e4f8e`](https://github.com/agentbeats/agentbeats/commit/d9e4f8e8cb19136a82e93903dabd8fedaba79ac0))
+
+
 ## v1.2.5 (2025-09-02)
 
 ### Bug Fixes
