@@ -359,7 +359,7 @@
                   {/each}
                   {#if battles.length > 10}
                     <Button 
-                      onclick={() => goto('/battles/featured')}
+                      onclick={() => goto('/battles/past')}
                       class="w-full btn-primary"
                       size="sm"
                     >
